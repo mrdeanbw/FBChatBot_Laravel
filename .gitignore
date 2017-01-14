@@ -1,0 +1,10 @@
+/node_modules
+/vendor
+/.idea
+.env
+_ide_helper.php
+/public/img/uploads/
+/.phpstorm.meta.php
+/storage/framework/cache/*
+/storage/framework/views/*
+/todo

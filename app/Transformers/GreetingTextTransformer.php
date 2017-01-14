@@ -1,0 +1,15 @@
+<?php namespace App\Transformers;
+
+use App\Models\GreetingText;
+
+class GreetingTextTransformer extends BaseTransformer
+{
+
+    public function transform(GreetingText $greetingText)
+    {
+        return [
+            'id'   => $greetingText->id,
+            'text' => $greetingText->text
+        ];
+    }
+}
