@@ -1,14 +1,12 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\API\APIController;
-use App\Models\Page;
-use App\Transformers\BaseTransformer;
-use App\Transformers\TagTransformer;
-use Illuminate\Http\Request;
-
 class TagController extends APIController
 {
 
+    /**
+     * Return a list of page tags.
+     * @return \Dingo\Api\Http\Response
+     */
     public function index()
     {
         $tags = $this->page()->tags()->pluck('tag')->toArray();
@@ -16,14 +14,8 @@ class TagController extends APIController
         return $this->arrayResponse($tags);
     }
 
-
-    public function update(Request $request)
-    {
-        return response([]);
-    }
-
-    /** @return BaseTransformer */
     protected function transformer()
     {
+        return null;
     }
 }

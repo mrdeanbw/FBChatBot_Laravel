@@ -1,10 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\API\APIController;
+use Illuminate\Http\Request;
 use App\Services\AudienceService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\SubscriberTransformer;
-use Illuminate\Http\Request;
 
 class SubscriberController extends APIController
 {
@@ -24,17 +23,30 @@ class SubscriberController extends APIController
     }
 
     /**
+     * Return paginated list of subscribers.
      * @param Request $request
      * @return \Dingo\Api\Http\Response
      */
     public function index(Request $request)
     {
-        $paginator = $this->audience->paginate($this->page(), $request->get('count'), $request->get('filter', []), $request->get('sorting', []));
+        /**
+         * Parse the filter query string to an array.
+         */
+        $filter = $request->get('filter', '[]');
+        $filter = json_decode($filter, true);
+
+        $paginator = $this->audience->paginate(
+            $this->page(),
+            $request->get('count'),
+            $filter,
+            $request->get('sorting', [])
+        );
 
         return $this->paginatorResponse($paginator);
     }
 
     /**
+     * Return details of a subscriber.
      * @param $id
      * @return \Dingo\Api\Http\Response
      */
@@ -47,6 +59,7 @@ class SubscriberController extends APIController
     }
 
     /**
+     * Update a subscriber.
      * @param         $id
      * @param Request $request
      * @return \Dingo\Api\Http\Response
@@ -55,7 +68,7 @@ class SubscriberController extends APIController
     {
         $page = $this->page();
 
-        $this->validateUpdate($request, $page);
+        $this->validateUpdateRequest($request, $page);
 
         $this->audience->update($request->all(), $id, $page);
 
@@ -63,6 +76,7 @@ class SubscriberController extends APIController
     }
 
     /**
+     * Batch update subscribers.
      * @param Request $request
      * @return \Dingo\Api\Http\Response
      */
@@ -70,7 +84,7 @@ class SubscriberController extends APIController
     {
         $page = $this->page();
 
-        $this->validateUpdate($request, $page, true);
+        $this->validateUpdateRequest($request, $page, true);
 
         $this->audience->batchUpdate($request->all(), $request->get('subscribers', []), $page);
 
@@ -84,28 +98,27 @@ class SubscriberController extends APIController
     }
 
     /**
+     * Validate the request for updating subscriber(s);
      * @param Request $request
      * @param         $page
-     * @param bool    $batchUpdate
+     * @param bool    $isBatchUpdate
      */
-    private function validateUpdate(Request $request, $page, $batchUpdate = false)
+    private function validateUpdateRequest(Request $request, $page, $isBatchUpdate = false)
     {
-        $callback = function ($validator, $input) {
-            $tag = array_get($input, 'tag', []);
-            $untag = array_get($input, 'untag', []);
-            if (array_intersect($tag, $untag)) {
-                $validator->errors()->add('tag', "You cannot add the same tag to 'Tag' and 'Untag' actions.");
-            }
+        $this->validate(
+            $request,
+            $this->updateSubscriberValidationRules($page, $isBatchUpdate),
+            $this->updateSubscriberValidationCallback()
+        );
+    }
 
-            $subscribeIds = extract_attribute(array_get($input, 'subscribe', []));
-            $unSubscribeIds = extract_attribute(array_get($input, 'unsubscribe', []));
-            if (array_intersect($subscribeIds, $unSubscribeIds)) {
-                $validator->errors()->add('subscribe', "A single sequence can't be selected for both 'Subscribe' and 'Unsubscribe' actions.");
-            }
-
-            return $validator;
-        };
-
+    /**
+     * @param $page
+     * @param $isBatchUpdate
+     * @return array
+     */
+    private function updateSubscriberValidationRules($page, $isBatchUpdate)
+    {
         $rules = [
             'subscribe'      => 'bail|array',
             'subscribe.id'   => 'bail|exists:sequences,id,page_id,' . $page->id,
@@ -117,11 +130,39 @@ class SubscriberController extends APIController
             'untag.*'        => 'bail|required|max:255',
         ];
 
-        if ($batchUpdate) {
+        if ($isBatchUpdate) {
             $rules['subscribers'] = 'bail|array';
             $rules['subscribers.*'] = 'bail|integer|exists:subscribers,id,page_id,' . $page->id;
+
+            return $rules;
         }
 
-        $this->validate($request, $rules, $callback);
+        return $rules;
+    }
+
+    /**
+     * A callback to check for incompatible tags/sequences.
+     * @return \Closure
+     */
+    private function updateSubscriberValidationCallback()
+    {
+        return function ($validator, $input) {
+
+            $tag = array_get($input, 'tag', []);
+            $untag = array_get($input, 'untag', []);
+
+            if (array_intersect($tag, $untag)) {
+                $validator->errors()->add('tag', "You cannot add the same tag to 'Tag' and 'Untag' actions.");
+            }
+
+            $subscribeIds = extract_attribute(array_get($input, 'subscribe', []));
+            $unSubscribeIds = extract_attribute(array_get($input, 'unsubscribe', []));
+
+            if (array_intersect($subscribeIds, $unSubscribeIds)) {
+                $validator->errors()->add('subscribe', "A single sequence can't be selected for both 'Subscribe' and 'Unsubscribe' actions.");
+            }
+
+            return $validator;
+        };
     }
 }

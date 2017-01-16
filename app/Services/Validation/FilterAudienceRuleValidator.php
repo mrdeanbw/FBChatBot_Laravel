@@ -1,5 +1,4 @@
-<?php
-namespace App\Services\Validation;
+<?php namespace App\Services\Validation;
 
 use App\Models\Page;
 use App\Services\TagService;

@@ -1,10 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Services\Facebook\Makana\MakanaAdapter;
+use Illuminate\Http\Request;
+use App\Transformers\BaseTransformer;
 use App\Services\MessagePreviewService;
 use App\Services\Validation\MessageBlockRuleValidator;
-use App\Transformers\BaseTransformer;
-use Illuminate\Http\Request;
 
 class MessagePreviewController extends APIController
 {
@@ -27,6 +26,7 @@ class MessagePreviewController extends APIController
     
 
     /**
+     * Create a message preview.
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\Response
      */

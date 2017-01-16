@@ -1,11 +1,11 @@
 <?php namespace App\Http\Controllers\API\Build;
 
-use App\Http\Controllers\API\APIController;
-use App\Services\WelcomeMessageService;
-use App\Services\Validation\MessageBlockRuleValidator;
-use App\Transformers\BaseTransformer;
-use App\Transformers\WelcomeMessageTransformer;
 use Illuminate\Http\Request;
+use App\Transformers\BaseTransformer;
+use App\Services\WelcomeMessageService;
+use App\Http\Controllers\API\APIController;
+use App\Transformers\WelcomeMessageTransformer;
+use App\Services\Validation\MessageBlockRuleValidator;
 
 class WelcomeMessageController extends APIController
 {
@@ -25,21 +25,21 @@ class WelcomeMessageController extends APIController
     {
         $this->welcomeMessages = $welcomeMessages;
     }
-    
 
     /**
+     * Return the welcome message associated with the page.
      * @return \Dingo\Api\Http\Response
      */
     public function show()
     {
         $page = $this->page();
+        $welcomeMessage = $this->welcomeMessages->getOrFail($page);
 
-        return $this->itemResponse($this->welcomeMessages->get($page));
+        return $this->itemResponse($welcomeMessage);
     }
 
-
-
     /**
+     * Update the welcome message associated with the page.
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
@@ -53,7 +53,7 @@ class WelcomeMessageController extends APIController
             return $this->errorsResponse($validator->errors());
         }
 
-        $this->welcomeMessages->persist($request->all(), $page);
+        $this->welcomeMessages->update($request->all(), $page);
 
         return $this->response->accepted();
     }

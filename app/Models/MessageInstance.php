@@ -1,18 +1,17 @@
 <?php namespace App\Models;
 
-
 /**
  * App\Models\MessageInstance
  *
- * @property integer $id
- * @property integer $subscriber_id
- * @property integer $message_block_id
+ * @property int $id
+ * @property int $subscriber_id
+ * @property int $message_block_id
  * @property string $sent_at
- * @property integer $page_id
+ * @property int $page_id
  * @property string $facebook_id
  * @property \Carbon\Carbon $read_at
  * @property \Carbon\Carbon $delivered_at
- * @property integer $clicks
+ * @property int $clicks
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property-read \App\Models\MessageBlock $messageBlock
@@ -34,19 +33,20 @@
  */
 class MessageInstance extends BaseModel
 {
+
     protected $dates = ['read_at', 'delivered_at'];
     protected $casts = ['clicks' => 'integer'];
-    
+
     public function message_block()
     {
         return $this->messageBlock();
-    }    
-    
+    }
+
     public function messageBlock()
     {
         return $this->belongsTo(MessageBlock::class);
     }
-    
+
     public function subscriber()
     {
         return $this->belongsTo(Subscriber::class);

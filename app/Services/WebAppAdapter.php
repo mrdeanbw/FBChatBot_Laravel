@@ -1,25 +1,18 @@
-<?php
+<?php namespace App\Services;
 
-namespace App\Services\Facebook\Makana;
-
-use App\Models\AutoReplyRule;
-use App\Models\Broadcast;
-use App\Models\Button;
-use App\Models\MainMenu;
-use App\Models\MessageInstanceClick;
-use App\Models\MessageInstance;
-use App\Models\Page;
-use App\Models\Subscriber;
-use App\Models\Template;
-use App\Models\User;
-use App\Services\AudienceService;
-use App\Services\AutoReplyRuleService;
-use App\Services\DefaultReplyService;
-use App\Services\MessageBlockService;
-use App\Services\WelcomeMessageService;
-use App\Services\URLShortener;
-use Carbon\Carbon;
 use DB;
+use Carbon\Carbon;
+use App\Models\User;
+use App\Models\Page;
+use App\Models\Button;
+use App\Models\Template;
+use App\Models\MainMenu;
+use App\Models\Broadcast;
+use App\Models\Subscriber;
+use App\Models\AutoReplyRule;
+use App\Models\MessageInstance;
+use App\Services\Facebook\Sender;
+use App\Models\MessageInstanceClick;
 
 class WebAppAdapter
 {
@@ -29,7 +22,7 @@ class WebAppAdapter
     /**
      * @type Sender
      */
-    protected $MakanaSender;
+    protected $FacebookSender;
     /**
      * @type AudienceService
      */
@@ -39,9 +32,9 @@ class WebAppAdapter
      */
     private $welcomeMessage;
     /**
-     * @type MakanaAdapter
+     * @type FacebookAPIAdapter
      */
-    private $MakanaAdapter;
+    private $FacebookAdapter;
     /**
      * @type MessageBlockService
      */
@@ -60,8 +53,8 @@ class WebAppAdapter
      *
      * @param AudienceService       $audience
      * @param WelcomeMessageService $welcomeMessage
-     * @param MakanaAdapter         $MakanaAdapter
-     * @param Sender                $MakanaSender
+     * @param FacebookAPIAdapter    $FacebookAdapter
+     * @param Sender                $FacebookSender
      * @param MessageBlockService   $messageBlocks
      * @param DefaultReplyService   $defaultReplies
      * @param AutoReplyRuleService  $AIResponses
@@ -69,19 +62,19 @@ class WebAppAdapter
     public function __construct(
         AudienceService $audience,
         WelcomeMessageService $welcomeMessage,
-        MakanaAdapter $MakanaAdapter,
-        Sender $MakanaSender,
+        FacebookAPIAdapter $FacebookAdapter,
+        Sender $FacebookSender,
         MessageBlockService $messageBlocks,
         DefaultReplyService $defaultReplies,
         AutoReplyRuleService $AIResponses
     ) {
         $this->audience = $audience;
         $this->welcomeMessage = $welcomeMessage;
-        $this->MakanaAdapter = $MakanaAdapter;
+        $this->FacebookAdapter = $FacebookAdapter;
         $this->messageBlocks = $messageBlocks;
         $this->defaultReplies = $defaultReplies;
         $this->AIResponses = $AIResponses;
-        $this->MakanaSender = $MakanaSender;
+        $this->FacebookSender = $FacebookSender;
     }
 
     /**
@@ -102,7 +95,7 @@ class WebAppAdapter
                         'text' => 'You are already subscribed to the page.'
                     ],
                 ];
-                $this->MakanaAdapter->sendMessage($message, $subscriber, $page);
+                $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
             }
 
             return $subscriber;
@@ -113,12 +106,12 @@ class WebAppAdapter
         }
 
         if (! $subscriber->is_active) {
-            $this->audience->subscribe($senderId, $page);
+            $this->audience->resubscribe($senderId, $page);
         }
 
         if (! $silentMode) {
-            $welcomeMessage = $this->welcomeMessage->get($page);
-            $this->MakanaAdapter->sendBlocks($welcomeMessage, $subscriber);
+            $welcomeMessage = $this->welcomeMessage->getOrFail($page);
+            $this->FacebookAdapter->sendBlocks($welcomeMessage, $subscriber);
         }
 
         return $subscriber;
@@ -152,7 +145,7 @@ class WebAppAdapter
                     'id' => $facebookId,
                 ]
             ];
-            $this->MakanaSender->send($page->access_token, $message, false);
+            $this->FacebookSender->send($page->access_token, $message, false);
 
             return;
         }
@@ -164,7 +157,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->MakanaAdapter->sendMessage($message, $subscriber, $page);
+            $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
 
             return;
         }
@@ -189,7 +182,7 @@ class WebAppAdapter
         ];
 
 
-        $this->MakanaAdapter->sendMessage($message, $subscriber, $page);
+        $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
     }
 
     /**
@@ -205,7 +198,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->MakanaAdapter->sendMessage($message, $subscriber, $page);
+            $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
 
             return;
         }
@@ -218,7 +211,7 @@ class WebAppAdapter
             ],
         ];
 
-        $this->MakanaAdapter->sendMessage($message, $subscriber, $page);
+        $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
     }
 
     /**
@@ -229,7 +222,7 @@ class WebAppAdapter
     {
         $defaultReply = $this->defaultReplies->get($page);
 
-        $this->MakanaAdapter->sendBlocks($defaultReply, $subscriber);
+        $this->FacebookAdapter->sendBlocks($defaultReply, $subscriber);
     }
 
     /**
@@ -252,7 +245,7 @@ class WebAppAdapter
             $hash = substr($hash, strlen("MAIN_MENU_"));
         }
 
-        if (! ($id = URLShortener::decode($hash))) {
+        if (! ($id = SimpleEncryptionService::decode($hash))) {
             return false;
         }
 
@@ -284,11 +277,11 @@ class WebAppAdapter
      */
     public function messageBlockUrl($messageBlockHash, $subscriberHash)
     {
-        if (! ($modelId = URLShortener::decode($messageBlockHash))) {
+        if (! ($modelId = SimpleEncryptionService::decode($messageBlockHash))) {
             return false;
         }
 
-        if ($subscriberHash == MakanaAdapter::NO_HASH_PLACEHOLDER) {
+        if ($subscriberHash == FacebookAPIAdapter::NO_HASH_PLACEHOLDER) {
             $mainMenuButton = Button::find($modelId);
             if (! $mainMenuButton || $mainMenuButton->context_type != MainMenu::class) {
                 return false;
@@ -297,7 +290,7 @@ class WebAppAdapter
             return $mainMenuButton->url;
         }
 
-        if (! ($subscriberId = URLShortener::decode($subscriberHash))) {
+        if (! ($subscriberId = SimpleEncryptionService::decode($subscriberHash))) {
             return false;
         }
 
@@ -339,7 +332,7 @@ class WebAppAdapter
 
         /** @type Template $template */
         if ($template = $button->template) {
-            $this->MakanaAdapter->sendBlocks($template, $subscriber);
+            $this->FacebookAdapter->sendBlocks($template, $subscriber);
         }
     }
 
@@ -373,7 +366,7 @@ class WebAppAdapter
      */
     public function matchingAutoReplyRule($message, Page $page)
     {
-        return $this->AIResponses->matching($message, $page);
+        return $this->AIResponses->getMatchingRule($message, $page);
     }
 
     /**
@@ -382,7 +375,7 @@ class WebAppAdapter
      */
     public function autoReply(AutoReplyRule $rule, Subscriber $subscriber)
     {
-        $this->MakanaAdapter->sendBlocks($rule->template, $subscriber);
+        $this->FacebookAdapter->sendBlocks($rule->template, $subscriber);
     }
 
     /**

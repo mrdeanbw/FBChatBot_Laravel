@@ -1,13 +1,11 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 /**
  * App\Models\SubscriptionHistory
  *
- * @property integer $id
- * @property integer $subscriber_id
- * @property integer $page_id
+ * @property int $id
+ * @property int $subscriber_id
+ * @property int $page_id
  * @property string $action
  * @property \Carbon\Carbon $action_at
  * @property \Carbon\Carbon $created_at
@@ -25,12 +23,10 @@ namespace App\Models;
  */
 class SubscriptionHistory extends BaseModel
 {
-
     public $table = 'subscription_history';
 
     protected $dates = ['action_at'];
-    
-    
+
     public function subscriber()
     {
         return $this->belongsTo(Subscriber::class);

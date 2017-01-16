@@ -1,12 +1,9 @@
-<?php
+<?php namespace App\Services;
 
-namespace App\Services;
-
-use App\Models\MessagePreview;
+use DB;
 use App\Models\Page;
 use App\Models\User;
-use App\Services\Facebook\Makana\MakanaAdapter;
-use DB;
+use App\Models\MessagePreview;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class MessagePreviewService
@@ -17,19 +14,19 @@ class MessagePreviewService
      */
     private $messageBlocks;
     /**
-     * @type MakanaAdapter
+     * @type FacebookAPIAdapter
      */
-    private $Makana;
+    private $FacebookAdapter;
 
     /**
      * MessagePreviewService constructor.
      * @param MessageBlockService $messageBlockService
-     * @param MakanaAdapter       $Makana
+     * @param FacebookAPIAdapter  $FacebookAdapter
      */
-    public function __construct(MessageBlockService $messageBlockService, MakanaAdapter $Makana)
+    public function __construct(MessageBlockService $messageBlockService, FacebookAPIAdapter $FacebookAdapter)
     {
         $this->messageBlocks = $messageBlockService;
-        $this->Makana = $Makana;
+        $this->FacebookAdapter = $FacebookAdapter;
     }
 
     /**
@@ -40,16 +37,18 @@ class MessagePreviewService
      */
     public function createAndSend($input, User $user, Page $page)
     {
-        $subscriber = $user->subscriber($page);
+        $subscriber = $user->isSubscribedTo($page);
 
         if (! $subscriber) {
             throw new ModelNotFoundException;
         }
 
-        DB::beginTransaction();
-        $messagePreview = $this->create($input, $page);
-        $this->Makana->sendBlocks($messagePreview->fresh(), $subscriber);
-        DB::commit();
+        $messagePreview = DB::transaction(function () use ($input, $page, $subscriber) {
+            $messagePreview = $this->create($input, $page);
+            $this->FacebookAdapter->sendBlocks($messagePreview->fresh(), $subscriber);
+
+            return $messagePreview;
+        });
 
         return $messagePreview;
     }
@@ -69,7 +68,7 @@ class MessagePreviewService
             return $block;
         }, $input['message_blocks']);
 
-        $this->messageBlocks->persist($messagePreview, $input['message_blocks'], $page);
+        $this->messageBlocks->persist($messagePreview, $input['message_blocks']);
 
         return $messagePreview;
     }

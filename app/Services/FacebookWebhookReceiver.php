@@ -1,12 +1,11 @@
-<?php
-namespace App\Services\Facebook\Makana;
+<?php namespace App\Services;
 
+use Log;
+use Carbon\Carbon;
 use App\Models\Page;
 use App\Models\Subscriber;
-use Carbon\Carbon;
-use Log;
 
-class Receiver
+class FacebookWebhookReceiver
 {
 
     private $data;

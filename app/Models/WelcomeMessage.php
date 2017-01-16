@@ -1,12 +1,10 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 /**
  * App\Models\WelcomeMessage
  *
- * @property integer $id
- * @property integer $page_id
+ * @property int $id
+ * @property int $page_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $messageBlocks
@@ -21,7 +19,6 @@ namespace App\Models;
  */
 class WelcomeMessage extends BaseModel implements HasMessageBlocksInterface
 {
-
     use HasMessageBlocks, BelongsToPage;
 
     protected $guarded = ['id'];

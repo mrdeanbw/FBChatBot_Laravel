@@ -1,11 +1,11 @@
 <?php namespace App\Http\Controllers\API;
 
 use App\Models\Page;
+use Illuminate\Http\Request;
 use App\Services\SequenceService;
-use App\Services\Validation\MessageBlockRuleValidator;
 use App\Transformers\BaseTransformer;
 use App\Transformers\SequenceMessageTransformer;
-use Illuminate\Http\Request;
+use App\Services\Validation\MessageBlockRuleValidator;
 
 class SequenceMessageController extends APIController
 {
@@ -22,6 +22,7 @@ class SequenceMessageController extends APIController
     }
 
     /**
+     * Create a sequence message.
      * @param         $sequenceId
      * @param Request $request
      * @return \Dingo\Api\Http\Response
@@ -42,7 +43,9 @@ class SequenceMessageController extends APIController
     }
 
     /**
+     * Update a sequence message.
      * @param         $id
+     * @param         $sequenceId
      * @param Request $request
      * @return \Dingo\Api\Http\Response
      */
@@ -62,7 +65,9 @@ class SequenceMessageController extends APIController
     }
 
     /**
+     * Delete a sequence message.
      * @param $id
+     * @param $sequenceId
      * @return \Dingo\Api\Http\Response
      */
     public function destroy($id, $sequenceId)
@@ -79,7 +84,6 @@ class SequenceMessageController extends APIController
     {
         return new SequenceMessageTransformer();
     }
-
 
     /**
      * @param Request $request

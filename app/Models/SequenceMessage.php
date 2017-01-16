@@ -1,21 +1,22 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * App\Models\SequenceMessage
  *
- * @property integer                                                                  $id
- * @property integer                                                                  $sequence_id
- * @property integer                                                                  $order
- * @property string                                                                   $name
- * @property integer                                                                  $days
- * @property boolean                                                                  $is_live
- * @property \Carbon\Carbon                                                           $created_at
- * @property \Carbon\Carbon                                                           $updated_at
- * @property-read \App\Models\Sequence                                                $sequence
+ * @property int $id
+ * @property int $sequence_id
+ * @property int $order
+ * @property string $name
+ * @property int $days
+ * @property bool $is_live
+ * @property \Carbon\Carbon $deleted_at
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property-read \App\Models\Sequence $sequence
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Subscriber[] $subscribers
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SequenceMessageSchedule[] $schedules
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $messageBlocks
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $unorderedMessageBlocks
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereId($value)
@@ -24,14 +25,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereName($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereDays($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereIsLive($value)
+ * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereDeletedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereCreatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereUpdatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\BaseModel date($columnName, $value)
  * @mixin \Eloquent
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Subscriber[]   $subscribers
- * @property \Carbon\Carbon $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SequenceMessageSchedule[] $schedules
- * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereDeletedAt($value)
  */
 class SequenceMessage extends BaseModel implements HasMessageBlocksInterface
 {

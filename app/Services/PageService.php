@@ -6,8 +6,8 @@ use App\Models\GreetingText;
 use App\Models\MainMenu;
 use App\Models\Page;
 use App\Models\WelcomeMessage;
-use App\Services\Facebook\Makana\Subscription;
-use App\Services\Facebook\Makana\Thread;
+use App\Services\Facebook\Subscription;
+use App\Services\Facebook\Thread;
 use App\Models\User;
 use App\Services\Facebook\PageService as FacebookPage;
 use DB;
@@ -19,15 +19,15 @@ class PageService
     /**
      * @type FacebookPage
      */
-    private $facebookPage;
+    private $FacebookPages;
     /**
      * @type Subscription
      */
-    private $MakanaSubscription;
+    private $FacebookSubscriptions;
     /**
      * @type Thread
      */
-    private $MakanaThread;
+    private $FacebookThreads;
     /**
      * @type WelcomeMessageService
      */
@@ -52,9 +52,9 @@ class PageService
     /**
      * PageService constructor.
      *
-     * @param FacebookPage          $facebookPage
-     * @param Subscription          $MakanaSubscription
-     * @param Thread                $MakanaThread
+     * @param FacebookPage          $FacebookPages
+     * @param Subscription          $FacebookSubscriptions
+     * @param Thread                $FacebookThreads
      * @param WelcomeMessageService $welcomeMessages
      * @param GreetingTextService   $greetingTexts
      * @param MainMenuService       $mainMenus
@@ -62,18 +62,18 @@ class PageService
      * @param TagService            $tags
      */
     public function __construct(
-        FacebookPage $facebookPage,
-        Subscription $MakanaSubscription,
-        Thread $MakanaThread,
+        FacebookPage $FacebookPages,
+        Subscription $FacebookSubscriptions,
+        Thread $FacebookThreads,
         WelcomeMessageService $welcomeMessages,
         GreetingTextService $greetingTexts,
         MainMenuService $mainMenus,
         AutoReplyRuleService $autoReplyRules,
         TagService $tags
     ) {
-        $this->facebookPage = $facebookPage;
-        $this->MakanaSubscription = $MakanaSubscription;
-        $this->MakanaThread = $MakanaThread;
+        $this->FacebookPages = $FacebookPages;
+        $this->FacebookSubscriptions = $FacebookSubscriptions;
+        $this->FacebookThreads = $FacebookThreads;
         $this->welcomeMessages = $welcomeMessages;
         $this->greetingTexts = $greetingTexts;
         $this->mainMenus = $mainMenus;
@@ -87,27 +87,28 @@ class PageService
      */
     public function createBotForPages(User $user, $pageIds)
     {
-        $remotePages = $this->getUnmanagedPages($user)->keyBy('facebook_id');
+        DB::transaction(function () use ($user, $pageIds) {
 
-        $createdPageIds = [];
+            $remotePages = $this->getUnmanagedPages($user)->keyBy('facebook_id');
 
-        foreach ($pageIds as $facebookId) {
-            $page = $remotePages->get($facebookId);
+            $createdPageIds = [];
 
-            if (! $page) {
-                continue;
+            foreach ($pageIds as $facebookId) {
+                $page = $remotePages->get($facebookId);
+
+                if (! $page) {
+                    continue;
+                }
+
+                if (! $page->exists) {
+                    $this->persistPage($page);
+                }
+
+                $createdPageIds[] = $page->id;
             }
 
-            if (! $page->exists) {
-                $this->persistPage($page);
-            }
-
-            $createdPageIds[] = $page->id;
-        }
-
-        $user->pages()->sync($createdPageIds, false);
-
-        DB::commit();
+            $user->pages()->sync($createdPageIds, false);
+        });
     }
 
     /**
@@ -134,7 +135,7 @@ class PageService
      */
     public function getUnmanagedPages(User $user)
     {
-        $remotePages = $this->facebookPage->getManagePageList($user->access_token);
+        $remotePages = $this->FacebookPages->getManagePageList($user->access_token);
 
         return $this->normalizeRemotePages($user, $remotePages);
     }
@@ -155,7 +156,7 @@ class PageService
      *
      * @return Collection
      */
-    public function inActivePageList($user)
+    public function inactivePageList($user)
     {
         return $user->pages()->whereIsActive(0)->get();
     }
@@ -197,7 +198,7 @@ class PageService
      */
     private function createDefaultTags(Page $page)
     {
-        return $this->tags->createTags(['new'], $page);
+        return $this->tags->getOrCreateTags(['new'], $page);
     }
 
     /**
@@ -239,7 +240,7 @@ class PageService
         $mainMenu = new MainMenu();
         $page->mainMenu()->save($mainMenu);
 
-        $this->mainMenus->attachDefaultMenuItems($mainMenu);
+        $this->mainMenus->attachDefaultButtonsToMainMenu($mainMenu);
 
         return $mainMenu;
     }
@@ -287,13 +288,13 @@ class PageService
      */
     private function initializeFacebookBot(Page $page)
     {
-        $this->MakanaSubscription->subscribe($page->access_token);
+        $this->FacebookSubscriptions->subscribe($page->access_token);
 
         $this->greetingTexts->updateGreetingTextOnFacebook($page);
 
-        $this->MakanaThread->addGetStartedButton($page->access_token);
+        $this->FacebookThreads->addGetStartedButton($page->access_token);
 
-        $this->mainMenus->createFacebookMenu($page->mainMenu, $page);
+        $this->mainMenus->setupFacebookPagePersistentMenu($page->mainMenu, $page);
     }
 
     /**

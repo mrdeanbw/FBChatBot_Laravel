@@ -1,10 +1,10 @@
-<?php
+<?php namespace App\Services;
 
-namespace App\Services;
-
+use DB;
 use App\Models\Page;
 use App\Models\WelcomeMessage;
-use DB;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Repositories\WelcomeMessage\WelcomeMessageRepository;
 
 class WelcomeMessageService
 {
@@ -13,23 +13,34 @@ class WelcomeMessageService
      * @type MessageBlockService
      */
     private $messageBlocks;
+    /**
+     * @type WelcomeMessageRepository
+     */
+    private $welcomeMessageRepo;
 
     /**
      * WelcomeMessageService constructor.
-     * @param MessageBlockService $messageBlockService
+     * @param WelcomeMessageRepository $welcomeMessageRepo
+     * @param MessageBlockService      $messageBlockService
      */
-    public function __construct(MessageBlockService $messageBlockService)
+    public function __construct(WelcomeMessageRepository $welcomeMessageRepo, MessageBlockService $messageBlockService)
     {
         $this->messageBlocks = $messageBlockService;
+        $this->welcomeMessageRepo = $welcomeMessageRepo;
     }
 
     /**
+     * Attach the default message blocks to the welcome message,
+     * The "copyright message" / second message blocks which contains
+     * "Powered By Mr. Reply" sentence is then disabled, to prevent editing
+     * or removing it.
      * @param WelcomeMessage $welcomeMessage
      */
     public function attachDefaultMessageBlocks(WelcomeMessage $welcomeMessage)
     {
-        $this->messageBlocks->persist($welcomeMessage, $this->getDefaultBlocks());
-        $this->messageBlocks->disableLastMessageBlock($welcomeMessage);
+        $messageBlocks = $this->messageBlocks->persist($welcomeMessage, $this->getDefaultBlocks());
+        $copyrightBlock = $messageBlocks->get(1);
+        $this->messageBlocks->update($copyrightBlock, ['is_disabled' => true]);
     }
 
     /**
@@ -39,7 +50,7 @@ class WelcomeMessageService
     {
         return [
             $this->initialTextMessage(),
-            $this->copyrightedMessage()
+            $this->copyrightMessage()
         ];
 
     }
@@ -54,44 +65,44 @@ class WelcomeMessageService
             'text' => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
         ];
     }
-
-
+    
     /**
      * @return array
      */
-    private function copyrightedMessage()
+    private function copyrightMessage()
     {
         return [
             'type' => 'text',
-            'text' => 'Want to create your own bot? Go to: http://www.mrreply.com',
+            'text' => 'Want to create your own bot? Go to: https://www.mrreply.com',
         ];
     }
 
     /**
+     * Get the welcome message associated with the page,
+     * if it doesn't exist, throw an exception.
      * @param Page $page
      * @return WelcomeMessage
      */
-    public function get(Page $page)
+    public function getOrFail(Page $page)
     {
-        //        return $page->welcomeMessage()->with('blocks.blocks')->firstOrFail();
-        return $page->welcomeMessage()->firstOrFail();
+        if ($mainMenu = $this->welcomeMessageRepo->getForPage($page)) {
+            return $mainMenu;
+        }
+        throw new ModelNotFoundException;
     }
 
     /**
+     *
      * @param array $input
-     * @param       $page
+     * @param Page  $page
      */
-    public function persist($input, $page)
+    public function update(array $input, Page $page)
     {
-        DB::beginTransaction();
-
-        $welcomeMessage = $this->get($page);
-
-        $blocks = $input['message_blocks'];
-        
-        $this->messageBlocks->persist($welcomeMessage, $blocks, $page);
-        
-        DB::commit();
+        DB::transaction(function () use ($input, $page) {
+            $welcomeMessage = $this->getOrFail($page);
+            $blocks = $input['message_blocks'];
+            $this->messageBlocks->persist($welcomeMessage, $blocks);
+        });
 
     }
 }

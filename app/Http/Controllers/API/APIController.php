@@ -1,16 +1,15 @@
 <?php
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Dingo\Api\Routing\Helpers;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\Paginator;
+use App\Http\Controllers\Controller;
 use App\Transformers\BaseTransformer;
 use Dingo\Api\Exception\ValidationHttpException;
-use Dingo\Api\Routing\Helpers;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Collection;
 
 abstract class APIController extends Controller
 {
@@ -25,15 +24,21 @@ abstract class APIController extends Controller
     protected $page;
 
     /**
+     * Parses the request for the page id, and fetches the page from the database.
      * @return Page
      */
     protected function page()
     {
+        /**
+         * If the page has been already fetched, return it.
+         */
         if ($this->page) {
             return $this->page;
         }
 
-        $pageId = $this->getPageIdFromUrlParameters(app('request'));
+        $request = app('request');
+
+        $pageId = $this->getPageIdFromUrlParameters($request);
 
         if (! $pageId) {
             $this->response->errorBadRequest("Page Not Specified.");
@@ -43,6 +48,7 @@ abstract class APIController extends Controller
     }
 
     /**
+     * Get the authenticated user.
      * @return User
      */
     protected function user()
@@ -51,10 +57,13 @@ abstract class APIController extends Controller
     }
 
 
-    /** @return BaseTransformer */
+    /**
+     * @return BaseTransformer
+     */
     protected abstract function transformer();
 
     /**
+     * A wrapper around Dingo collection response.
      * @param Collection $collection
      * @return \Dingo\Api\Http\Response
      */
@@ -64,6 +73,7 @@ abstract class APIController extends Controller
     }
 
     /**
+     * A wrapper around Dingo pagination response.
      * @param Paginator $paginator
      * @return \Dingo\Api\Http\Response
      */
@@ -73,6 +83,7 @@ abstract class APIController extends Controller
     }
 
     /**
+     * A wrapper around Dingo array response.
      * @param $array
      * @return \Dingo\Api\Http\Response
      */
@@ -82,6 +93,7 @@ abstract class APIController extends Controller
     }
 
     /**
+     * A wrapper around Dingo item response.
      * @param $model
      * @return \Dingo\Api\Http\Response
      */
@@ -91,6 +103,8 @@ abstract class APIController extends Controller
     }
 
     /**
+     * The page id is always provided either through a GET parameter called "pageId".
+     * Or through a route parameter called "id"
      * @param Request $request
      * @return mixed
      */
@@ -111,6 +125,7 @@ abstract class APIController extends Controller
 
 
     /**
+     * A helper method to make the Validator.
      * @param Request       $request
      * @param array         $rules
      * @param callable|null $callback
@@ -123,6 +138,9 @@ abstract class APIController extends Controller
 
         $validator = \Validator::make($input, $rules, $messages, $customAttributes);
 
+        /**
+         * If a callback is provided, call it.
+         */
         $validator->after(function ($validator) use ($callback, $input) {
             if ($callback) {
                 $validator = $callback($validator, $input);
@@ -132,10 +150,14 @@ abstract class APIController extends Controller
         });
 
 
+        /**
+         * If the validation fails, terminate the request and return the error messages.
+         */
         if ($validator->fails()) {
             $this->errorsResponse($validator->errors());
         }
     }
+
     /**
      * @param $errors
      */

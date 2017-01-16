@@ -5,128 +5,155 @@ use Carbon\Carbon;
 if (! function_exists('config_path')) {
     /**
      * Get the configuration path.
-     *
      * @param  string $path
-     *
      * @return string
      */
     function config_path($path = '')
     {
-        return app()->basePath() . '/config' . ($path ? '/' . $path : $path);
+        return app()->basePath() . '/config' . ($path? '/' . $path : $path);
     }
 }
+
 if (! function_exists('public_path')) {
     /**
      * Get the public path.
-     *
      * @param  string $path
-     *
      * @return string
      */
     function public_path($path = '')
     {
-        return app()->basePath() . '/public' . ($path ? '/' . $path : $path);
+        return app()->basePath() . '/public' . ($path? '/' . $path : $path);
     }
 }
 
-/**
- * @param $date
- *
- * @return array
- * @throws Exception
- */
-function date_string_boundaries($date)
-{
-    $today = Carbon::today();
-    $tomorrow = Carbon::tomorrow();
-    $thisMonthBeginning = (new Carbon('first day of this month midnight'));
 
-    switch ($date) {
-        case 'today':
-            return [$today, $tomorrow];
-        case 'yesterday':
-            return [Carbon::yesterday(), $today];
-        case 'last_seven_days':
-            return [(new Carbon('today'))->subDays(6), $tomorrow];
-        case 'last_thirty_days':
-            return [(new Carbon('today'))->subDays(29), $tomorrow];
-        case 'this_month':
-            return [$thisMonthBeginning, $tomorrow];
-        case 'last_month':
-            return [(new Carbon('first day of last month midnight')), $thisMonthBeginning];
-        default:
-            throw new \Exception("Unknown Date String {$date}");
+if (! function_exists('date_string_boundaries')) {
+    /**
+     * Return the lower and upper boundary of a date string (today, yesterday,... etc)
+     * @param string $date
+     * @return Carbon[]
+     * @throws Exception
+     */
+    function date_string_boundaries($date)
+    {
+        $today = Carbon::today();
+        $tomorrow = Carbon::tomorrow();
+        $thisMonthBeginning = (new Carbon('first day of this month midnight'));
+
+        switch ($date) {
+            case 'today':
+                return [$today, $tomorrow];
+            case 'yesterday':
+                return [Carbon::yesterday(), $today];
+            case 'last_seven_days':
+                return [(new Carbon('today'))->subDays(6), $tomorrow];
+            case 'last_thirty_days':
+                return [(new Carbon('today'))->subDays(29), $tomorrow];
+            case 'this_month':
+                return [$thisMonthBeginning, $tomorrow];
+            case 'last_month':
+                return [(new Carbon('first day of last month midnight')), $thisMonthBeginning];
+            default:
+                throw new \Exception("Unknown Date String {$date}");
+        }
     }
 }
 
-/**
- * @param Carbon|string $date
- *
- * @return Carbon[]
- * @throws \Exception
- */
-function date_boundaries($date)
-{
-    if (is_string($date)) {
-        return date_string_boundaries($date);
-    }
+if (! function_exists('date_boundaries')) {
+    /**
+     * Return the lower and upper boundary of a specific date or of a date string (today, yesterday,... etc)
+     * @param Carbon|string $date
+     * @return Carbon[]
+     * @throws \Exception
+     */
+    function date_boundaries($date)
+    {
+        if (is_string($date)) {
+            return date_string_boundaries($date);
+        }
 
-    return [$date, $date->copy()->addDay()];
+        return [$date, $date->copy()->addDay()];
+    }
 }
 
+if (! function_exists('extract_attribute')) {
+    /**
+     * Return an array of a specific attribute in a collection of objects.
+     * @param        $array
+     * @param string $attribute
+     * @return array
+     */
+    function extract_attribute($array, $attribute = 'id')
+    {
+        $attributes = array_map(function ($object) use ($attribute) {
+            return $object[$attribute];
+        }, (array)$array);
 
-/**
- * @param        $array
- * @param string $attribute
- *
- * @return array
- */
-function extract_attribute($array, $attribute = 'id')
-{
-    $attributes = array_map(function ($object) use ($attribute) {
-        return $object[$attribute];
-    }, (array)$array);
-
-    return $attributes;
+        return $attributes;
+    }
 }
 
-function stable_usort(array &$array, $value_compare_func)
-{
-    $index = 0;
-    foreach ($array as &$item) {
-        $item = [$index++, $item];
-    }
-    $result = usort($array, function ($a, $b) use ($value_compare_func) {
-        $result = call_user_func($value_compare_func, $a[1], $b[1]);
+if (! function_exists('stable_usort')) {
+    /**
+     * Stable sort for PHP (on ties preserve input order)
+     * @see https://github.com/vanderlee/PHP-stable-sort-functions
+     * @param array $array
+     * @param       $cmp
+     * @return bool
+     */
+    function stable_usort(array &$array, $cmp)
+    {
+        $index = 0;
+        foreach ($array as &$item) {
+            $item = [$index++, $item];
+        }
+        $result = usort($array, function ($a, $b) use ($cmp) {
+            $result = call_user_func($cmp, $a[1], $b[1]);
 
-        return $result == 0 ? $a[0] - $b[0] : $result;
-    });
-    foreach ($array as &$item) {
-        $item = $item[1];
-    }
+            return $result == 0? $a[0] - $b[0] : $result;
+        });
+        foreach ($array as &$item) {
+            $item = $item[1];
+        }
 
-    return $result;
+        return $result;
+    }
 }
 
-
-function parse_signed_request($signed_request)
-{
-    list($encoded_sig, $payload) = explode('.', $signed_request, 2);
-
-    $secret = config('services.facebook.client_secret');
-
-    $sig = base64_url_decode($encoded_sig);
-    $data = json_decode(base64_url_decode($payload), true);
-
-    $expected_sig = hash_hmac('sha256', $payload, $secret, $raw = true);
-    if ($sig !== $expected_sig) {
-        return null;
+if (! function_exists('base64_url_decode')) {
+    /**
+     * A helper function used by function `parse_facebook_signed_request`
+     * @param $input
+     * @return string
+     */
+    function base64_url_decode($input)
+    {
+        return base64_decode(strtr($input, '-_', '+/'));
     }
-
-    return $data;
 }
 
-function base64_url_decode($input)
-{
-    return base64_decode(strtr($input, '-_', '+/'));
+if (! function_exists('parse_Facebook_signed_request')) {
+    /**
+     * Parses a signed request from Facebook.
+     * @see https://developers.facebook.com/docs/games/gamesonfacebook/login#usingsignedrequest/
+     * @see http://stackoverflow.com/a/32654932
+     * @param $signedRequest
+     * @param $clientSecret
+     * @return mixed|null
+     */
+    function parse_Facebook_signed_request($signedRequest, $clientSecret)
+    {
+        list($encoded_sig, $payload) = explode('.', $signedRequest, 2);
+
+        $secret = $clientSecret;
+
+        $sig = base64_url_decode($encoded_sig);
+        $data = json_decode(base64_url_decode($payload), true);
+
+        $expected_sig = hash_hmac('sha256', $payload, $secret, $raw = true);
+        if ($sig !== $expected_sig) {
+            return null;
+        }
+        return $data;
+    }
 }

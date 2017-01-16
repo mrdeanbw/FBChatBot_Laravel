@@ -1,9 +1,12 @@
-<?php
-namespace App\Services;
-
+<?php namespace App\Services;
 
 use Illuminate\Filesystem\Filesystem;
 
+/**
+ * Class ImageFileService
+ * A customized service to help storing image files.
+ * @package App\Services
+ */
 class ImageFileService
 {
 
@@ -18,22 +21,20 @@ class ImageFileService
     }
 
     /**
+     * Store image data to an image file.
      * @param $directory
      * @param $imageData
      * @return string
      */
     public function store($directory, $imageData)
     {
-        if ($this->isUrl($imageData)) {
-            return $imageData;
-        }
-
         $fileName = $this->validImageDataURI($imageData, $directory, true);
 
         return $fileName;
     }
 
     /**
+     * Do the actual image storage, by writing the image data to a file.
      * @param string $imageData
      * @param string $filePath
      */
@@ -45,6 +46,7 @@ class ImageFileService
     }
 
     /**
+     * Delete an image file.
      * @param string $filePath
      */
     private function deleteImage($filePath)
@@ -53,6 +55,7 @@ class ImageFileService
     }
 
     /**
+     * Validate the submitted image.
      * @param string $imageData
      * @return bool
      */
@@ -66,6 +69,7 @@ class ImageFileService
     }
 
     /**
+     * Checks if a URL is valid.
      * @param $imageData
      * @return mixed
      */
@@ -75,6 +79,7 @@ class ImageFileService
     }
 
     /**
+     * Checks if the URL actually belongs to this web app, and the file pointed to exists.
      * @param $imageData
      * @return bool
      */
@@ -89,6 +94,7 @@ class ImageFileService
     }
 
     /**
+     * Validate image data, make sure it has a valid mime type and size.
      * @param      $imageData
      * @param null $directoryPath
      * @param bool $keepImage
@@ -119,7 +125,6 @@ class ImageFileService
             return false;
         }
 
-
         if (! $keepImage) {
             $this->deleteImage($filePath);
         }
@@ -128,6 +133,7 @@ class ImageFileService
     }
 
     /**
+     * Checks if a file has a valid MIME type.
      * @param $filePath
      * @return bool
      */
@@ -142,6 +148,7 @@ class ImageFileService
     }
 
     /**
+     * Checks if the image files doesn't exceed the maximum allowed file size.
      * @param $filePath
      * @return bool
      */
@@ -156,6 +163,7 @@ class ImageFileService
     }
 
     /**
+     * Generate a random file name.
      * @param $extension
      * @return string
      */
@@ -167,6 +175,7 @@ class ImageFileService
     }
 
     /**
+     * Creates the directory where the image will be saved, and returns the full file path to the image.
      * @param $directoryPath
      * @param $fileExtension
      * @return array

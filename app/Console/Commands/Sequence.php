@@ -1,16 +1,14 @@
-<?php
+<?php namespace App\Console\Commands;
 
-namespace App\Console\Commands;
-
-use App\Models\SequenceMessage;
-use App\Models\SequenceMessageSchedule;
+use DB;
+use Carbon\Carbon;
 use App\Models\Subscriber;
+use Illuminate\Console\Command;
+use App\Models\SequenceMessage;
 use App\Services\AudienceService;
 use App\Services\SequenceService;
-use App\Services\Facebook\Makana\MakanaAdapter;
-use Carbon\Carbon;
-use DB;
-use Illuminate\Console\Command;
+use App\Models\SequenceMessageSchedule;
+use App\Services\FacebookAPIAdapter;
 
 class Sequence extends Command
 {
@@ -33,22 +31,22 @@ class Sequence extends Command
      */
     private $sequences;
     /**
-     * @var MakanaAdapter
+     * @var FacebookAPIAdapter
      */
-    private $Makana;
+    private $FacebookAdapter;
 
 
     /**
      * Broadcast constructor.
-     * @param SequenceService $sequences
-     * @param AudienceService $audience
-     * @param MakanaAdapter   $Makana
+     * @param SequenceService    $sequences
+     * @param AudienceService    $audience
+     * @param FacebookAPIAdapter $FacebookAdapter
      */
-    public function __construct(SequenceService $sequences, AudienceService $audience, MakanaAdapter $Makana)
+    public function __construct(SequenceService $sequences, AudienceService $audience, FacebookAPIAdapter $FacebookAdapter)
     {
         parent::__construct();
         $this->sequences = $sequences;
-        $this->Makana = $Makana;
+        $this->FacebookAdapter = $FacebookAdapter;
     }
 
     /**
@@ -60,25 +58,23 @@ class Sequence extends Command
 
         /** @var SequenceMessageSchedule $schedule */
         foreach ($schedules as $schedule) {
-            DB::beginTransaction();
+            DB::transaction(function () use ($schedule) {
+                $sequenceMessage = $schedule->sequence_message()->withTrashed()->first();
 
-            $sequenceMessage = $schedule->sequence_message()->withTrashed()->first();
+                $this->info("Sending Message {$sequenceMessage->name}, To {$schedule->subscriber->first_name} {$schedule->subscriber->last_name}");
 
-            $this->info("Sending Message {$sequenceMessage->name}, To {$schedule->subscriber->first_name} {$schedule->subscriber->last_name}");
-
-            $this->markAsRunning($schedule);
+                $this->markAsRunning($schedule);
 
 
-            $sent = $this->sendMessage($sequenceMessage, $schedule->subscriber);
+                $sent = $this->sendMessage($sequenceMessage, $schedule->subscriber);
 
-            $this->markAsCompleted($schedule, $sent);
+                $this->markAsCompleted($schedule, $sent);
 
-            if ($nextMessage = $sequenceMessage->next()) {
-                $this->info("Scheduling next message: {$nextMessage->name}");
-                $this->sequences->scheduleMessage($nextMessage, $schedule->subscriber, $schedule->sent_at?: Carbon::now());
-            }
-
-            DB::commit();
+                if ($nextMessage = $sequenceMessage->next()) {
+                    $this->info("Scheduling next message: {$nextMessage->name}");
+                    $this->sequences->scheduleMessage($nextMessage, $schedule->subscriber, $schedule->sent_at?: Carbon::now());
+                }
+            });
         }
 
 
@@ -123,7 +119,7 @@ class Sequence extends Command
         }
 
         $this->info("Sending using facebook API.");
-        $this->Makana->sendBlocks($sequenceMessage, $subscriber);
+        $this->FacebookAdapter->sendBlocks($sequenceMessage, $subscriber);
 
         return true;
     }

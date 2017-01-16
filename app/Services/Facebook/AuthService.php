@@ -1,11 +1,10 @@
-<?php
-
-namespace App\Services\Facebook;
+<?php namespace App\Services\Facebook;
 
 class AuthService extends API
 {
 
     /**
+     * Return the list of permissions that has been granted to us.
      * @param string $accessToken
      * @return array
      */
@@ -27,12 +26,16 @@ class AuthService extends API
     }
 
     /**
+     * Get Facebook user.
      * @param string $accessToken
      * @return array
      */
     public function getUser($accessToken)
     {
-        $url = $this->url('me', ['access_token' => $accessToken, 'fields' => 'name,first_name,last_name,gender,email,picture{url}']);
+        $url = $this->url('me', [
+            'access_token' => $accessToken,
+            'fields'       => 'name,first_name,last_name,gender,email,picture{url}'
+        ]);
 
         $response = $this->guzzle->get($url, $this->requestOptions());
 
@@ -41,6 +44,7 @@ class AuthService extends API
 
 
     /**
+     * Exchange the short-term access token, with a long-lived one.
      * @param $accessToken
      * @param $clientId
      * @param $clientSecret
@@ -56,26 +60,9 @@ class AuthService extends API
         ]);
 
         $response = $this->guzzle->get($url, $this->requestOptions());
-        
+
         parse_str($response->getBody(), $response);
-        
+
         return $response;
     }
-
-    /**
-     * @param $accessToken
-     * @param $clientId
-     * @return bool
-     */
-    public function isValidToken($accessToken, $clientId)
-    {
-        $url = $this->url('debug_token', ['access_token' => $accessToken, 'input_token' => $accessToken]);
-
-        $response = $this->guzzle->get($url, $this->requestOptions());
-        
-        $response = json_decode($response->getBody(), true);
-
-        return array_get($response, 'data.app_id', false) === $clientId;
-    }
-
 }

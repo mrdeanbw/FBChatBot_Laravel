@@ -18,4 +18,7 @@ php -S localhost:8888
 - Subscribe to the following fields `message_deliveries, message_reads, messages, messaging_optins, messaging_postbacks`
 - The verify token should be exactly like the one in your `.env` file.
 
-
+## References
+* [Mr. Reply Scrum Guide](https://gist.github.com/netcode/917291503a8265eb9c7143db823dcb75)
+* [Mr. Reply Git Flow](https://gist.github.com/netcode/b9ecd59b832a344b7f6345cec9678d0c)
+* [Mr. Reply PHP Coding Guidelines](https://gist.github.com/netcode/60bfa0f77ec95115556911dd8f10cdfd)

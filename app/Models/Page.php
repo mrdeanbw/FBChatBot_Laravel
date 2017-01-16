@@ -1,42 +1,45 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 use Laravel\Cashier\Billable;
 
 /**
  * App\Models\Page
  *
- * @property integer                                                                         $id
- * @property string                                                                          $facebook_id
- * @property string                                                                          $name
- * @property string                                                                          $url
- * @property string                                                                          $avatar_url
- * @property string                                                                          $access_token
- * @property boolean                                                                         $bot_enabled
- * @property float                                                                           $bot_timezone
- * @property string                                                                          $bot_timezone_string
- * @property string                                                                          $stripe_id
- * @property string                                                                          $card_brand
- * @property string                                                                          $card_last_four
- * @property \Carbon\Carbon                                                                  $trial_ends_at
- * @property \Carbon\Carbon                                                                  $created_at
- * @property \Carbon\Carbon                                                                  $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[]                $users
- * @property-read \App\Models\MainMenu                                                       $mainMenu
- * @property-read \App\Models\GreetingText                                                   $greetingText
- * @property-read \App\Models\WelcomeMessage                                                 $welcomeMessage
- * @property-read \App\Models\DefaultReply                                                   $defaultReply
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Template[]            $templates
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[]                 $tags
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Subscriber[]          $subscribers
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\AutoReplyRule[]       $autoReplyRules
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Broadcast[]           $broadcasts
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Sequence[]            $sequences
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Widget[]              $widgets
- * @property-read mixed                                                                      $plan
+ * @property int $id
+ * @property string $facebook_id
+ * @property string $name
+ * @property string $url
+ * @property string $avatar_url
+ * @property string $access_token
+ * @property bool $bot_enabled
+ * @property float $bot_timezone
+ * @property string $bot_timezone_string
+ * @property string $stripe_id
+ * @property string $card_brand
+ * @property string $card_last_four
+ * @property \Carbon\Carbon $trial_ends_at
+ * @property bool $is_active
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\User[] $users
+ * @property-read \App\Models\MainMenu $mainMenu
+ * @property-read \App\Models\GreetingText $greetingText
+ * @property-read \App\Models\WelcomeMessage $welcomeMessage
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessagePreview[] $messagePreviews
+ * @property-read \App\Models\DefaultReply $defaultReply
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Template[] $templates
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[] $tags
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Subscriber[] $subscribers
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\AutoReplyRule[] $autoReplyRules
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Broadcast[] $broadcasts
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Sequence[] $sequences
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Widget[] $widgets
+ * @property-read mixed $plan
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SubscriptionHistory[] $subscriptionHistory
- * @property-read \Illuminate\Database\Eloquent\Collection|\Laravel\Cashier\Subscription[]   $subscriptions
+ * @property-read mixed $payment_plan
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstanceClick[] $messageClicks
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstance[] $messageInstances
+ * @property-read \Illuminate\Database\Eloquent\Collection|\Laravel\Cashier\Subscription[] $subscriptions
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereFacebookId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereName($value)
@@ -50,16 +53,11 @@ use Laravel\Cashier\Billable;
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereCardBrand($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereCardLastFour($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereTrialEndsAt($value)
+ * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereIsActive($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereCreatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereUpdatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\BaseModel date($columnName, $value)
  * @mixin \Eloquent
- * @property-read mixed                                                                      $payment_plan
- * @property boolean $is_active
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessagePreview[] $messagePreviews
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstanceClick[] $messageClicks
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstance[] $messageInstances
- * @method static \Illuminate\Database\Query\Builder|\App\Models\Page whereIsActive($value)
  */
 class Page extends BaseModel
 {

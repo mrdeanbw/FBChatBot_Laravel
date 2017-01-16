@@ -94,13 +94,10 @@ $app->register(Dingo\Api\Provider\LumenServiceProvider::class);
 $app->register(Tymon\JWTAuth\Providers\LumenServiceProvider::class);
 $app->register(Laravel\Cashier\CashierServiceProvider::class);
 
-if ($app->environment('local') && class_exists(Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class)) {
-    $app->register(Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class);
-}
-
 $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\RegisterAPITransformersProvider::class);
 $app->register(App\Providers\CatchAllOptionsRequestsProvider::class);
+$app->register(App\Providers\EloquentRepositoryServiceProvider::class);
 $app->register(Rap2hpoutre\LaravelLogViewer\LaravelLogViewerServiceProvider::class);
 
 $app->make(Dingo\Api\Auth\Auth::class)->extend('jwt', function (Application $app) {

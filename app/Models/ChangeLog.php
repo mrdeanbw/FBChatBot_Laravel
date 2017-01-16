@@ -1,12 +1,10 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 /**
  * App\Models\ChangeLog
  *
- * @property integer $id
- * @property integer $context_id
+ * @property int $id
+ * @property int $context_id
  * @property string $context_type
  * @property string $before
  * @property string $after

@@ -1,5 +1,4 @@
-<?php
-namespace App\Services\Facebook\Makana;
+<?php namespace App\Services\Facebook;
 
 
 class Sender extends Base

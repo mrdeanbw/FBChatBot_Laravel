@@ -1,10 +1,9 @@
-<?php
-namespace App\Services\Facebook\Makana;
+<?php namespace App\Services\Facebook;
 
 class AppVerifier
 {
-
     private $params;
+    
     private $verifyToken;
 
     /**
@@ -18,9 +17,18 @@ class AppVerifier
         $this->verifyToken = $verifyToken;
     }
 
+    /**
+     * Verify Facebook Webhook
+     * @return bool
+     */
     public function verify()
     {
         return (array_get($this->params, 'hub_mode') == 'subscribe' && array_get($this->params, 'hub_verify_token') == $this->verifyToken);
+    }
+
+    public function challenge()
+    {
+        return array_get($this->params, 'hub_challenge');
     }
 
 }

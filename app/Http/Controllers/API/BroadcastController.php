@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Services\BroadcastService;
-use App\Services\Validation\MessageBlockRuleValidator;
-use App\Transformers\BroadcastTransformer;
 use Illuminate\Http\Request;
+use App\Services\BroadcastService;
+use App\Transformers\BroadcastTransformer;
+use App\Services\Validation\MessageBlockRuleValidator;
 use App\Services\Validation\FilterAudienceRuleValidator;
 
 class BroadcastController extends APIController
@@ -26,6 +26,7 @@ class BroadcastController extends APIController
     }
 
     /**
+     * Retrieve the list of broadcasts.
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function index()
@@ -36,6 +37,7 @@ class BroadcastController extends APIController
     }
 
     /**
+     * Delete a broadcast.
      * @param         $id
      * @return \Symfony\Component\HttpFoundation\Response
      */
@@ -49,6 +51,7 @@ class BroadcastController extends APIController
     }
 
     /**
+     * Update a broadcast.
      * @param         $id
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\Response
@@ -57,7 +60,7 @@ class BroadcastController extends APIController
     {
         $page = $this->page();
 
-        $validator = $this->makeValidator($request->all(), $this->broadcastValidationRules(), $page, $this->filterGroupRuleValidationCallback($page));
+        $validator = $this->makeBroadcastValidator($request, $page);
 
         if ($validator->fails()) {
             return $this->errorsResponse($validator->errors());
@@ -69,6 +72,7 @@ class BroadcastController extends APIController
     }
 
     /**
+     * Create a broadcast.
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
@@ -76,7 +80,7 @@ class BroadcastController extends APIController
     {
         $page = $this->page();
 
-        $validator = $this->makeValidator($request->all(), $this->broadcastValidationRules(), $page, $this->filterGroupRuleValidationCallback($page));
+        $validator = $this->makeBroadcastValidator($request, $page);
 
         if ($validator->fails()) {
             return $this->errorsResponse($validator->errors());
@@ -88,6 +92,7 @@ class BroadcastController extends APIController
     }
 
     /**
+     * Return the details of a broadcast.
      * @param         $id
      * @return \Symfony\Component\HttpFoundation\Response
      */
@@ -97,6 +102,28 @@ class BroadcastController extends APIController
         $broadcast = $this->broadcasts->find($page, $id);
 
         return $this->itemResponse($broadcast);
+    }
+
+    protected function transformer()
+    {
+        return new BroadcastTransformer();
+    }
+
+    /**
+     * @param Request $request
+     * @param         $page
+     * @return \Illuminate\Validation\Validator
+     */
+    private function makeBroadcastValidator(Request $request, $page)
+    {
+        $validator = $this->makeValidator(
+            $request->all(),
+            $this->broadcastValidationRules(),
+            $page,
+            $this->filterGroupRuleValidationCallback($page)
+        );
+
+        return $validator;
     }
 
     /**
@@ -122,8 +149,4 @@ class BroadcastController extends APIController
         ];
     }
 
-    protected function transformer()
-    {
-        return new BroadcastTransformer();
-    }
 }

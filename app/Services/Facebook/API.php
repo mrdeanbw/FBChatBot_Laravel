@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Services\Facebook;
+<?php namespace App\Services\Facebook;
 
 use GuzzleHttp\Client;
 
@@ -26,16 +24,29 @@ abstract class API
      */
     protected $guzzle;
 
+    /**
+     * API constructor.
+     */
     public function __construct()
     {
         $this->guzzle = new Client(['http_errors' => false]);
     }
 
+    /**
+     * Build the Facebook API url.
+     * @param       $path
+     * @param array $params
+     * @return string
+     */
     protected function url($path, $params = [])
     {
         return $this->graphUrl . '/' . ltrim($path, '/') . '?' . http_build_query($params);
     }
 
+    /**
+     * Default Guzzle Request Options.
+     * @return array
+     */
     protected function requestOptions()
     {
         return [

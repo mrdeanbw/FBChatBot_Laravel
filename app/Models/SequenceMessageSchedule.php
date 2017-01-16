@@ -1,33 +1,30 @@
-<?php
-
-namespace App\Models;
-
+<?php namespace App\Models;
 
 /**
  * App\Models\SequenceMessageSchedule
  *
- * @property integer                                  $sequence_id
- * @property integer                                  $subscriber_id
- * @property \Carbon\Carbon                           $send_at
- * @property string                                   $status
- * @property \Carbon\Carbon                           $created_at
- * @property \Carbon\Carbon                           $updated_at
- * @property-read \App\Models\SequenceMessageSchedule $sequenceMessage
- * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSequenceId($value)
+ * @property int $id
+ * @property int $subscriber_id
+ * @property int $sequence_id
+ * @property int $sequence_message_id
+ * @property string $status
+ * @property \Carbon\Carbon $send_at
+ * @property string $sent_at
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property-read \App\Models\SequenceMessage $sequenceMessage
+ * @property-read \App\Models\Subscriber $subscriber
+ * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSubscriberId($value)
- * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSendAt($value)
+ * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSequenceId($value)
+ * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSequenceMessageId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereStatus($value)
+ * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSendAt($value)
+ * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSentAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereCreatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereUpdatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\BaseModel date($columnName, $value)
  * @mixin \Eloquent
- * @property integer                                  $sequence_message_id
- * @property-read \App\Models\Subscriber              $subscriber
- * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSequenceMessageId($value)
- * @property integer $id
- * @property string $sent_at
- * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereId($value)
- * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSentAt($value)
  */
 class SequenceMessageSchedule extends BaseModel
 {

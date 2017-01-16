@@ -1,27 +1,23 @@
-<?php
-
-namespace App\Models;
-
+<?php namespace App\Models;
 
 /**
  * App\Models\Text
  *
- * @property integer $id
- * @property integer $order
+ * @property int $id
+ * @property int $order
  * @property string $type
- * @property integer $context_id
+ * @property int $context_id
  * @property string $context_type
  * @property string $text
  * @property string $image_url
  * @property string $title
  * @property string $subtitle
  * @property string $url
- * @property boolean $is_disabled
+ * @property bool $is_disabled
  * @property string $deleted_at
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- * @property integer $template_id
- * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $instances
+ * @property int $template_id
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $messageBlocks
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $unorderedMessageBlocks
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\ChangeLog[] $changeLogs
@@ -42,11 +38,9 @@ namespace App\Models;
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Text whereTemplateId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\BaseModel date($columnName, $value)
  * @mixin \Eloquent
- * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $context
  */
 class Text extends MessageBlock
 {
-
-    protected static $singleTableType = 'text';
     protected static $persisted = ['text'];
+    protected static $singleTableType = 'text';
 }

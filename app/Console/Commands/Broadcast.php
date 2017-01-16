@@ -1,15 +1,13 @@
-<?php
+<?php namespace App\Console\Commands;
 
-namespace App\Console\Commands;
-
+use DB;
+use Carbon\Carbon;
+use Illuminate\Console\Command;
 use App\Models\BroadcastSchedule;
 use App\Services\AudienceService;
 use App\Services\BroadcastService;
-use App\Services\Facebook\Makana\MakanaAdapter;
-use Carbon\Carbon;
-use DB;
-use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
+use App\Services\FacebookAPIAdapter;
 
 class Broadcast extends Command
 {
@@ -32,9 +30,9 @@ class Broadcast extends Command
      */
     private $broadcasts;
     /**
-     * @var MakanaAdapter
+     * @var FacebookAPIAdapter
      */
-    private $Makana;
+    private $FacebookAdapter;
     /**
      * @type AudienceService
      */
@@ -43,15 +41,15 @@ class Broadcast extends Command
 
     /**
      * Broadcast constructor.
-     * @param BroadcastService $sequences
-     * @param AudienceService  $audience
-     * @param MakanaAdapter    $Makana
+     * @param BroadcastService   $sequences
+     * @param AudienceService    $audience
+     * @param FacebookAPIAdapter $FacebookAdapter
      */
-    public function __construct(BroadcastService $sequences, AudienceService $audience, MakanaAdapter $Makana)
+    public function __construct(BroadcastService $sequences, AudienceService $audience, FacebookAPIAdapter $FacebookAdapter)
     {
         parent::__construct();
         $this->broadcasts = $sequences;
-        $this->Makana = $Makana;
+        $this->FacebookAdapter = $FacebookAdapter;
         $this->audience = $audience;
     }
 
@@ -60,60 +58,88 @@ class Broadcast extends Command
      */
     public function handle()
     {
-        $schedules = BroadcastSchedule::whereStatus('pending')->where('send_at', '<=', Carbon::now())->get();
+        $schedules = $this->getDueBroadcastSchedules();
 
         /** @var BroadcastSchedule $schedule */
         foreach ($schedules as $schedule) {
+            $this->processBroadcastSchedule($schedule);
+        }
+    }
 
-            DB::beginTransaction();
+    /**
+     * @return mixed
+     */
+    private function getDueBroadcastSchedules()
+    {
+        $schedules = BroadcastSchedule::whereStatus('pending')->where('send_at', '<=', Carbon::now())->get();
 
-            $this->markAsRunning($schedule);
+        return $schedules;
+    }
 
-            $audience = $this->getTargetAudience($schedule);
-            
-            foreach ($audience as $subscriber) {
-                $ret = $this->Makana->sendBlocks($schedule->broadcast, $subscriber, strtoupper($schedule->broadcast->notification));
-                $schedule->broadcast->subscribers()->attach($subscriber, ['sent_at' => $ret[0]->sent_at]);
-            }
+    /**
+     * @param BroadcastSchedule $schedule
+     */
+    private function processBroadcastSchedule(BroadcastSchedule $schedule)
+    {
+        DB::transaction(function () use ($schedule) {
 
-            $this->markAsCompleted($schedule);
+            $this->markScheduleAsRunning($schedule);
 
-            DB::commit();
+            $this->runSchedule($schedule);
+
+            $this->markScheduleAsCompleted($schedule);
+        });
+    }
+
+    /**
+     * @param BroadcastSchedule $schedule
+     */
+    public function runSchedule(BroadcastSchedule $schedule)
+    {
+        $audience = $this->getTargetAudience($schedule);
+
+        foreach ($audience as $subscriber) {
+
+            $ret = $this->FacebookAdapter->sendBlocks(
+                $schedule->broadcast,
+                $subscriber,
+                strtoupper($schedule->broadcast->notification)
+            );
+
+            $schedule->broadcast->subscribers()->attach($subscriber, ['sent_at' => $ret[0]->sent_at]);
         }
     }
 
     /**
      * @param BroadcastSchedule $schedule
      */
-    protected function markAsRunning(BroadcastSchedule $schedule)
+    protected function markScheduleAsRunning(BroadcastSchedule $schedule)
     {
-        DB::beginTransaction();
-        if ($schedule->broadcast->status == 'pending') {
+        DB::transaction(function () use ($schedule) {
             $schedule->broadcast->status = 'running';
             $schedule->broadcast->save();
-        }
-        $schedule->status = 'running';
-        $schedule->save();
-        DB::commit();
+            $schedule->status = 'running';
+            $schedule->save();
+        });
     }
 
     /**
      * @param BroadcastSchedule $schedule
      */
-    private function markAsCompleted(BroadcastSchedule $schedule)
+    private function markScheduleAsCompleted(BroadcastSchedule $schedule)
     {
-        DB::beginTransaction();
+        DB::transaction(function () use ($schedule) {
+            $schedule->status = 'completed';
+            $schedule->save();
 
-        $schedule->status = 'completed';
-        $schedule->save();
-
-        if (! $schedule->broadcast->schedule()->whereStatus(['pending', 'running'])->exists()) {
-            $schedule->broadcast->status = 'completed';
-        }
-
-        $schedule->broadcast->save();
-
-        DB::commit();
+            /**
+             * If there are no more schedules for the broadcast, mark it as completed as well.
+             */
+            if (! $schedule->broadcast->schedule()->whereStatus(['pending', 'running'])->exists()) {
+                $schedule->broadcast->status = 'completed';
+                $schedule->broadcast->save();
+            }
+        });
     }
 
 
@@ -123,7 +149,15 @@ class Broadcast extends Command
      */
     protected function getTargetAudience(BroadcastSchedule $schedule)
     {
-        $audience = $this->audience->targetAudienceQuery($schedule->broadcast)->whereTimezone($schedule->timezone)->get();
+        $filters = [
+            [
+                'type'      => 'exact',
+                'attribute' => 'timezone',
+                'value'     => $schedule->timezone
+            ]
+        ];
+
+        $audience = $this->audience->getActiveTargetAudience($schedule->broadcast, $filters);
 
         return $audience;
     }

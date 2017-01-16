@@ -42,7 +42,6 @@ trait MessageBlockRuleValidator
      * @param               $rules
      * @param Page          $page
      * @param null|callable $callback
-     *
      * @return \Illuminate\Validation\Validator
      */
     public function makeValidator($input, $rules, Page $page, $callback = null)
@@ -75,7 +74,7 @@ trait MessageBlockRuleValidator
      *
      * @return \Illuminate\Validation\Validator
      */
-    public function runMainMenuValidation($input, Page $page)
+    public function makeMainMenuValidator($input, Page $page)
     {
         $validator = \Validator::make($input, $this->mainMenuRules($page));
 

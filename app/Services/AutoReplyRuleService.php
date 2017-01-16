@@ -1,37 +1,79 @@
-<?php
+<?php namespace App\Services;
 
-namespace App\Services;
-
-use App\Models\AutoReplyRule;
 use App\Models\Page;
+use App\Models\AutoReplyRule;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Repositories\AutoReplyRule\AutoReplyRuleRepository;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class AutoReplyRuleService
 {
 
     /**
+     * @type AutoReplyRuleRepository
+     */
+    private $autoReplyRuleRepo;
+
+    /**
+     * AutoReplyRuleService constructor.
+     * @param AutoReplyRuleRepository $autoReplyRuleRepo
+     */
+    public function __construct(AutoReplyRuleRepository $autoReplyRuleRepo)
+    {
+        $this->autoReplyRuleRepo = $autoReplyRuleRepo;
+    }
+
+    /**
+     * Get all auto reply rules associated with a page.
      * @param Page $page
      * @return Collection
      */
     public function all(Page $page)
     {
-        return $page->autoReplyRules;
+        return $this->autoReplyRuleRepo->getAllForPage($page);
+    }
+
+    /**
+     * @param $ruleId
+     * @param $page
+     * @return AutoReplyRule
+     */
+    private function find($ruleId, $page)
+    {
+        return $this->autoReplyRuleRepo->findByIdForPage($ruleId, $page);
     }
 
     /**
      * @param      $ruleId
      * @param Page $page
+     * @return AutoReplyRule
+     */
+    private function findOrFail($ruleId, Page $page)
+    {
+        $rule = $this->find($ruleId, $page);
+
+        if (! $rule) {
+            throw new ModelNotFoundException;
+        }
+
+        return $rule;
+    }
+
+    /**
+     * Delete an auto reply rule.
+     * @param      $ruleId
+     * @param Page $page
      */
     public function delete($ruleId, Page $page)
     {
-        $rule = $this->find($ruleId, $page);
+        $rule = $this->findOrFail($ruleId, $page);
 
         if ($rule->is_disabled) {
             throw new BadRequestHttpException("Default rules cannot be edited.");
         }
 
-        $rule->delete();
+        $this->autoReplyRuleRepo->delete($rule);
     }
 
     /**
@@ -41,15 +83,14 @@ class AutoReplyRuleService
      */
     public function create($input, Page $page)
     {
-        $rule = new AutoReplyRule();
-        $rule->mode = $input['mode'];
-        $rule->keyword = $input['keyword'];
-        $rule->action = 'send';
-        $rule->template_id = $input['template']['id'];
+        $data = [
+            'mode'        => $input['mode'],
+            'keyword'     => $input['keyword'],
+            'action'      => 'send',
+            'template_id' => $input['template']['id'],
+        ];
 
-        $page->autoReplyRules()->save($rule);
-
-        return $rule->fresh();
+        return $this->autoReplyRuleRepo->createForPage($data, $page);
     }
 
     /**
@@ -60,40 +101,28 @@ class AutoReplyRuleService
      */
     public function update($id, $input, Page $page)
     {
-        $rule = $this->find($id, $page);
+        $rule = $this->findOrFail($id, $page);
+
         if ($rule->is_disabled) {
             throw new BadRequestHttpException("Default rules cannot be edited.");
         }
 
-        $rule->mode = $input['mode'];
-        $rule->keyword = $input['keyword'];
-        $rule->template_id = $input['template']['id'];
-        $rule->save();
+        $data = [
+            'mode'        => $input['mode'],
+            'keyword'     => $input['keyword'],
+            'template_id' => $input['template']['id'],
+        ];
+
+        $this->autoReplyRuleRepo->update($rule, $data);
     }
 
     /**
-     * @param $ruleId
-     * @param $page
+     * @param string $text
+     * @param Page   $page
      * @return AutoReplyRule
      */
-    private function find($ruleId, $page)
+    public function getMatchingRule($text, Page $page)
     {
-        return $page->autoReplyRules()->findOrFail($ruleId);
-    }
-
-    /**
-     * @param      $message
-     * @param Page $page
-     * @return AutoReplyRule
-     */
-    public function matching($message, Page $page)
-    {
-        return $page->autoReplyRules()->where(function ($query) use ($message) {
-            $query->whereMode('is')->where('keyword', '=', $message);
-        })->orWhere(function ($query) use ($message) {
-            $query->whereMode('contains')->where('keyword', 'LIKE', "%{$message}%");
-        })->orWhere(function ($query) use ($message) {
-            $query->whereMode('begins_with')->where('keyword', 'LIKE', "{$message}%");
-        })->with('template')->first();
+        return $this->autoReplyRuleRepo->getMatchingRuleForPage($text, $page);
     }
 }

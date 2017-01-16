@@ -1,10 +1,9 @@
-<?php
+<?php namespace App\Services;
 
-namespace App\Services;
-
+use App\Repositories\DefaultReply\DefaultReplyRepository;
+use DB;
 use App\Models\Page;
 use App\Models\DefaultReply;
-use DB;
 
 class DefaultReplyService
 {
@@ -17,41 +16,47 @@ class DefaultReplyService
      * @type TemplateService
      */
     private $templates;
+    /**
+     * @type DefaultReplyRepository
+     */
+    private $defaultReplyRepo;
 
     /**
      * DefaultReplyService constructor.
-     * @param MessageBlockService $messageBlockService
-     * @param TemplateService     $templates
+     * @param DefaultReplyRepository $defaultReplyRepo
+     * @param MessageBlockService    $messageBlockService
+     * @param TemplateService        $templates
      */
-    public function __construct(MessageBlockService $messageBlockService, TemplateService $templates)
-    {
+    public function __construct(
+        DefaultReplyRepository $defaultReplyRepo,
+        MessageBlockService $messageBlockService,
+        TemplateService $templates
+    ) {
         $this->messageBlocks = $messageBlockService;
         $this->templates = $templates;
+        $this->defaultReplyRepo = $defaultReplyRepo;
     }
 
     /**
+     * Get the default reply for this page.
      * @param Page $page
      * @return DefaultReply
      */
     public function get(Page $page)
     {
-//        return $page->defaultReply()->with('blocks.blocks')->first();
-        return $page->defaultReply()->first();
+        return $this->defaultReplyRepo->getForPage($page);
     }
 
     /**
+     * Update the default reply.
      * @param array $input
      * @param       $page
      */
-    public function persist($input, $page)
+    public function update($input, $page)
     {
-        \DB::beginTransaction();
-
-        $defaultReply = $this->get($page);
-
-        $this->messageBlocks->persist($defaultReply, $input['message_blocks'], $page);
-        
-        \DB::commit();
-
+        DB::transaction(function () use ($input, $page) {
+            $defaultReply = $this->get($page);
+            $this->messageBlocks->persist($defaultReply, $input['message_blocks']);
+        });
     }
 }

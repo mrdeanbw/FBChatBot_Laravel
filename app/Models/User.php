@@ -1,30 +1,27 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 use DB;
 use Illuminate\Auth\Authenticatable;
 use Laravel\Lumen\Auth\Authorizable;
-
+use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 
 /**
  * App\Models\User
  *
- * @property integer                                                          $id
- * @property string                                                           $facebook_id
- * @property string                                                           $first_name
- * @property string                                                           $last_name
- * @property string                                                           $full_name
- * @property string                                                           $email
- * @property string                                                           $gender
- * @property string                                                           $avatar_url
- * @property string                                                           $access_token
- * @property string                                                           $granted_permissions
- * @property \Carbon\Carbon                                                   $created_at
- * @property \Carbon\Carbon                                                   $updated_at
+ * @property int $id
+ * @property string $facebook_id
+ * @property string $first_name
+ * @property string $last_name
+ * @property string $full_name
+ * @property string $email
+ * @property string $gender
+ * @property string $avatar_url
+ * @property string $access_token
+ * @property array $granted_permissions
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Page[] $pages
  * @method static \Illuminate\Database\Query\Builder|\App\Models\User whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\User whereFacebookId($value)
@@ -38,8 +35,8 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
  * @method static \Illuminate\Database\Query\Builder|\App\Models\User whereGrantedPermissions($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\User whereCreatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\User whereUpdatedAt($value)
- * @mixin \Eloquent
  * @method static \Illuminate\Database\Query\Builder|\App\Models\BaseModel date($columnName, $value)
+ * @mixin \Eloquent
  */
 class User extends BaseModel implements AuthenticatableContract, AuthorizableContract, JWTSubject
 {
@@ -51,7 +48,6 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
     protected $casts = [
         'granted_permissions' => 'array'
     ];
-
 
     public function hasManagingPagePermissions()
     {
@@ -69,7 +65,7 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
      * @param int|Page $pageId
      * @return Subscriber|null
      */
-    public function subscriber($pageId)
+    public function isSubscribedTo($pageId)
     {
         if (is_a($pageId, Page::class)) {
             $pageId = $pageId->id;

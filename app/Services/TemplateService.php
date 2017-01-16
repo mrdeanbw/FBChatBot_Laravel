@@ -1,8 +1,9 @@
 <?php namespace App\Services;
 
+use DB;
 use App\Models\Page;
 use App\Models\Template;
-use DB;
+use App\Repositories\Template\TemplateRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class TemplateService
@@ -12,19 +13,29 @@ class TemplateService
      * @type MessageBlockService
      */
     private $messageBlocks;
+    /**
+     * @type TemplateRepository
+     */
+    private $templateRepo;
 
-    public function __construct(MessageBlockService $messageBlocks)
+    /**
+     * TemplateService constructor.
+     * @param TemplateRepository  $templateRepo
+     * @param MessageBlockService $messageBlocks
+     */
+    public function __construct(TemplateRepository $templateRepo, MessageBlockService $messageBlocks)
     {
         $this->messageBlocks = $messageBlocks;
+        $this->templateRepo = $templateRepo;
     }
 
     /**
      * @param Page $page
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function explicit(Page $page)
+    public function explicitList(Page $page)
     {
-        return $page->templates()->whereIsExplicit(1)->get();
+        return $this->templateRepo->explicitTemplatesForPage($page);
     }
 
     /**
@@ -32,9 +43,12 @@ class TemplateService
      * @param Page $page
      * @return Template
      */
-    public function findExplicit($id, Page $page)
+    public function findExplicitOrFail($id, Page $page)
     {
-        return $page->templates()->whereIsExplicit(1)->findOrFail($id);
+        if ($template = $this->templateRepo->FindExplicitByIdForPage($id, $page)) {
+            return $template;
+        }
+        throw new ModelNotFoundException;
     }
 
     /**
@@ -42,48 +56,47 @@ class TemplateService
      * @param Page $page
      * @return Template
      */
-    public function find($id, Page $page)
+    public function findOrFail($id, Page $page)
     {
-        return $page->templates()->findOrFail($id);
+        if ($template = $this->templateRepo->findByIdForPage($id, $page)) {
+            return $template;
+        }
+        throw new ModelNotFoundException;
     }
 
     /**
-     * @param Page $page
-     * @param      $input
+     * Create a new explicit template.
+     * @param Page  $page
+     * @param array $input
      * @return Template
      */
-    public function create(Page $page, $input)
+    public function createExplicit(array $input, Page $page)
     {
-        DB::beginTransaction();
+        $template = DB::transaction(function () use ($input, $page) {
+            $template = $this->templateRepo->create(['name' => $input['name'], 'is_explicit' => 1], $page);
+            $this->messageBlocks->persist($template, $input['message_blocks']);
 
-        $template = new Template();
-        $template->name = $input['name'];
-        $template->is_explicit = 1;
-        $page->templates()->save($template);
-        $this->messageBlocks->persist($template, $input['message_blocks'], $page);
-
-        DB::commit();
+            return $template;
+        });
 
         return $template;
     }
 
     /**
-     * @param      $id
-     * @param Page $page
-     * @param      $input
+     * Update a message template.
+     * @param       $id
+     * @param Page  $page
+     * @param array $input
      * @return Template
      */
-    public function update($id, Page $page, $input)
+    public function update($id, array $input, Page $page)
     {
-        DB::beginTransaction();
+        $template = $this->findOrFail($id, $page);
 
-        $template = $this->find($id, $page);
-        $template->name = $input['name'];
-        $template->is_explicit = 1;
-        $template->save();
-        $this->messageBlocks->persist($template, $input['message_blocks'], $page);
-
-        DB::commit();
+        DB::transaction(function () use ($input, $template) {
+            $this->templateRepo->update($template, ['name' => $input['name']]);
+            $this->messageBlocks->persist($template, $input['message_blocks']);
+        });
 
         return $template->fresh();
     }

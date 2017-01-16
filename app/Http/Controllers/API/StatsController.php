@@ -13,6 +13,14 @@ class StatsController extends APIController
      */
     private $audience;
 
+    protected $supportedMetrics = [
+        'summary',
+        'subscriber_count',
+        'subscription_timeline',
+        'click_count',
+        'message_count'
+    ];
+
     /**
      * StatsController constructor.
      *
@@ -24,33 +32,37 @@ class StatsController extends APIController
     }
 
     /**
+     * List of all metrics and stats.
      * @param Request $request
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function index(Request $request)
     {
         $page = $this->page();
+        $dateString = $request->get('graph_date', 'last_seven_days');
 
         $ret = [];
 
-        foreach (['summary', 'subscriber_count', 'subscription_timeline', 'click_count', 'message_count'] as $metric) {
+        foreach ($this->supportedMetrics as $metric) {
             $methodName = camel_case($metric);
-            $ret[$metric] = $this->{$methodName}($page, $request->get('graph_date', 'last_seven_days'));
+            $ret[$metric] = $this->{$methodName}($page, $dateString);
         }
 
         return $this->arrayResponse($ret);
     }
 
     /**
+     * Summary metrics include:
+     * 1. Total number of active subscribers.
+     * 2. New subscription actions today.
+     * 3. New unsubscription actions today.
      * @param Page $page
-     *
      * @return array
      */
-    private function summary(Page $page, $dateString)
+    private function summary(Page $page)
     {
         return [
-            'total' => $this->audience->activeSubscribers($page),
+            'total' => $this->subscriberCount($page),
             'today' => [
                 'plus'     => $this->audience->newSubscriptions($page, 'today'),
                 'negative' => $this->audience->newUnsubscriptions($page, 'today'),
@@ -58,14 +70,22 @@ class StatsController extends APIController
         ];
     }
 
+    /**
+     * Return the day-by-day number of new and total subscription actions in a given period of time
+     * @param Page   $page
+     * @param string $dateString
+     * @return array
+     */
     private function subscriptionTimeline(Page $page, $dateString)
     {
-        $total = $this->audience->deltaSubscriptions($page, $dateString);
-
         $boundaries = date_boundaries($dateString);
 
         $dates = [];
 
+        /**
+         * For every day in the specified time period, calculate
+         * the number of new subscription as well as total subscription actions.
+         */
         for ($date = $boundaries[0]; $date->lt($boundaries[1]); $date->addDay()) {
             $dates[$date->format('Y-m-d')] = [
                 'plus'  => $this->audience->newSubscriptions($page, $date),
@@ -73,19 +93,30 @@ class StatsController extends APIController
             ];
         }
 
+        /**
+         * Total number of subscription actions in the given time period.
+         */
+        $total = $this->audience->totalSubscriptions($page, $dateString);
+
         return compact('total', 'dates');
     }
 
     /**
+     * Total number of active subscribers.
      * @param Page $page
-     *
      * @return array
      */
-    private function subscriberCount(Page $page, $dateString)
+    private function subscriberCount(Page $page)
     {
         return $this->audience->activeSubscribers($page);
     }
 
+    /**
+     * Total number of clicks on relevant message blocks in a specific time period.
+     * @param Page $page
+     * @param      $dateString
+     * @return array
+     */
     private function clickCount(Page $page, $dateString)
     {
         return [
@@ -94,13 +125,22 @@ class StatsController extends APIController
         ];
     }
 
+    /**
+     * Total number of messages sent in a specific time period
+     * @param Page $page
+     * @param      $dateString
+     * @return mixed
+     */
     private function messageCount(Page $page, $dateString)
     {
         return $page->messageInstances()->date('created_at', $dateString)->count();
     }
 
-
+    /**
+     * @return null
+     */
     protected function transformer()
     {
+        return null;
     }
 }

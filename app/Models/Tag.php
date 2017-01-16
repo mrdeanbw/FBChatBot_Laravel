@@ -1,18 +1,15 @@
-<?php
-
-namespace App\Models;
-
+<?php namespace App\Models;
 
 /**
  * App\Models\Tag
  *
- * @property integer                                                                $id
- * @property string                                                                 $tag
- * @property integer                                                                $page_id
- * @property \Carbon\Carbon                                                         $created_at
- * @property \Carbon\Carbon                                                         $updated_at
+ * @property int $id
+ * @property string $tag
+ * @property int $page_id
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Subscriber[] $subscribers
- * @property-read \App\Models\Page                                                  $page
+ * @property-read \App\Models\Page $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Tag whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Tag whereTag($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Tag wherePageId($value)
@@ -23,7 +20,6 @@ namespace App\Models;
  */
 class Tag extends BaseModel
 {
-
     use BelongsToPage;
 
     protected $guarded = ['id'];
@@ -32,5 +28,4 @@ class Tag extends BaseModel
     {
         return $this->belongsToMany(Subscriber::class);
     }
-
 }

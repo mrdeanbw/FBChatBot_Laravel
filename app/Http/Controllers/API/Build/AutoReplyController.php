@@ -1,12 +1,12 @@
 <?php namespace App\Http\Controllers\API\Build;
 
-use App\Http\Controllers\API\APIController;
-use App\Services\AutoReplyRuleService;
-use App\Transformers\AutoReplyRuleTransformer;
-use App\Transformers\BaseTransformer;
 use Illuminate\Http\Request;
+use App\Transformers\BaseTransformer;
+use App\Services\AutoReplyRuleService;
+use App\Http\Controllers\API\APIController;
+use App\Transformers\AutoReplyRuleTransformer;
 
-class AIResponseController extends APIController
+class AutoReplyController extends APIController
 {
 
     /**
@@ -25,25 +25,27 @@ class AIResponseController extends APIController
     }
 
     /**
+     * Return the list of auto reply rules.
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function rules()
     {
         $page = $this->page();
+        $rules = $this->AIResponses->all($page);
 
-        return $this->collectionResponse($this->AIResponses->all($page));
+        return $this->collectionResponse($rules);
     }
 
     /**
+     * Create a new rule.
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function createRule(Request $request)
     {
         $page = $this->page();
 
-        $this->validate($request, $this->KeywordRuleValidationRules($page));
+        $this->validate($request, $this->AIResponseRuleValidationRules($page));
 
         $rule = $this->AIResponses->create($request->all(), $page);
 
@@ -51,16 +53,16 @@ class AIResponseController extends APIController
     }
 
     /**
+     * Update a rule.
      * @param         $id
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function updateRule($id, Request $request)
     {
         $page = $this->page();
 
-        $this->validate($request, $this->KeywordRuleValidationRules($page, $id));
+        $this->validate($request, $this->AIResponseRuleValidationRules($page, $id));
 
         $this->AIResponses->update($id, $request->all(), $page);
 
@@ -68,8 +70,8 @@ class AIResponseController extends APIController
     }
 
     /**
+     * Delete a rule.
      * @param $id
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function deleteRule($id)
@@ -82,20 +84,20 @@ class AIResponseController extends APIController
     }
 
     /**
+     * Array of validation rules for creating a new auto reply rule.
      * @param      $page
      * @param null $id
-     *
      * @return array
      */
-    private function KeywordRuleValidationRules($page, $id = null)
+    private function AIResponseRuleValidationRules($page, $id = null)
     {
-        $additionalKeywordRule = "|unique:auto_reply_rules,keyword,";
-        $additionalKeywordRule .= $id ? "{$id},id," : "NULL,NULL,";
-        $additionalKeywordRule .= "page_id,{$page->id}";
+        $keywordUniqueRule = "unique:auto_reply_rules,keyword,";
+        $keywordUniqueRule .= $id? "{$id},id," : "NULL,NULL,";
+        $keywordUniqueRule .= "page_id,{$page->id}";
 
         return [
             'mode'        => 'bail|required|in:is,contains,begins_with',
-            'keyword'     => "bail|required|max:255{$additionalKeywordRule}",
+            'keyword'     => "bail|required|max:255|{$keywordUniqueRule}",
             'action'      => 'bail|required', // must be "send"
             'template'    => 'bail|required|array',
             'template.id' => 'bail|required|exists:templates,id,page_id,' . $page->id

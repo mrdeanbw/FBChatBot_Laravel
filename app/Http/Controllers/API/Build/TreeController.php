@@ -1,15 +1,11 @@
-<?php
+<?php namespace App\Http\Controllers\API\Build;
 
-namespace App\Http\Controllers\API\Build;
-
-use App\Http\Controllers\API\APIController;
-use App\Models\Template;
+use Illuminate\Http\Request;
 use App\Services\TemplateService;
-use App\Services\Validation\MessageBlockRuleValidator;
 use App\Transformers\BaseTransformer;
 use App\Transformers\TemplateTransformer;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
+use App\Http\Controllers\API\APIController;
+use App\Services\Validation\MessageBlockRuleValidator;
 
 class TreeController extends APIController
 {
@@ -32,31 +28,32 @@ class TreeController extends APIController
     }
 
     /**
+     * Return a list of message trees.
      * @return \Dingo\Api\Http\Response
      */
     public function index()
     {
         $page = $this->page();
+        $trees = $this->templates->explicitList($page);
 
-        return $this->collectionResponse($this->templates->explicit($page));
+        return $this->collectionResponse($trees);
     }
 
     /**
+     * Return the details of a message tree.
      * @param         $id
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function show($id)
     {
         $page = $this->page();
-        $template = $this->templates->findExplicit($id, $page);
 
-        return $this->itemResponse($template);
+        return $this->itemResponse($tree);
     }
 
     /**
+     * Create a new message tree.
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function store(Request $request)
@@ -67,7 +64,7 @@ class TreeController extends APIController
     /**
      * @param         $id
      * @param Request $request
-     *
+     * Update a message tree.
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
@@ -76,40 +73,42 @@ class TreeController extends APIController
     }
 
     /**
+     * Validate and persist (create/update) a message tree.
      * @param         $id
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function persist($id, Request $request)
     {
         $page = $this->page();
 
-        $validator = $this->validator($id, $request, $page);
+        $validator = $this->makeMessageTreeValidator($id, $request, $page);
 
         if ($validator->fails()) {
             return $this->errorsResponse($validator->errors());
         }
 
         if ($id) {
-            $tree = $this->templates->update($id, $page, $request->all());
+            // updating
+            $tree = $this->templates->update($id, $request->all(), $page);
         } else {
-            $tree = $this->templates->create($page, $request->all());
+            // creating
+            $tree = $this->templates->createExplicit($request->all(), $page);
         }
 
         return $this->itemResponse($tree);
     }
 
     /**
+     * Make the validator for message trees.
      * @param         $id
      * @param Request $request
      * @param         $page
-     *
      * @return \Illuminate\Validation\Validator
      */
-    protected function validator($id, Request $request, $page)
+    protected function makeMessageTreeValidator($id, Request $request, $page)
     {
-        $idString = $id ? "{$id}" : "NULL";
+        $idString = $id? "{$id}" : "NULL";
 
         $rules = [
             'name' => "bail|required|max:255|unique:templates,name,{$idString},id,page_id,{$page->id}"

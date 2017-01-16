@@ -89,12 +89,10 @@ class BroadcastService
      */
     public function update($id, $input, Page $page)
     {
-        DB::beginTransaction();
-
-        $broadcast = $this->find($page, $id, 'pending');
-        $this->persist($input, $page, $broadcast);
-
-        DB::commit();
+        DB::transaction(function () use ($id, $input, $page) {
+            $broadcast = $this->find($page, $id, 'pending');
+            $this->persist($input, $page, $broadcast);
+        });
     }
 
     /**
@@ -104,12 +102,11 @@ class BroadcastService
      */
     public function create($input, Page $page)
     {
-        DB::beginTransaction();
-
         $broadcast = new Broadcast();
-        $this->persist($input, $page, $broadcast);
 
-        DB::commit();
+        DB::transaction(function () use ($input, $page, $broadcast) {
+            $this->persist($input, $page, $broadcast);
+        });
 
         return $broadcast;
     }
@@ -130,7 +127,7 @@ class BroadcastService
 
         BroadcastSchedule::insert($this->getBroadcastSchedules($broadcast));
 
-        $this->messageBlocks->persist($broadcast, $input['message_blocks'], $page);
+        $this->messageBlocks->persist($broadcast, $input['message_blocks']);
 
         $this->filterGroups->persist($broadcast, $input['filter_groups']);
     }
@@ -264,9 +261,9 @@ class BroadcastService
     public function delete($id, $page)
     {
         $broadcast = $this->find($page, $id, 'pending');
-        DB::beginTransaction();
-        $broadcast->delete();
-        DB::commit();
+        DB::transaction(function () use ($broadcast) {
+            $broadcast->delete();
+        });
     }
 
 

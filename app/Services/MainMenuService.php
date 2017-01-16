@@ -1,13 +1,12 @@
-<?php
+<?php namespace App\Services;
 
-namespace App\Services;
-
-use App\Models\MainMenu;
-use App\Models\Page;
-use App\Services\Facebook\Makana\MakanaAdapter;
-use App\Services\Facebook\Makana\Thread;
 use DB;
 use Log;
+use App\Models\Page;
+use App\Models\MainMenu;
+use App\Services\Facebook\Thread;
+use App\Repositories\MainMenu\MainMenuRepository;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class MainMenuService
 {
@@ -20,89 +19,104 @@ class MainMenuService
     /**
      * @type Thread
      */
-    private $facebookThread;
+    private $FacebookThread;
     /**
-     * @type MakanaAdapter
+     * @type FacebookAPIAdapter
      */
-    private $MakanaAdapter;
+    private $FacebookAdapter;
+    /**
+     * @type MainMenuRepository
+     */
+    private $mainMenuRepo;
 
     /**
      * MainMenuService constructor.
+     * @param MainMenuRepository  $mainMenuRepo
      * @param MessageBlockService $messageBlocks
      * @param Thread              $facebookThread
-     * @param MakanaAdapter       $MakanaAdapter
+     * @param FacebookAPIAdapter  $FacebookAdapter
      */
-    public function __construct(MessageBlockService $messageBlocks, Thread $facebookThread, MakanaAdapter $MakanaAdapter)
-    {
+    public function __construct(
+        MainMenuRepository $mainMenuRepo,
+        MessageBlockService $messageBlocks,
+        Thread $facebookThread,
+        FacebookAPIAdapter $FacebookAdapter
+    ) {
         $this->messageBlocks = $messageBlocks;
-        $this->facebookThread = $facebookThread;
-        $this->MakanaAdapter = $MakanaAdapter;
+        $this->FacebookThread = $facebookThread;
+        $this->FacebookAdapter = $FacebookAdapter;
+        $this->mainMenuRepo = $mainMenuRepo;
     }
 
     /**
      * @param Page $page
      * @return MainMenu
      */
-    public function get(Page $page)
+    public function getOrFail(Page $page)
     {
-        return $page->mainMenu()->firstOrFail();
-        //        return $page->mainMenu()->with('message_blocks')->firstOrFail();
+        if ($mainMenu = $this->mainMenuRepo->getForPage($page)) {
+            return $mainMenu;
+        }
+        throw new ModelNotFoundException;
     }
 
     /**
+     * Updates the main menu (buttons).
      * @param Page $page
      * @param      $input
      * @return bool
      */
-    public function persist($input, Page $page)
+    public function update($input, Page $page)
     {
-        DB::beginTransaction();
+        $success = DB::transaction(function () use ($input, $page) {
+            $blocks = $input['message_blocks'];
+            $mainMenu = $this->getOrFail($page);
+            $this->messageBlocks->persist($mainMenu, $blocks);
 
-        $blocks = $input['message_blocks'];
-
-        $mainMenu = $this->get($page);
-
-        $this->messageBlocks->persist($mainMenu, $blocks, $page);
-
-        $success = $this->createFacebookMenu($mainMenu, $page);
-
-        DB::commit();
+            return $this->setupFacebookPagePersistentMenu($mainMenu, $page);
+        });
 
         return $success;
     }
 
     /**
+     * Use Facebook API to actually setup and display the main menu.
      * @param MainMenu $mainMenu
      * @param Page     $page
      * @return bool
      */
-    public function createFacebookMenu(MainMenu $mainMenu, Page $page)
+    public function setupFacebookPagePersistentMenu(MainMenu $mainMenu, Page $page)
     {
-        $blocks = $this->MakanaAdapter->mapButtons($mainMenu->message_blocks);
+        $blocks = $this->FacebookAdapter->mapButtons($mainMenu->message_blocks);
 
-        $response = $this->facebookThread->setPersistentMenu($page->access_token, $blocks);
-        
+        $response = $this->FacebookThread->setPersistentMenu($page->access_token, $blocks);
+
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 
         if (! $success) {
-            \Log::error("Failed to create menu [$mainMenu->id]");
-            \Log::error(json_encode($blocks));
-            \Log::error(json_encode($response));
+            Log::error("Failed to create menu [$mainMenu->id]");
+            Log::error(json_encode($blocks));
+            Log::error(json_encode($response));
         }
 
         return $success;
     }
 
     /**
+     * Attach the default "Powered By: Mr. Reply button" to the main menu,
+     * and make it "disabled", so that it cannot be edited/removed.
      * @param $mainMenu
      */
-    public function attachDefaultMenuItems($mainMenu)
+    public function attachDefaultButtonsToMainMenu(MainMenu $mainMenu)
     {
-        $this->messageBlocks->persist($mainMenu, [$this->copyrightedButton()]);
-        $this->messageBlocks->disableLastMessageBlock($mainMenu);
+        $defaultButtons = [$this->copyrightedButton()];
+        $messageBlocks = $this->messageBlocks->persist($mainMenu, $defaultButtons);
+        $copyrightBlock = $messageBlocks->get(0);
+        $this->messageBlocks->update($copyrightBlock, ['is_disabled' => true]);
     }
 
     /**
+     * The button array for the button.
      * @return array
      */
     private function copyrightedButton()
@@ -110,7 +124,7 @@ class MainMenuService
         return [
             'type'  => 'button',
             'title' => 'Powered By ' . config('app.name'),
-            'url'   => 'http://www.mrreply.com',
+            'url'   => 'https://www.mrreply.com',
         ];
     }
 

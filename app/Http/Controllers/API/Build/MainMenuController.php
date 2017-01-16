@@ -1,14 +1,12 @@
-<?php
-
-namespace App\Http\Controllers\API\Build;
+<?php namespace App\Http\Controllers\API\Build;
 
 
-use App\Http\Controllers\API\APIController;
+use Illuminate\Http\Request;
 use App\Services\MainMenuService;
-use App\Services\Validation\MessageBlockRuleValidator;
 use App\Transformers\BaseTransformer;
 use App\Transformers\MainMenuTransformer;
-use Illuminate\Http\Request;
+use App\Http\Controllers\API\APIController;
+use App\Services\Validation\MessageBlockRuleValidator;
 
 class MainMenuController extends APIController
 {
@@ -26,35 +24,38 @@ class MainMenuController extends APIController
     }
 
     /**
+     * Return the details of the page's persistent menu.
      * @return \Dingo\Api\Http\Response
      */
     public function show()
     {
         $page = $this->page();
+        $mainMenu = $this->mainMenu->getOrFail($page);
 
-        return $this->itemResponse($this->mainMenu->get($page));
+        return $this->itemResponse($mainMenu);
     }
 
 
     /**
+     * Update the main menu associated with the page
      * @param Request $request
-     * @return \Illuminate\Http\Response|\Laravel\Lumen\Http\ResponseFactory|void
+     * @return \Dingo\Api\Http\Response
      */
     public function update(Request $request)
     {
         $page = $this->page();
 
-        $validator = $this->runMainMenuValidation($request->all(), $page);
+        $validator = $this->makeMainMenuValidator($request->all(), $page);
 
         if ($validator->fails()) {
-            return $this->errorsResponse($validator->errors());
+            $this->errorsResponse($validator->errors());
         }
 
-        if ($this->mainMenu->persist($request->all(), $page)) {
-            return $this->itemResponse($this->mainMenu->get($page));
+        if (! $this->mainMenu->update($request->all(), $page)) {
+            $this->errorsResponse(['Failed to add the menu to your facebook page. Try again later.']);
         }
 
-        return $this->errorsResponse(['Failed to add the menu to your facebook page. Try again later.']);
+        return $this->itemResponse($this->mainMenu->getOrFail($page));
     }
 
     /** @return BaseTransformer */

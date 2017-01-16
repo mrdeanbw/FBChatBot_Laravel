@@ -1,5 +1,4 @@
-<?php
-namespace App\Models;
+<?php namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,9 +9,7 @@ abstract class BaseModel extends Model
     {
         $boundaries = date_boundaries($value);
 
-        if (! is_null($boundaries)) {
-            $query->where($columnName, '>=', $boundaries[0])->where($columnName, '<', $boundaries[1]);
-        }
+        $query->where($columnName, '>=', $boundaries[0])->where($columnName, '<', $boundaries[1]);
 
         return $query;
     }

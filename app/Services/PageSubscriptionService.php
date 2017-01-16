@@ -1,10 +1,10 @@
 <?php
 namespace App\Services;
 
-use App\Models\Page;
-use App\Models\PaymentPlan;
 use DB;
 use Exception;
+use App\Models\Page;
+use App\Models\PaymentPlan;
 
 class PageSubscriptionService
 {
@@ -20,10 +20,10 @@ class PageSubscriptionService
             throw new Exception("You are already subscribed to Pro plan.");
         }
 
-        DB::beginTransaction();
-        $this->enableDisabledBlocks($page);
-        $page->newSubscription('default', $this->getStripePlanId($page))->create($token);
-        DB::commit();
+        DB::transaction(function () use ($page, $token) {
+            $this->enableDisabledBlocks($page);
+            $page->newSubscription('default', $this->getStripePlanId($page))->create($token);
+        });
     }
 
     /**

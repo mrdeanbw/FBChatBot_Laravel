@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 use App\Events\Resubscription;
 use App\Events\Unsubscription;
@@ -10,26 +8,29 @@ use Carbon\Carbon;
 /**
  * App\Models\Subscriber
  *
- * @property integer                                                                         $id
- * @property string                                                                          $facebook_id
- * @property string                                                                          $page_id
- * @property string                                                                          $first_name
- * @property string                                                                          $last_name
- * @property string                                                                          $avatar_url
- * @property string                                                                          $locale
- * @property float                                                                           $timezone
- * @property string                                                                          $gender
- * @property \Carbon\Carbon                                                                  $last_contacted_at
- * @property boolean                                                                         $is_active
- * @property \Carbon\Carbon                                                                  $last_subscribed_at
- * @property \Carbon\Carbon                                                                  $last_unsubscribed_at
- * @property \Carbon\Carbon                                                                  $created_at
- * @property \Carbon\Carbon                                                                  $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[]                 $tags
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Sequence[]            $sequences
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Broadcast[]           $broadcasts
+ * @property int $id
+ * @property string $facebook_id
+ * @property int $page_id
+ * @property string $first_name
+ * @property string $last_name
+ * @property string $avatar_url
+ * @property string $locale
+ * @property float $timezone
+ * @property string $gender
+ * @property \Carbon\Carbon $last_contacted_at
+ * @property bool $is_active
+ * @property \Carbon\Carbon $last_subscribed_at
+ * @property \Carbon\Carbon $last_unsubscribed_at
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[] $tags
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Sequence[] $sequences
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Broadcast[] $broadcasts
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SubscriptionHistory[] $subscriptionHistory
- * @property-read \App\Models\Page                                                           $page
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SequenceMessageSchedule[] $sequenceSchedules
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstance[] $messageInstances
+ * @property-read mixed $full_name
+ * @property-read \App\Models\Page $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Subscriber whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Subscriber whereFacebookId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Subscriber wherePageId($value)
@@ -47,9 +48,6 @@ use Carbon\Carbon;
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Subscriber whereUpdatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\BaseModel date($columnName, $value)
  * @mixin \Eloquent
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SequenceMessageSchedule[] $sequenceSchedules
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstance[] $messageInstances
- * @property-read mixed $full_name
  */
 class Subscriber extends BaseModel
 {
@@ -91,13 +89,13 @@ class Subscriber extends BaseModel
     {
         return $this->hasMany(SequenceMessageSchedule::class);
     }
-    
-    
+
+
     public function messageInstances()
     {
         return $this->hasMany(MessageInstance::class);
     }
-    
+
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";

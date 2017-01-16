@@ -1,13 +1,10 @@
-<?php
-
-namespace App\Models;
-
+<?php namespace App\Models;
 
 /**
  * App\Models\AudienceFilterRule
  *
- * @property integer $id
- * @property integer $group_id
+ * @property int $id
+ * @property int $group_id
  * @property string $key
  * @property string $value
  * @property \Carbon\Carbon $created_at
@@ -19,8 +16,8 @@ namespace App\Models;
  * @method static \Illuminate\Database\Query\Builder|\App\Models\AudienceFilterRule whereValue($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\AudienceFilterRule whereCreatedAt($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\AudienceFilterRule whereUpdatedAt($value)
- * @mixin \Eloquent
  * @method static \Illuminate\Database\Query\Builder|\App\Models\BaseModel date($columnName, $value)
+ * @mixin \Eloquent
  */
 class AudienceFilterRule extends BaseModel
 {

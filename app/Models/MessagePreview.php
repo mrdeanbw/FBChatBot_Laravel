@@ -1,12 +1,10 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 /**
  * App\Models\MessagePreview
  *
- * @property integer $id
- * @property integer $page_id
+ * @property int $id
+ * @property int $page_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $messageBlocks
@@ -21,5 +19,6 @@ namespace App\Models;
  */
 class MessagePreview extends BaseModel implements HasMessageBlocksInterface
 {
+
     use BelongsToPage, HasMessageBlocks;
 }

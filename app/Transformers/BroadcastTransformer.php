@@ -26,7 +26,7 @@ class BroadcastTransformer extends BaseTransformer
             'filter_type'    => $broadcast->filter_type,
             'created_at'     => $broadcast->created_at->toDateTimeString(),
             'stats'          => $this->broadcastStats($broadcast),
-            'target_count'   => $broadcast->targetAudienceCount(),
+            'target_count'   => $broadcast->activeTargetAudienceCount(),
         ];
     }
 

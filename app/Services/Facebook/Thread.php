@@ -1,6 +1,4 @@
-<?php
-namespace App\Services\Facebook\Makana;
-
+<?php namespace App\Services\Facebook;
 
 use stdClass;
 

@@ -1,59 +1,60 @@
-<?php
-
-namespace App\Services;
+<?php namespace App\Services;
 
 use App\Models\AudienceFilterGroup;
-use App\Models\AudienceFilterRule;
 use App\Models\HasFilterGroupsInterface;
-use App\Models\Page;
+use App\Repositories\Filter\FilterRepository;
 
 class FilterGroupService
 {
 
+    /**
+     * @type TagService
+     */
     private $tags;
+    /**
+     * @type FilterRepository
+     */
+    private $filterRepo;
 
     /**
      * MessageBlockService constructor.
-     * @param TagService $tags
+     * @param FilterRepository $filterRepo
+     * @param TagService       $tags
      */
-    public function __construct(TagService $tags)
+    public function __construct(FilterRepository $filterRepo, TagService $tags)
     {
         $this->tags = $tags;
+        $this->filterRepo = $filterRepo;
     }
 
     /**
+     * Persist the filter groups.
+     * Approach: delete all filter groups along with
+     * their rules and create new ones from the input.
+     * @todo benchmark performance, improve it or change the approach if necessary.
      * @param HasFilterGroupsInterface $model
-     * @param                          $filterGroups
+     * @param array                    $filterGroups
      */
-    public function persist(HasFilterGroupsInterface $model, $filterGroups)
+    public function persist(HasFilterGroupsInterface $model, array $filterGroups)
     {
         $model->deleteFilterGroups();
 
         foreach ($filterGroups as $data) {
-            $group = new AudienceFilterGroup();
-            $group->type = $data['type'];
-            $model->filterGroups()->save($group);
+            $group = $this->filterRepo->createForModel(['type' => $data['type']], $model);
             $this->persistRules($data['rules'], $group);
         }
     }
 
     /**
-     * @param                     $rules
+     * Persist the filter rules for a certain group.
+     * @param array               $rules
      * @param AudienceFilterGroup $group
      */
-    private function persistRules($rules, AudienceFilterGroup $group)
+    private function persistRules(array $rules, AudienceFilterGroup $group)
     {
         foreach ($rules as $data) {
-            $rule = new AudienceFilterRule();
-            $rule->key = $data['key'];
-            switch ($rule->key) {
-                case 'tag':
-                    $rule->value = $data['value'];
-                    break;
-                default:
-                    $rule->value = $data['value'];
-            }
-            $group->rules()->save($rule);
+            $clean = array_only($data, ['key', 'value']);
+            $this->filterRepo->createRule($clean, $group);
         }
     }
 }

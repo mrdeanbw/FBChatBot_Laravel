@@ -17,13 +17,14 @@ trait HasMessageBlocks
     {
         return $this->morphMany(MessageBlock::class, 'context');
     }
-    
-    protected static function bootHasMessageBlocks() {
-        static::deleting(function(HasMessageBlocksInterface $model) {
+
+    protected static function bootHasMessageBlocks()
+    {
+        static::deleting(function (HasMessageBlocksInterface $model) {
             $model->deleteMessageBlocks();
         });
     }
-    
+
     public function deleteMessageBlocks()
     {
         $this->messageBlocks->each(function ($messageBlock) {

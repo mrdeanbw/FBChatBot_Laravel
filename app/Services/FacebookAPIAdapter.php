@@ -1,24 +1,22 @@
-<?php
-namespace App\Services\Facebook\Makana;
+<?php namespace App\Services;
 
-use App\Models\BaseModel;
-use App\Models\Button;
-use App\Models\Card;
-use App\Models\CardContainer;
-use App\Models\HasMessageBlocksInterface;
-use App\Models\Image;
-use App\Models\MessageBlock;
-use App\Models\MessageInstance;
-use App\Models\Page;
-use App\Models\Subscriber;
-use App\Models\Text;
-use App\Services\URLShortener;
-use Carbon\Carbon;
 use Exception;
+use Carbon\Carbon;
+use App\Models\Card;
+use App\Models\Page;
+use App\Models\Text;
+use App\Models\Image;
+use App\Models\Button;
+use App\Models\BaseModel;
+use App\Models\Subscriber;
+use App\Models\MessageBlock;
+use App\Models\CardContainer;
+use App\Models\MessageInstance;
+use App\Services\Facebook\Sender;
+use App\Models\HasMessageBlocksInterface;
 use Illuminate\Database\Eloquent\Collection;
-use Log;
 
-class MakanaAdapter
+class FacebookAPIAdapter
 {
 
     CONST NO_HASH_PLACEHOLDER = "MAIN_MENU";
@@ -26,16 +24,16 @@ class MakanaAdapter
     /**
      * @type Sender
      */
-    private $MakanaSender;
+    private $FacebookSender;
 
     /**
-     * MakanaAdapter constructor.
+     * FacebookAPIAdapter constructor.
      *
-     * @param Sender $MakanaSender
+     * @param Sender $FacebookSender
      */
-    public function __construct(Sender $MakanaSender)
+    public function __construct(Sender $FacebookSender)
     {
-        $this->MakanaSender = $MakanaSender;
+        $this->FacebookSender = $FacebookSender;
     }
 
 
@@ -96,7 +94,7 @@ class MakanaAdapter
      */
     private function getHashForModel(BaseModel $model)
     {
-        $hash = URLShortener::encode($model->id);
+        $hash = SimpleEncryptionService::encode($model->id);
 
         return $hash;
     }
@@ -306,7 +304,7 @@ class MakanaAdapter
         $message = $this->addRecipientHeader($message, $subscriber);
         $message = $this->addNotificationType($message, $notificationType);
 
-        $response = $this->MakanaSender->send($page->access_token, $message, false);
+        $response = $this->FacebookSender->send($page->access_token, $message, false);
         
 //        Log::debug("[Sending Message] Request:", json_decode(json_encode($message), true));
 //        Log::debug("[Sending Message] Response:", json_decode(json_encode($response), true));

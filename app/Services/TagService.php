@@ -1,58 +1,59 @@
-<?php
-namespace App\Services;
+<?php namespace App\Services;
 
-use App\Models\Page;
 use App\Models\Tag;
+use App\Models\Page;
+use App\Repositories\Tag\TagRepository;
 use Illuminate\Database\Eloquent\Collection;
 
 class TagService
 {
 
     /**
-     * @param      $tag
-     * @param Page $page
-     * @return integer
+     * @type TagRepository
      */
-    public function getTagID($tag, Page $page)
+    private $tagRepo;
+
+    /**
+     * TagService constructor.
+     * @param TagRepository $tagRepo
+     */
+    public function __construct(TagRepository $tagRepo)
     {
-        return $this->getTagIDs([$tag], $page)[0];
+        $this->tagRepo = $tagRepo;
     }
 
     /**
-     * @param      $tags
-     * @param Page $page
+     * @param string $label
+     * @param Page   $page
+     * @return Tag|null
+     */
+    private function findByLabel($label, Page $page)
+    {
+        return $this->tagRepo->findByLabelForPage($label, $page);
+    }
+
+    /**
+     * @param array $tags
+     * @param Page  $page
      * @return array
      */
-    public function getTagIDs($tags, Page $page)
+    public function getOrCreateTags(array $tags, Page $page)
     {
         $ret = [];
-        foreach ($tags as $tagName) {
-            /** @type Tag $tag */
-            $tag = $page->tags()->whereTag($tagName)->firstOrFail();
+
+        foreach ($tags as $label) {
+
+            $tag = $this->findByLabel($label, $page);
+
+            if (! $tag) {
+                $tag = $this->tagRepo->createForPage($label, $page);
+            }
+
             $ret[] = $tag->id;
         }
 
         return $ret;
     }
-
-    /**
-     * @param      $tags
-     * @param Page $page
-     * @return array
-     */
-    public function createTags($tags, Page $page)
-    {
-        $ret = [];
-        foreach ($tags as $tagName) {
-            /** @type Tag $tag */
-            $tag = $page->tags()->firstOrNew(['tag' => $tagName]);
-            $tag->save();
-            $ret[] = $tag->id;
-        }
-
-        return $ret;
-    }
-
 
     /**
      * @param Page $page
@@ -60,7 +61,7 @@ class TagService
      */
     public function tagList(Page $page)
     {
-        return $page->tags()->pluck('tag');
+        return $this->tagRepo->getAllForPage($page)->pluck('tag');
     }
 
 }

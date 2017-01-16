@@ -2,6 +2,7 @@
 
 trait LogChanges
 {
+
     protected static function bootRecordsActivity()
     {
         static::updating(function (BaseModel $model) {

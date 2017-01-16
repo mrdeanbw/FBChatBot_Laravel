@@ -1,15 +1,14 @@
-<?php
-namespace App\Models;
+<?php namespace App\Models;
 
 /**
  * App\Models\Widget
  *
- * @property integer $id
- * @property integer $page_id
- * @property integer $sequence_id
+ * @property int $id
+ * @property int $page_id
+ * @property int $sequence_id
  * @property string $name
  * @property string $type
- * @property string $options
+ * @property array $options
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property-read \App\Models\Sequence $sequence
@@ -29,13 +28,11 @@ namespace App\Models;
  */
 class Widget extends BaseModel implements HasMessageBlocksInterface
 {
-
     use BelongsToPage, HasMessageBlocks;
 
     protected $guarded = ['id'];
 
     protected $casts = ['options' => 'array'];
-
 
     public function sequence()
     {
