@@ -7,13 +7,13 @@ use App\Models\Sequence;
 use App\Models\Subscriber;
 use App\Models\SequenceMessage;
 use App\Models\SequenceMessageSchedule;
+use App\Events\SequenceTargetingWasAltered;
 use App\Repositories\Sequence\SequenceRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SequenceService
 {
-
     /**
      * @type MessageBlockService
      */
@@ -121,6 +121,10 @@ class SequenceService
             $sequence = $this->findOrFail($id, $page);
             $this->sequenceRepo->update($sequence, $data);
             $this->filterGroups->persist($sequence, $filterGroups);
+
+            // Fresh instance of the sequence
+            $sequence = $this->findOrFail($id, $page);
+            event(new SequenceTargetingWasAltered($sequence));
         });
 
         // return a fresh instance.
@@ -159,7 +163,6 @@ class SequenceService
         $this->persistMessages($messages, $sequence);
     }
 
-
     /**
      * Persist the messages for a sequence.
      * @param array    $messages
@@ -188,7 +191,6 @@ class SequenceService
             $this->sequenceRepo->delete($sequence);
         });
     }
-
 
     /**
      * Add a new message to a sequences.
@@ -222,10 +224,10 @@ class SequenceService
         DB::transaction(function () use ($input, $id, $sequenceId, $page) {
             $data = array_only('name', 'days');
             $data['is_live'] = array_get($input, 'is_live', false);
-            
+
             $sequence = $this->findOrFail($sequenceId, $page);
             $message = $this->findMessageOrFail($id, $sequence);
-            
+
             $this->sequenceRepo->updateMessage($message, $data);
             $this->messageBlocks->persist($message, $input['message_blocks']);
         });
@@ -248,6 +250,8 @@ class SequenceService
 
 
     /**
+     * Schedule the next sequence message to be sent to a subscriber.
+     * Schedule message data = send date of previous message + time period to be waited before sending this message
      * @param SequenceMessage $message
      * @param Subscriber      $subscriber
      * @param                 $previousMessagesWasSentAt (or subscribed at for first message).
@@ -255,65 +259,13 @@ class SequenceService
      */
     public function scheduleMessage(SequenceMessage $message, Subscriber $subscriber, Carbon $previousMessagesWasSentAt)
     {
-        $schedule = new SequenceMessageSchedule();
-        $schedule->subscriber_id = $subscriber->id;
-        $schedule->status = 'pending';
-        $schedule->sequence_message_id = $message->id;
-        $schedule->send_at = $previousMessagesWasSentAt->addMinutes($message->days);
-        //        $schedule->send_at = $previousMessagesWasSentAt->addDays($message->days);
-        $schedule->save();
-
-        return $schedule;
+        $data = [
+            'status' => 'pending',
+            'send_at' => $previousMessagesWasSentAt->copy()->addDays($message->days)
+        ];
+        
+        return $this->sequenceRepo->createMessageSchedule($data, $message, $subscriber);
     }
-
-    /**
-     * @param Subscriber $subscriber
-     * @param Sequence   $sequence
-     */
-    public function subscribe(Subscriber $subscriber, Sequence $sequence)
-    {
-        $subscriber->sequences()->attach($sequence);
-        $this->scheduleMessage($sequence->messages()->first(), $subscriber, Carbon::now());
-        // @todo if resubscribing, handle properly.
-    }
-
-    /**
-     * @param Subscriber $subscriber
-     * @param Sequence   $sequence
-     */
-    public function unsubscribe(Subscriber $subscriber, Sequence $sequence)
-    {
-        $subscriber->sequenceSchedules()->whereSequenceId($sequence->id)->whereStatus('pending')->delete();
-        $subscriber->sequences()->detach($sequence);
-    }
-
-    /**
-     * @param Subscriber $subscriber
-     */
-    public function reSyncSequences(Subscriber $subscriber)
-    {
-        $matchingSequences = [];
-
-        foreach ($subscriber->page->sequences as $sequence) {
-
-            $subscribed = $subscriber->sequences->contains($sequence->id);
-
-            if ($shouldSubscribe = $this->audience->subscriberIsAmongActiveTargetAudience($subscriber, $sequence)) {
-                $matchingSequences[] = $sequence->id;
-            }
-
-            if ($shouldSubscribe && ! $subscribed) {
-                $this->subscribe($subscriber, $sequence);
-            }
-
-            if (! $shouldSubscribe && $subscribed) {
-                $this->unsubscribe($subscriber, $sequence);
-            }
-        }
-
-        $subscriber->sequences()->sync($matchingSequences);
-    }
-
 
     /**
      * @return array

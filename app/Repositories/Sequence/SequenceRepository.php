@@ -3,6 +3,7 @@
 use App\Models\Page;
 use App\Models\Sequence;
 use App\Models\SequenceMessage;
+use App\Models\SequenceMessageSchedule;
 use App\Models\Subscriber;
 use Illuminate\Support\Collection;
 
@@ -101,4 +102,20 @@ interface SequenceRepository
      * @param SequenceMessage $message
      */
     public function deleteMessage(SequenceMessage $message);
+
+
+    /**
+     * Return a collection of subscribers, who are subscribed to a sequence.
+     * @param Sequence $sequence
+     * @return Collection
+     */
+    public function getSequenceSubscribers(Sequence $sequence);
+
+    /**
+     * @param array           $data
+     * @param SequenceMessage $message
+     * @param Subscriber      $subscriber
+     * @return SequenceMessageSchedule
+     */
+    public function createMessageSchedule(array $data, SequenceMessage $message, Subscriber $subscriber);
 }

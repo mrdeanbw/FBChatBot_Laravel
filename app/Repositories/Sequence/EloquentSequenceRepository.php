@@ -5,6 +5,7 @@ use App\Models\Sequence;
 use App\Models\Subscriber;
 use App\Models\SequenceMessage;
 use Illuminate\Support\Collection;
+use App\Models\SequenceMessageSchedule;
 use App\Repositories\BaseEloquentRepository;
 
 class EloquentSequenceRepository extends BaseEloquentRepository implements SequenceRepository
@@ -140,5 +141,28 @@ class EloquentSequenceRepository extends BaseEloquentRepository implements Seque
     public function deleteMessage(SequenceMessage $message)
     {
         $message->delete();
+    }
+
+    /**
+     * Return a collection of subscribers, who are subscribed to a sequence.
+     * @param Sequence $sequence
+     * @return Collection
+     */
+    public function getSequenceSubscribers(Sequence $sequence)
+    {
+        return $sequence->subscribers;
+    }
+
+    /**
+     * @param array           $data
+     * @param SequenceMessage $message
+     * @param Subscriber      $subscriber
+     * @return SequenceMessageSchedule
+     */
+    public function createMessageSchedule(array $data, SequenceMessage $message, Subscriber $subscriber)
+    {
+        $data['subscriber_id'] = $subscriber->id;
+
+        return $message->schedules()->create($data);
     }
 }

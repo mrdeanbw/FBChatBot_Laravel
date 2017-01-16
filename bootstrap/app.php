@@ -95,6 +95,7 @@ $app->register(Tymon\JWTAuth\Providers\LumenServiceProvider::class);
 $app->register(Laravel\Cashier\CashierServiceProvider::class);
 
 $app->register(App\Providers\AppServiceProvider::class);
+$app->register(App\Providers\EventServiceProvider::class);
 $app->register(App\Providers\RegisterAPITransformersProvider::class);
 $app->register(App\Providers\CatchAllOptionsRequestsProvider::class);
 $app->register(App\Providers\EloquentRepositoryServiceProvider::class);

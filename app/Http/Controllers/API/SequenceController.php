@@ -91,7 +91,7 @@ class SequenceController extends APIController
             $this->filterGroupRuleValidationCallback($page)
         );
 
-        $this->updateSequenceAndReSyncSubscribers($id, $request, $page);
+        $this->sequences->update($id, $request->all(), $page);
 
         return $this->response->accepted();
     }
@@ -133,18 +133,5 @@ class SequenceController extends APIController
         ];
 
         return $rules;
-    }
-
-    /**
-     * @param         $id
-     * @param Request $request
-     * @param         $page
-     */
-    private function updateSequenceAndReSyncSubscribers($id, Request $request, $page)
-    {
-        DB::transaction(function () use ($id, $request, $page) {
-            $sequence = $this->sequences->update($id, $request->all(), $page);
-            $this->audience->updateSequenceSubscribers($sequence);
-        });
     }
 }

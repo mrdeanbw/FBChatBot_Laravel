@@ -1,8 +1,5 @@
 <?php namespace App\Models;
 
-use App\Events\Resubscription;
-use App\Events\Unsubscription;
-use App\Services\SequenceService;
 use Carbon\Carbon;
 
 /**
@@ -114,14 +111,14 @@ class Subscriber extends BaseModel
             $record->action = 'subscribed';
             $this->last_subscribed_at = $record->action_at;
             if ($updating) {
-                static::$dispatcher->fire(new Resubscription($this));
+//                static::$dispatcher->fire(new Resubscription($this));
             } else {
-                $this->reSyncSequences();
+//                $this->reSyncSequences();
             }
         } else {
             $record->action = 'unsubscribed';
             $this->last_unsubscribed_at = $record->action_at;
-            static::$dispatcher->fire(new Unsubscription($this));
+//            static::$dispatcher->fire(new Unsubscription($this));
         }
         $this->subscriptionHistory()->save($record);
 
@@ -146,26 +143,11 @@ class Subscriber extends BaseModel
     public function syncTags($ids, $detaching = true)
     {
         $this->tags()->sync($ids, $detaching);
-        $this->reSyncSequences();
-    }
-
-    public function attachTags($id, array $attributes = [], $touch = true)
-    {
-        $this->tags()->attach($id, $attributes, $touch);
-        $this->reSyncSequences();
     }
 
     public function detachTags($id, $touch = true)
     {
         $this->tags()->detach($id, $touch);
-        $this->reSyncSequences();
-    }
-
-    private function reSyncSequences()
-    {
-        /** @type SequenceService $sequenceService */
-        $sequenceService = app(SequenceService::class);
-        $sequenceService->reSyncSequences($this);
     }
 
 }

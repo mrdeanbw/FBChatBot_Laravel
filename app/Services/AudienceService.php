@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use App\Services\Facebook\FacebookUser;
 use App\Models\HasFilterGroupsInterface;
+use App\Events\SubscriberTagsWereAltered;
 use App\Repositories\Filter\FilterRepository;
 use App\Repositories\Sequence\SequenceRepository;
 use App\Repositories\Subscriber\SubscriberRepository;
@@ -397,6 +398,7 @@ class AudienceService
     }
 
     /**
+     * Update a subscriber.
      * @param array $input
      * @param int   $subscriberId
      * @param Page  $page
@@ -412,6 +414,8 @@ class AudienceService
     }
 
     /**
+     * Batch update subscribers.
+     * @todo for now they are updated one by one. Consider implementing actual batch updating (single query).
      * @param array $input
      * @param array $subscriberIds
      * @param Page  $page
@@ -460,6 +464,7 @@ class AudienceService
     }
 
     /**
+     * Sync subscriber tags with input.
      * @param Subscriber $subscriber
      * @param array      $tags
      * @param bool       $detaching
@@ -467,41 +472,9 @@ class AudienceService
     public function syncTags(Subscriber $subscriber, array $tags, $detaching = true)
     {
         $this->subscriberRepo->syncTags($subscriber, $tags, $detaching);
-
-        $this->reSyncSequences($subscriber);
+        event(new SubscriberTagsWereAltered($subscriber));
     }
-
-
-    /**
-     * Re-sync a subscriber's sequences. i.e., subscribe him to matching sequences, and unsubscribe him from mismatching sequences.
-     * @param Subscriber $subscriber
-     */
-    private function reSyncSequences(Subscriber $subscriber)
-    {
-        $allSequences = $this->sequenceRepo->getAllForPage($subscriber->page);
-        $subscribedSequences = $this->sequenceRepo->getAllForSubscriber($subscriber);
-
-        foreach ($allSequences as $sequence) {
-
-            $isActuallySubscribed = $subscribedSequences->contains($sequence->id);
-            $shouldSubscribe = $this->subscriberIsAmongActiveTargetAudience($subscriber, $sequence);
-
-            /**
-             * If the subscriber is not subscribed to a sequence that he should subscribe to, then subscribe him.
-             */
-            if ($shouldSubscribe && ! $isActuallySubscribed) {
-                $this->subscribeToSequence($subscriber, $sequence);
-            }
-
-            /**
-             * If the subscriber is actually subscribed to a sequence that he should not subscribe to, then unsubscribe him.
-             */
-            if (! $shouldSubscribe && $isActuallySubscribed) {
-                $this->unsubscribeFromSequence($subscriber, $sequence);
-            }
-        }
-    }
-
+    
     /**
      * Subscribe to a sequence, and schedule the first message in that sequence for sending.
      * @todo [Needs discussion] if resubscribing to sequence, should we send the sequence from the beginning, or we continue from where he unsubscribed.
@@ -526,22 +499,5 @@ class AudienceService
     {
         $this->sequenceRepo->deleteSequenceScheduledMessageForSubscriber($subscriber, $sequence);
         $this->subscriberRepo->detachSequences($subscriber, (array)$sequence);
-    }
-
-    /**
-     * @param Sequence $sequence
-     */
-    public function updateSequenceSubscribers(Sequence $sequence)
-    {
-        $oldAudience = $sequence->subscribers;
-        $newAudience = $this->getActiveTargetAudience($sequence);
-
-        foreach ($newAudience->diff($oldAudience) as $subscriber) {
-            $this->subscribeToSequence($subscriber, $sequence);
-        }
-
-        foreach ($oldAudience->diff($newAudience) as $subscriber) {
-            $this->unsubscribeFromSequence($subscriber, $sequence);
-        }
     }
 }

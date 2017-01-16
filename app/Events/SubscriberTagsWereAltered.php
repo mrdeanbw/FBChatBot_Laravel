@@ -1,12 +1,13 @@
-<?php
-
-namespace App\Events;
+<?php namespace App\Events;
 
 use App\Models\Subscriber;
 
-class Resubscription
+class SubscriberTagsWereAltered
 {
 
+    /**
+     * @type Subscriber
+     */
     public $subscriber;
 
     /**
