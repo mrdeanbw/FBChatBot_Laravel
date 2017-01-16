@@ -47,6 +47,7 @@ class TreeController extends APIController
     public function show($id)
     {
         $page = $this->page();
+        $tree = $this->templates->findExplicitOrFail($id, $page);
 
         return $this->itemResponse($tree);
     }
@@ -62,9 +63,9 @@ class TreeController extends APIController
     }
 
     /**
+     * Update a message tree.
      * @param         $id
      * @param Request $request
-     * Update a message tree.
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
