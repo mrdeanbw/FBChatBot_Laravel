@@ -3,15 +3,15 @@
 /**
  * App\Models\Template
  *
- * @property int $id
- * @property string $name
- * @property bool $is_explicit
- * @property int $page_id
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property int                                                                      $id
+ * @property string                                                                   $name
+ * @property bool                                                                     $is_explicit
+ * @property int                                                                      $page_id
+ * @property \Carbon\Carbon                                                           $created_at
+ * @property \Carbon\Carbon                                                           $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $messageBlocks
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $unorderedMessageBlocks
- * @property-read \App\Models\Page $page
+ * @property-read \App\Models\Page                                                    $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Template whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Template whereName($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Template whereIsExplicit($value)
@@ -23,8 +23,8 @@
  */
 class Template extends BaseModel implements HasMessageBlocksInterface
 {
+
     use HasMessageBlocks, BelongsToPage;
 
-    protected $guarded = ['id'];
     protected $casts = ['is_explicit' => 'boolean'];
 }

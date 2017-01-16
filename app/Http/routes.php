@@ -115,4 +115,4 @@ $app->group(['prefix' => 'callback'], function () use ($app) {
     $app->post('stripe/web-hook', '\Laravel\Cashier\Http\Controllers\WebhookController@handleWebhook');
 });
 
-$app->get('/ba/{messageBlockHash}/{subscriberHash}', 'ButtonClickController@handle');
+$app->get('/ba/{messageBlockHash}/{subscriberHash}', 'MessageBlockClickController@handle');

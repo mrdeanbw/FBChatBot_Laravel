@@ -5,20 +5,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * App\Models\SequenceMessage
  *
- * @property int $id
- * @property int $sequence_id
- * @property int $order
- * @property string $name
- * @property int $days
- * @property bool $is_live
- * @property \Carbon\Carbon $deleted_at
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \App\Models\Sequence $sequence
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Subscriber[] $subscribers
+ * @property int                                                                                 $id
+ * @property int                                                                                 $sequence_id
+ * @property int                                                                                 $order
+ * @property string                                                                              $name
+ * @property int                                                                                 $days
+ * @property bool                                                                                $is_live
+ * @property \Carbon\Carbon                                                                      $deleted_at
+ * @property \Carbon\Carbon                                                                      $created_at
+ * @property \Carbon\Carbon                                                                      $updated_at
+ * @property-read \App\Models\Sequence                                                           $sequence
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Subscriber[]              $subscribers
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SequenceMessageSchedule[] $schedules
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $messageBlocks
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $unorderedMessageBlocks
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[]            $messageBlocks
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[]            $unorderedMessageBlocks
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereSequenceId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessage whereOrder($value)
@@ -36,7 +36,6 @@ class SequenceMessage extends BaseModel implements HasMessageBlocksInterface
 
     use HasMessageBlocks, SoftDeletes;
 
-    protected $guarded = ['id'];
     protected $dates = ['deleted_at'];
     protected $casts = ['is_live' => 'boolean'];
 

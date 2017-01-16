@@ -3,20 +3,20 @@
 /**
  * App\Models\MessageInstance
  *
- * @property int $id
- * @property int $subscriber_id
- * @property int $message_block_id
- * @property string $sent_at
- * @property int $page_id
- * @property string $facebook_id
- * @property \Carbon\Carbon $read_at
- * @property \Carbon\Carbon $delivered_at
- * @property int $clicks
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property int                           $id
+ * @property int                           $subscriber_id
+ * @property int                           $message_block_id
+ * @property string                        $sent_at
+ * @property int                           $page_id
+ * @property string                        $facebook_id
+ * @property \Carbon\Carbon                $read_at
+ * @property \Carbon\Carbon                $delivered_at
+ * @property int                           $clicks
+ * @property \Carbon\Carbon                $created_at
+ * @property \Carbon\Carbon                $updated_at
  * @property-read \App\Models\MessageBlock $messageBlock
- * @property-read \App\Models\Subscriber $subscriber
- * @property-read \App\Models\Page $page
+ * @property-read \App\Models\Subscriber   $subscriber
+ * @property-read \App\Models\Page         $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\MessageInstance whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\MessageInstance whereSubscriberId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\MessageInstance whereMessageBlockId($value)

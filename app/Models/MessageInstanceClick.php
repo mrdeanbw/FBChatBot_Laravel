@@ -3,8 +3,8 @@
 /**
  * App\Models\MessageInstanceClick
  *
- * @property int $id
- * @property int $message_instance_id
+ * @property int            $id
+ * @property int            $message_instance_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @method static \Illuminate\Database\Query\Builder|\App\Models\MessageInstanceClick whereId($value)

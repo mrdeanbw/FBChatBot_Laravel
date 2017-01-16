@@ -3,13 +3,13 @@
 /**
  * App\Models\ChangeLog
  *
- * @property int $id
- * @property int $context_id
- * @property string $context_type
- * @property string $before
- * @property string $after
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property int                                                $id
+ * @property int                                                $context_id
+ * @property string                                             $context_type
+ * @property string                                             $before
+ * @property string                                             $after
+ * @property \Carbon\Carbon                                     $created_at
+ * @property \Carbon\Carbon                                     $updated_at
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $context
  * @method static \Illuminate\Database\Query\Builder|\App\Models\ChangeLog whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\ChangeLog whereContextId($value)

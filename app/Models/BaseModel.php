@@ -2,8 +2,15 @@
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * App\Models\Models
+ *
+ * @property int $id
+ */
 abstract class BaseModel extends Model
 {
+
+    protected $guarded = ['id'];
 
     public function scopeDate($query, $columnName, $value)
     {

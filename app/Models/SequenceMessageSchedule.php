@@ -3,17 +3,17 @@
 /**
  * App\Models\SequenceMessageSchedule
  *
- * @property int $id
- * @property int $subscriber_id
- * @property int $sequence_id
- * @property int $sequence_message_id
- * @property string $status
- * @property \Carbon\Carbon $send_at
- * @property string $sent_at
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property int                              $id
+ * @property int                              $subscriber_id
+ * @property int                              $sequence_id
+ * @property int                              $sequence_message_id
+ * @property string                           $status
+ * @property \Carbon\Carbon                   $send_at
+ * @property string                           $sent_at
+ * @property \Carbon\Carbon                   $created_at
+ * @property \Carbon\Carbon                   $updated_at
  * @property-read \App\Models\SequenceMessage $sequenceMessage
- * @property-read \App\Models\Subscriber $subscriber
+ * @property-read \App\Models\Subscriber      $subscriber
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSubscriberId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\SequenceMessageSchedule whereSequenceId($value)
@@ -29,7 +29,6 @@
 class SequenceMessageSchedule extends BaseModel
 {
 
-    protected $guarded = ['id'];
 
     protected $dates = ['send_at'];
 

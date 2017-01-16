@@ -3,11 +3,11 @@
 /**
  * App\Models\PaymentPlan
  *
- * @property int $id
- * @property string $name
- * @property int $subscribers
- * @property int $price
- * @property string $stripe_id
+ * @property int            $id
+ * @property string         $name
+ * @property int            $subscribers
+ * @property int            $price
+ * @property string         $stripe_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @method static \Illuminate\Database\Query\Builder|\App\Models\PaymentPlan whereId($value)

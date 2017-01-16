@@ -3,18 +3,18 @@
 /**
  * App\Models\Widget
  *
- * @property int $id
- * @property int $page_id
- * @property int $sequence_id
- * @property string $name
- * @property string $type
- * @property array $options
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \App\Models\Sequence $sequence
+ * @property int                                                                      $id
+ * @property int                                                                      $page_id
+ * @property int                                                                      $sequence_id
+ * @property string                                                                   $name
+ * @property string                                                                   $type
+ * @property array                                                                    $options
+ * @property \Carbon\Carbon                                                           $created_at
+ * @property \Carbon\Carbon                                                           $updated_at
+ * @property-read \App\Models\Sequence                                                $sequence
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $messageBlocks
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageBlock[] $unorderedMessageBlocks
- * @property-read \App\Models\Page $page
+ * @property-read \App\Models\Page                                                    $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Widget whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Widget wherePageId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Widget whereSequenceId($value)
@@ -28,9 +28,9 @@
  */
 class Widget extends BaseModel implements HasMessageBlocksInterface
 {
+
     use BelongsToPage, HasMessageBlocks;
 
-    protected $guarded = ['id'];
 
     protected $casts = ['options' => 'array'];
 

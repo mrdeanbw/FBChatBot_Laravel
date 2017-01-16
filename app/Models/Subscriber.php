@@ -5,29 +5,29 @@ use Carbon\Carbon;
 /**
  * App\Models\Subscriber
  *
- * @property int $id
- * @property string $facebook_id
- * @property int $page_id
- * @property string $first_name
- * @property string $last_name
- * @property string $avatar_url
- * @property string $locale
- * @property float $timezone
- * @property string $gender
- * @property \Carbon\Carbon $last_contacted_at
- * @property bool $is_active
- * @property \Carbon\Carbon $last_subscribed_at
- * @property \Carbon\Carbon $last_unsubscribed_at
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[] $tags
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Sequence[] $sequences
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Broadcast[] $broadcasts
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SubscriptionHistory[] $subscriptionHistory
+ * @property int                                                                                 $id
+ * @property string                                                                              $facebook_id
+ * @property int                                                                                 $page_id
+ * @property string                                                                              $first_name
+ * @property string                                                                              $last_name
+ * @property string                                                                              $avatar_url
+ * @property string                                                                              $locale
+ * @property float                                                                               $timezone
+ * @property string                                                                              $gender
+ * @property \Carbon\Carbon                                                                      $last_contacted_at
+ * @property bool                                                                                $is_active
+ * @property \Carbon\Carbon                                                                      $last_subscribed_at
+ * @property \Carbon\Carbon                                                                      $last_unsubscribed_at
+ * @property \Carbon\Carbon                                                                      $created_at
+ * @property \Carbon\Carbon                                                                      $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[]                     $tags
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Sequence[]                $sequences
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Broadcast[]               $broadcasts
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SubscriptionHistory[]     $subscriptionHistory
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\SequenceMessageSchedule[] $sequenceSchedules
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstance[] $messageInstances
- * @property-read mixed $full_name
- * @property-read \App\Models\Page $page
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\MessageInstance[]         $messageInstances
+ * @property-read mixed                                                                          $full_name
+ * @property-read \App\Models\Page                                                               $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Subscriber whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Subscriber whereFacebookId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\Subscriber wherePageId($value)
@@ -51,7 +51,6 @@ class Subscriber extends BaseModel
 
     use BelongsToPage;
 
-    protected $guarded = ['id'];
 
     protected $dates = ['last_subscribed_at', 'last_unsubscribed_at', 'last_contacted_at'];
 
@@ -111,14 +110,14 @@ class Subscriber extends BaseModel
             $record->action = 'subscribed';
             $this->last_subscribed_at = $record->action_at;
             if ($updating) {
-//                static::$dispatcher->fire(new Resubscription($this));
+                //                static::$dispatcher->fire(new Resubscription($this));
             } else {
-//                $this->reSyncSequences();
+                //                $this->reSyncSequences();
             }
         } else {
             $record->action = 'unsubscribed';
             $this->last_unsubscribed_at = $record->action_at;
-//            static::$dispatcher->fire(new Unsubscription($this));
+            //            static::$dispatcher->fire(new Unsubscription($this));
         }
         $this->subscriptionHistory()->save($record);
 

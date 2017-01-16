@@ -15,6 +15,7 @@ use App\Models\MessageInstance;
 use App\Services\Facebook\Sender;
 use App\Models\HasMessageBlocksInterface;
 use Illuminate\Database\Eloquent\Collection;
+use App\Repositories\MessageInstance\MessageInstanceRepository;
 
 class FacebookAPIAdapter
 {
@@ -25,25 +26,30 @@ class FacebookAPIAdapter
      * @type Sender
      */
     private $FacebookSender;
+    /**
+     * @type MessageInstanceRepository
+     */
+    private $messageInstanceRepo;
 
     /**
      * FacebookAPIAdapter constructor.
      *
-     * @param Sender $FacebookSender
+     * @param MessageInstanceRepository $messageInstanceRepo
+     * @param Sender                    $FacebookSender
      */
-    public function __construct(Sender $FacebookSender)
+    public function __construct(MessageInstanceRepository $messageInstanceRepo, Sender $FacebookSender)
     {
         $this->FacebookSender = $FacebookSender;
+        $this->messageInstanceRepo = $messageInstanceRepo;
     }
 
-
     /**
-     * @param            $message
+     * Add recipient information to the message.
+     * @param array      $message
      * @param Subscriber $subscriber
-     *
      * @return array
      */
-    public function addRecipientHeader($message, Subscriber $subscriber)
+    public function addRecipientHeader(array $message, Subscriber $subscriber)
     {
         $message['recipient'] = [
             'id' => $subscriber->facebook_id
@@ -53,6 +59,7 @@ class FacebookAPIAdapter
     }
 
     /**
+     * Add the notification type to the message.
      * @param $message
      * @param $notificationType
      * @return array
@@ -65,6 +72,7 @@ class FacebookAPIAdapter
     }
 
     /**
+     * Map message block to the array format accepted by Facebook API.
      * @param MessageBlock $messageBlock
      * @param Subscriber   $subscriber
      * @return array
@@ -89,6 +97,7 @@ class FacebookAPIAdapter
 
 
     /**
+     * Generate the encrypted code for the model ID.
      * @param BaseModel $model
      * @return bool|string
      */
@@ -100,40 +109,48 @@ class FacebookAPIAdapter
     }
 
     /**
+     * Return the URL to the hashed block.
      * @param $modelHash
      * @param $subscriberHash
      * @return string
      */
-    function getButtonUrl($modelHash, $subscriberHash)
+    function getBlockURL($modelHash, $subscriberHash)
     {
         return url(config('app.url') . "ba/{$modelHash}/{$subscriberHash}");
     }
 
     /**
-     * @param Collection $messageBlocks
-     * @param Subscriber $subscriber
-     *
+     * Map Buttons to Facebook call to actions.
+     * @param Collection      $messageBlocks
+     * @param Subscriber|null $subscriber
      * @return array
      */
     public function mapButtons(Collection $messageBlocks, $subscriber = null)
     {
         return $messageBlocks->map(function (Button $button) use ($subscriber) {
 
+            /**
+             * If the button is being to sent a subscriber, we create a message instance for it.
+             * The generated hash will be for the message instance itself.
+             * Otherwise (in case of main menu buttons) the hash will be for the button itself.
+             *
+             * We differentiate between the two cases by using a special values for main menu hash.
+             */
             if ($subscriber) {
-                $instance = $this->createMessageInstance($button, $button->page->id, $subscriber->id);
+                $instance = $this->createMessageInstance($button, $subscriber);
                 $buttonHash = $this->getHashForModel($instance);
             } else {
                 $buttonHash = $this->getHashForModel($button);
             }
 
-
+            // If the button has a URL action, then we map it to Facebook's web_url.
             if ($button->url) {
                 $subscriberHash = $subscriber? $this->getHashForModel($subscriber) : self::NO_HASH_PLACEHOLDER;
 
                 return [
                     "type"  => "web_url",
                     "title" => $button->title,
-                    "url"   => $this->getButtonUrl($buttonHash, $subscriberHash)
+                    "url"   => $this->getBlockURL($buttonHash, $subscriberHash)
                 ];
             }
 
@@ -141,6 +158,7 @@ class FacebookAPIAdapter
                 $buttonHash = "MAIN_MENU_{$buttonHash}";
             }
 
+            // Otherwise, we map it to Facebook's postback.
             return [
                 'type'    => 'postback',
                 'title'   => $button->title,
@@ -151,15 +169,16 @@ class FacebookAPIAdapter
     }
 
     /**
+     * Map text blocks to Facebook messages.
      * @param Text       $textBlock
      * @param Subscriber $subscriber
-     *
      * @return array
      */
-    public function mapTextBlock(Text $textBlock, $subscriber)
+    public function mapTextBlock(Text $textBlock, Subscriber $subscriber)
     {
         $text = $this->evaluateShortcodes($textBlock->text, $subscriber);
 
+        // If the message has no buttons, then we simply map it to Facebook text messages.
         if ($textBlock->message_blocks->isEmpty()) {
             return [
                 'message' => [
@@ -168,6 +187,7 @@ class FacebookAPIAdapter
             ];
         }
 
+        // Otherwise, we map it to Facebook templates.
         return [
             'message' => [
                 'attachment' => [
@@ -184,6 +204,7 @@ class FacebookAPIAdapter
 
 
     /**
+     * Map image blocks to Facebook attachment.
      * @param Image $messageBlock
      * @return array
      */
@@ -202,11 +223,12 @@ class FacebookAPIAdapter
     }
 
     /**
+     * Map card container to Facebook generic template.
      * @param CardContainer $messageBlock
      * @param Subscriber    $subscriber
      * @return array
      */
-    private function mapCardContainer(CardContainer $messageBlock, $subscriber)
+    private function mapCardContainer(CardContainer $messageBlock, Subscriber $subscriber)
     {
         return [
             'message' => [
@@ -222,32 +244,40 @@ class FacebookAPIAdapter
     }
 
     /**
+     * Map card blocks to Facebook generic template element.
+     * @todo modify to reflect Facebook API changes https://developers.facebook.com/docs/messenger-platform/send-api-reference/generic-template
      * @param Collection $messageBlocks
      * @param Subscriber $subscriber
-     *
      * @return array
      */
     private function mapCards($messageBlocks, Subscriber $subscriber)
     {
         return $messageBlocks->map(function (Card $card) use ($subscriber) {
 
-            $instance = $this->createMessageInstance($card, $card->page->id, $subscriber->id);
-            $cardHash = $this->getHashForModel($instance);
-            $subscriberHash = $this->getHashForModel($subscriber);
+            $instance = $this->createMessageInstance($card, $subscriber);
 
-            return [
+            $ret = [
                 'title'     => $card->title,
                 'subtitle'  => $card->subtitle,
                 'image_url' => $card->image_url,
-                'item_url'  => $this->getButtonUrl($cardHash, $subscriberHash),
                 'buttons'   => $this->mapButtons($card->message_blocks, $subscriber)
             ];
+
+            // If the card has a URL.
+            if ($card->url) {
+                $cardHash = $this->getHashForModel($instance);
+                $subscriberHash = $this->getHashForModel($subscriber);
+                $ret['item_url'] = $this->getBlockURL($cardHash, $subscriberHash);
+            }
+
+            return $ret;
 
         })->toArray();
     }
 
 
     /**
+     * Send message blocks to a subscriber, using Facebook API.
      * @param HasMessageBlocksInterface $model
      * @param Subscriber                $subscriber
      * @param string                    $notificationType
@@ -257,12 +287,21 @@ class FacebookAPIAdapter
     public function sendBlocks(HasMessageBlocksInterface $model, Subscriber $subscriber, $notificationType = 'REGULAR')
     {
         $ret = [];
+
         foreach ($model->message_blocks as $messageBlock) {
-            $messageInstance = $this->createMessageInstance($messageBlock, $model->page->id, $subscriber->id);
+
+            // Create a message instance for this message block (to keep track of read/click stats)
+            $messageInstance = $this->createMessageInstance($messageBlock, $subscriber);
+
+            // Map our message block representation to the accepted format by Facebook API.
             $message = $this->mapToFacebookMessage($messageBlock, $subscriber);
+
+            // Send the message.
             $facebookMessageId = $this->sendMessage($message, $subscriber, $model->page, $notificationType);
-            $messageInstance->facebook_id = $facebookMessageId;
-            $messageInstance->save();
+
+            // Update the message instance
+            $this->updateMessageInstance($messageInstance, ['facebook_id' => $facebookMessageId]);
+
             $ret[] = $messageInstance;
         }
 
@@ -272,47 +311,53 @@ class FacebookAPIAdapter
 
     /**
      * @param MessageBlock $messageBlock
-     * @param              $pageId
-     * @param              $subscriberId
-     * @param null         $facebookMessageId
+     * @param Subscriber   $subscriber
+     * @param string|null  $facebookMessageId
      * @return MessageInstance
      */
-    public function createMessageInstance(MessageBlock $messageBlock, $pageId, $subscriberId, $facebookMessageId = null)
+    public function createMessageInstance(MessageBlock $messageBlock, Subscriber $subscriber, $facebookMessageId = null)
     {
-        $record = new MessageInstance();
-        $record->message_block_id = $messageBlock->id;
-        $record->subscriber_id = $subscriberId;
-        $record->page_id = $pageId;
-        $record->facebook_id = $facebookMessageId;
-        $record->sent_at = Carbon::now();
-        $record->save();
+        $data = [
+            'facebook_id' => $facebookMessageId,
+            'sent_at'     => Carbon::now()
+        ];
 
-        return $record;
+        return $this->messageInstanceRepo->create($data, $messageBlock, $subscriber);
+    }
+
+    /**
+     * @param MessageInstance $messageInstance
+     * @param array           $data
+     */
+    private function updateMessageInstance(MessageInstance $messageInstance, array $data)
+    {
+        $this->messageInstanceRepo->update($messageInstance, $data);
     }
 
 
     /**
-     * @param [] $message
+     * Add recipient header, notification type and send the message through Facebook API.
+     * @param array      $message
      * @param Subscriber $subscriber
      * @param Page       $page
      * @param string     $notificationType
-     *
      * @return \object[]
      */
-    public function sendMessage($message, Subscriber $subscriber, Page $page, $notificationType = 'REGULAR')
+    public function sendMessage(array $message, Subscriber $subscriber, Page $page, $notificationType = 'REGULAR')
     {
         $message = $this->addRecipientHeader($message, $subscriber);
         $message = $this->addNotificationType($message, $notificationType);
 
         $response = $this->FacebookSender->send($page->access_token, $message, false);
-        
-//        Log::debug("[Sending Message] Request:", json_decode(json_encode($message), true));
-//        Log::debug("[Sending Message] Response:", json_decode(json_encode($response), true));
+
+        //        Log::debug("[Sending Message] Request:", json_decode(json_encode($message), true));
+        //        Log::debug("[Sending Message] Response:", json_decode(json_encode($response), true));
 
         return $response->message_id;
     }
 
     /**
+     * Evaluate supported shortcodes
      * @param            $text
      * @param Subscriber $subscriber
      * @return mixed

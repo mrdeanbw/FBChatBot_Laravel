@@ -55,8 +55,6 @@ class Broadcast extends BaseModel implements HasMessageBlocksInterface, HasFilte
 
     use HasMessageBlocks, HasFilterGroups, BelongsToPage;
 
-    protected $guarded = ['id'];
-
     protected $dates = ['send_at', 'subscribers.read_at'];
 
     protected $casts = ['subscribers.data' => 'array', 'filter_enabled' => 'boolean'];

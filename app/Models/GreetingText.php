@@ -3,11 +3,11 @@
 /**
  * App\Models\GreetingText
  *
- * @property int $id
- * @property string $text
- * @property int $page_id
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property int                   $id
+ * @property string                $text
+ * @property int                   $page_id
+ * @property \Carbon\Carbon        $created_at
+ * @property \Carbon\Carbon        $updated_at
  * @property-read \App\Models\Page $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\GreetingText whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\GreetingText whereText($value)
@@ -22,5 +22,4 @@ class GreetingText extends BaseModel
 
     use BelongsToPage;
 
-    protected $guarded = ['id'];
 }

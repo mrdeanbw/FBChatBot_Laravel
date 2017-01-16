@@ -10,18 +10,18 @@ use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 /**
  * App\Models\User
  *
- * @property int $id
- * @property string $facebook_id
- * @property string $first_name
- * @property string $last_name
- * @property string $full_name
- * @property string $email
- * @property string $gender
- * @property string $avatar_url
- * @property string $access_token
- * @property array $granted_permissions
- * @property \Carbon\Carbon $created_at
- * @property \Carbon\Carbon $updated_at
+ * @property int                                                              $id
+ * @property string                                                           $facebook_id
+ * @property string                                                           $first_name
+ * @property string                                                           $last_name
+ * @property string                                                           $full_name
+ * @property string                                                           $email
+ * @property string                                                           $gender
+ * @property string                                                           $avatar_url
+ * @property string                                                           $access_token
+ * @property array                                                            $granted_permissions
+ * @property \Carbon\Carbon                                                   $created_at
+ * @property \Carbon\Carbon                                                   $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Page[] $pages
  * @method static \Illuminate\Database\Query\Builder|\App\Models\User whereId($value)
  * @method static \Illuminate\Database\Query\Builder|\App\Models\User whereFacebookId($value)
@@ -43,7 +43,6 @@ class User extends BaseModel implements AuthenticatableContract, AuthorizableCon
 
     use Authenticatable, Authorizable;
 
-    protected $guarded = ['id'];
 
     protected $casts = [
         'granted_permissions' => 'array'

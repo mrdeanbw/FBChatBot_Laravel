@@ -2,7 +2,7 @@
 
 use App\Services\WebAppAdapter;
 
-class ButtonClickController extends Controller
+class MessageBlockClickController extends Controller
 {
 
     /**
