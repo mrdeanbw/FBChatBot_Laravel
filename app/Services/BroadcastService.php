@@ -10,6 +10,7 @@ use App\Models\HasFilterGroupsInterface;
 use Illuminate\Database\Eloquent\Builder;
 use App\Repositories\Broadcast\BroadcastRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Collection;
 
 class BroadcastService
 {
@@ -292,18 +293,40 @@ class BroadcastService
         });
     }
 
+    /**
+     * @param Broadcast  $broadcast
+     * @param Subscriber $subscriber
+     * @param int        $incrementBy
+     */
     public function incrementBroadcastSubscriberClicks(Broadcast $broadcast, Subscriber $subscriber, $incrementBy = 1)
     {
         $this->broadcastRepo->updateBroadcastSubscriberClicks($broadcast, $subscriber, $incrementBy);
     }
 
+    /**
+     * @param Subscriber $subscriber
+     * @param  string    $dateTime
+     */
     public function updateBroadcastSubscriberDeliveredAt(Subscriber $subscriber, $dateTime)
     {
         $this->broadcastRepo->updateBroadcastSubscriberDeliveredAt($subscriber, $dateTime);
     }
 
+    /**
+     * @param Subscriber $subscriber
+     * @param string     $dateTime
+     */
     public function updateBroadcastSubscriberReadAt(Subscriber $subscriber, $dateTime)
     {
         $this->broadcastRepo->updateBroadcastSubscriberReadAt($subscriber, $dateTime);
+    }
+
+    /**
+     * Get broadcast schedules that are due (should be sent)
+     * @return Collection
+     */
+    public function getDueBroadcastSchedules()
+    {
+        return $this->broadcastRepo->getDueBroadcastSchedule();
     }
 }

@@ -1,5 +1,6 @@
 <?php namespace App\Repositories\Broadcast;
 
+use App\Models\BroadcastSchedule;
 use App\Models\Page;
 use App\Models\Broadcast;
 use App\Models\Subscriber;
@@ -76,4 +77,32 @@ interface BroadcastRepository
      */
     public function updateBroadcastSubscriberReadAt(Subscriber $subscriber, $dateTime);
 
+    /**
+     * Get list of sending-due broadcast schedules
+     * @return Collection
+     */
+    public function getDueBroadcastSchedule();
+
+    /**
+     * Update a broadcast schedule
+     * @param BroadcastSchedule $schedule
+     * @param array             $data
+     */
+    public function updateSchedule(BroadcastSchedule $schedule, array $data);
+
+    /**
+     * Does the broadcast still has unprocessed schedule?
+     * @param Broadcast $broadcast
+     * @return bool
+     */
+    public function broadcastHasIncompleteSchedule(Broadcast $broadcast);
+
+    /**
+     * Attach a subscriber to broadcast.
+     * @param Broadcast  $broadcast
+     * @param Subscriber $subscriber
+     * @param array      $attributes
+     * @param bool       $touch
+     */
+    public function attachSubscriber(Broadcast $broadcast, Subscriber $subscriber, array $attributes = [], $touch = true);
 }
