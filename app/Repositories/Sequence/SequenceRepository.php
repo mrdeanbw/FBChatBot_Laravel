@@ -38,6 +38,14 @@ interface SequenceRepository
      */
     public function getLastSequenceMessage(Sequence $sequence);
 
+
+    /**
+     * Get the next message in a sequence.
+     * @param SequenceMessage $sequenceMessage
+     * @return SequenceMessage|null
+     */
+    public function getNextSequenceMessage(SequenceMessage $sequenceMessage);
+
     /**
      * Delete all scheduled messages from a certain sequence for a specific subscriber.
      * @param Subscriber $subscriber
@@ -100,8 +108,10 @@ interface SequenceRepository
     /**
      * Delete a sequence message.
      * @param SequenceMessage $message
+     * @param bool            $completely If set to false, the message will be trashed (using deleted_at)
+     * @return
      */
-    public function deleteMessage(SequenceMessage $message);
+    public function deleteMessage(SequenceMessage $message, $completely = false);
 
 
     /**
@@ -118,4 +128,33 @@ interface SequenceRepository
      * @return SequenceMessageSchedule
      */
     public function createMessageSchedule(array $data, SequenceMessage $message, Subscriber $subscriber);
+
+
+    /**
+     * Get list of sending-due sequence message schedules
+     * @return Collection
+     */
+    public function getDueMessageSchedule();
+
+    /**
+     * Return the sequence message associated with this schedule
+     * @param SequenceMessageSchedule $schedule
+     * @param bool                    $includingSoftDeleted whether or not to return the message if it has been soft deleted
+     * @return SequenceMessage|null
+     */
+    public function getMessageFromSchedule(SequenceMessageSchedule $schedule, $includingSoftDeleted);
+
+    /**
+     * Update a sequence message schedule.
+     * @param SequenceMessageSchedule $schedule
+     * @param array                   $data
+     */
+    public function updateMessageSchedule(SequenceMessageSchedule $schedule, array $data);
+
+    /**
+     * Return the trashed (soft deleted) sequence messages which have no schedules.
+     * @return Collection
+     */
+    public function getTrashedMessagesWithNoSchedules();
+
 }

@@ -1,14 +1,12 @@
 <?php namespace App\Console\Commands;
 
-use App\Repositories\Broadcast\BroadcastRepository;
 use DB;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use App\Models\BroadcastSchedule;
 use App\Services\AudienceService;
-use App\Services\BroadcastService;
 use App\Services\FacebookAPIAdapter;
 use Illuminate\Database\Eloquent\Collection;
+use App\Repositories\Broadcast\BroadcastRepository;
 
 class Broadcast extends Command
 {
@@ -87,10 +85,8 @@ class Broadcast extends Command
      */
     protected function markScheduleAsRunning(BroadcastSchedule $schedule)
     {
-        DB::transaction(function () use ($schedule) {
-            $this->broadcastRepo->update($schedule->broadcast, ['status' => 'running']);
-            $this->broadcastRepo->updateSchedule($schedule, ['status' => 'running']);
-        });
+        $this->broadcastRepo->update($schedule->broadcast, ['status' => 'running']);
+        $this->broadcastRepo->updateSchedule($schedule, ['status' => 'running']);
     }
 
     /**
@@ -98,14 +94,12 @@ class Broadcast extends Command
      */
     private function markScheduleAsCompleted(BroadcastSchedule $schedule)
     {
-        DB::transaction(function () use ($schedule) {
-            $this->broadcastRepo->updateSchedule($schedule, ['status' => 'completed']);
+        $this->broadcastRepo->updateSchedule($schedule, ['status' => 'completed']);
 
-            // If there are no more schedules for the broadcast, mark it as completed as well.
-            if (! $this->broadcastRepo->broadcastHasIncompleteSchedule($schedule->broadcast)) {
-                $this->broadcastRepo->update($schedule->broadcast, ['status' => 'completed']);
-            }
-        });
+        // If there are no more schedules for the broadcast, mark it as completed as well.
+        if (! $this->broadcastRepo->broadcastHasIncompleteSchedule($schedule->broadcast)) {
+            $this->broadcastRepo->update($schedule->broadcast, ['status' => 'completed']);
+        }
     }
 
     /**

@@ -7,8 +7,9 @@ use Illuminate\Console\Command;
 use App\Models\SequenceMessage;
 use App\Services\AudienceService;
 use App\Services\SequenceService;
-use App\Models\SequenceMessageSchedule;
 use App\Services\FacebookAPIAdapter;
+use App\Models\SequenceMessageSchedule;
+use App\Repositories\Sequence\SequenceRepository;
 
 class Sequence extends Command
 {
@@ -34,19 +35,34 @@ class Sequence extends Command
      * @var FacebookAPIAdapter
      */
     private $FacebookAdapter;
+    /**
+     * @type SequenceRepository
+     */
+    private $sequenceRepo;
+    /**
+     * @type AudienceService
+     */
+    private $audience;
 
 
     /**
      * Broadcast constructor.
+     * @param SequenceRepository $sequenceRepo
      * @param SequenceService    $sequences
      * @param AudienceService    $audience
      * @param FacebookAPIAdapter $FacebookAdapter
      */
-    public function __construct(SequenceService $sequences, AudienceService $audience, FacebookAPIAdapter $FacebookAdapter)
-    {
+    public function __construct(
+        SequenceRepository $sequenceRepo,
+        SequenceService $sequences,
+        AudienceService $audience,
+        FacebookAPIAdapter $FacebookAdapter
+    ) {
         parent::__construct();
         $this->sequences = $sequences;
         $this->FacebookAdapter = $FacebookAdapter;
+        $this->sequenceRepo = $sequenceRepo;
+        $this->audience = $audience;
     }
 
     /**
@@ -54,29 +70,12 @@ class Sequence extends Command
      */
     public function handle()
     {
-        $schedules = SequenceMessageSchedule::whereStatus('pending')->where('send_at', '<=', Carbon::now())->get();
+        $schedules = $this->sequenceRepo->getDueMessageSchedule();
 
         /** @var SequenceMessageSchedule $schedule */
         foreach ($schedules as $schedule) {
-            DB::transaction(function () use ($schedule) {
-                $sequenceMessage = $schedule->sequence_message()->withTrashed()->first();
-
-                $this->info("Sending Message {$sequenceMessage->name}, To {$schedule->subscriber->first_name} {$schedule->subscriber->last_name}");
-
-                $this->markAsRunning($schedule);
-
-
-                $sent = $this->sendMessage($sequenceMessage, $schedule->subscriber);
-
-                $this->markAsCompleted($schedule, $sent);
-
-                if ($nextMessage = $sequenceMessage->next()) {
-                    $this->info("Scheduling next message: {$nextMessage->name}");
-                    $this->sequences->scheduleMessage($nextMessage, $schedule->subscriber, $schedule->sent_at?: Carbon::now());
-                }
-            });
+            $this->processSequenceMessageSchedule($schedule);
         }
-
 
         $this->forceDeleteMessagesWithNoQueuedSchedules();
 
@@ -86,34 +85,57 @@ class Sequence extends Command
     /**
      * @param SequenceMessageSchedule $schedule
      */
+    private function processSequenceMessageSchedule(SequenceMessageSchedule $schedule)
+    {
+        DB::transaction(function () use ($schedule) {
+
+            $sequenceMessage = $this->sequenceRepo->getMessageFromSchedule($schedule, true);
+
+            $this->info("Sending Message {$sequenceMessage->name}, To {$schedule->subscriber->first_name} {$schedule->subscriber->last_name}");
+
+            $this->markAsRunning($schedule);
+
+            $isSent = $this->sendMessage($sequenceMessage, $schedule->subscriber);
+
+            $this->markAsCompleted($schedule, $isSent);
+
+            $this->scheduleNextMessage($sequenceMessage, $schedule);
+        });
+    }
+
+
+    /**
+     * @param SequenceMessageSchedule $schedule
+     */
     protected function markAsRunning(SequenceMessageSchedule $schedule)
     {
-        $schedule->status = 'running';
-        $schedule->save();
+        $this->sequenceRepo->updateMessageSchedule($schedule, ['status' => 'running']);
     }
 
     /**
      * @param SequenceMessageSchedule $schedule
-     * @param bool                    $success
+     * @param bool                    $isSent
      */
-    private function markAsCompleted(SequenceMessageSchedule $schedule, $success)
+    private function markAsCompleted(SequenceMessageSchedule $schedule, $isSent)
     {
-        $schedule->status = 'completed';
-        if ($success) {
-            $schedule->sent_at = Carbon::now();
+        $data = ['status' => 'completed'];
+        if ($isSent) {
+            $data['sent_at'] = Carbon::now();
         }
-        $schedule->save();
+        $this->sequenceRepo->updateMessageSchedule($schedule, $data);
     }
 
     /**
-     * @param SequenceMessage|null $sequenceMessage (might be deleted)
-     * @param Subscriber           $subscriber
+     * Send a sequence message to a subscriber.
+     * @param SequenceMessage $sequenceMessage (might be deleted)
+     * @param Subscriber      $subscriber
      * @return bool
      */
     protected function sendMessage(SequenceMessage $sequenceMessage, Subscriber $subscriber)
     {
+        // If the message is deleted, or is marked as draft. Don't send it.
         if ($sequenceMessage->trashed() || ! $sequenceMessage->is_live) {
-            $this->info("Message is either deleted, or not live. Skip it.");
+            $this->warn("Message is either deleted, or not live. Skip it.");
 
             return false;
         }
@@ -123,16 +145,36 @@ class Sequence extends Command
 
         return true;
     }
+    
+    /**
+     * Schedule the next message (if it exists).
+     * @param SequenceMessage         $sequenceMessage
+     * @param SequenceMessageSchedule $schedule
+     */
+    private function scheduleNextMessage(SequenceMessage $sequenceMessage, SequenceMessageSchedule $schedule)
+    {
+        if ($nextMessage = $this->sequenceRepo->getNextSequenceMessage($sequenceMessage)) {
+
+            $this->info("Scheduling next message: {$nextMessage->name}");
+
+            $this->sequences->scheduleMessage(
+                $nextMessage,
+                $schedule->subscriber,
+                $schedule->sent_at?: Carbon::now()
+            );
+        }
+    }
 
 
+    /**
+     * Completely delete soft deleted sequence messages that have no more schedules.
+     */
     private function forceDeleteMessagesWithNoQueuedSchedules()
     {
-        $messagesWithNoQueuedSchedules = SequenceMessage::onlyTrashed()->whereHas('schedules', function ($query) {
-            $query->whereStatus('pending');
-        }, '=', 0);
+        $messagesWithNoQueuedSchedules = $this->sequenceRepo->getTrashedMessagesWithNoSchedules();
 
         $messagesWithNoQueuedSchedules->each(function (SequenceMessage $message) {
-            $message->forceDelete();
+            $this->sequenceRepo->deleteMessage($message, true);
         });
     }
 

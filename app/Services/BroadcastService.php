@@ -320,13 +320,4 @@ class BroadcastService
     {
         $this->broadcastRepo->updateBroadcastSubscriberReadAt($subscriber, $dateTime);
     }
-
-    /**
-     * Get broadcast schedules that are due (should be sent)
-     * @return Collection
-     */
-    public function getDueBroadcastSchedules()
-    {
-        return $this->broadcastRepo->getDueBroadcastSchedule();
-    }
 }

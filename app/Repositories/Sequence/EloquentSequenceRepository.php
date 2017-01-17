@@ -1,5 +1,6 @@
 <?php namespace App\Repositories\Sequence;
 
+use Carbon\Carbon;
 use App\Models\Page;
 use App\Models\Sequence;
 use App\Models\Subscriber;
@@ -49,6 +50,16 @@ class EloquentSequenceRepository extends BaseEloquentRepository implements Seque
     public function getLastSequenceMessage(Sequence $sequence)
     {
         return $sequence->unorderedMessages()->orderBy('order', 'desc')->first();
+    }
+
+    /**
+     * Get the next message in a sequence.
+     * @param SequenceMessage $sequenceMessage
+     * @return SequenceMessage|null
+     */
+    public function getNextSequenceMessage(SequenceMessage $sequenceMessage)
+    {
+        return $sequenceMessage->next();
     }
 
     /**
@@ -137,10 +148,15 @@ class EloquentSequenceRepository extends BaseEloquentRepository implements Seque
     /**
      * Delete a sequence message.
      * @param SequenceMessage $message
+     * @param bool            $completely
      */
-    public function deleteMessage(SequenceMessage $message)
+    public function deleteMessage(SequenceMessage $message, $completely = false)
     {
-        $message->delete();
+        if ($completely) {
+            $message->forceDelete();
+        } else {
+            $message->delete();
+        }
     }
 
     /**
@@ -164,5 +180,53 @@ class EloquentSequenceRepository extends BaseEloquentRepository implements Seque
         $data['subscriber_id'] = $subscriber->id;
 
         return $message->schedules()->create($data);
+    }
+
+    /**
+     * Get list of sending-due sequence message schedules
+     * @return Collection
+     */
+    public function getDueMessageSchedule()
+    {
+        return SequenceMessageSchedule::whereStatus('pending')->where('send_at', '<=', Carbon::now())->get();
+    }
+
+    /**
+     * Return the sequence message associated with this schedule
+     * @param SequenceMessageSchedule $schedule
+     * @param bool                    $includingSoftDeleted whether or not to return the message if it has been soft deleted
+     * @return SequenceMessage|null
+     */
+    public function getMessageFromSchedule(SequenceMessageSchedule $schedule, $includingSoftDeleted)
+    {
+        $query = $schedule->sequenceMessage();
+        if ($includingSoftDeleted) {
+            $query->withTrashed();
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Update a sequence message schedule.
+     * @param SequenceMessageSchedule $schedule
+     * @param array                   $data
+     */
+    public function updateMessageSchedule(SequenceMessageSchedule $schedule, array $data)
+    {
+        $schedule->update($data);
+    }
+
+    /**
+     * Return the trashed (soft deleted) sequence messages which have no schedules.
+     * @return Collection
+     */
+    public function getTrashedMessagesWithNoSchedules()
+    {
+        $inCompleteSchedule = function ($query) {
+            $query->where('status', '!=', 'completed');
+        };
+
+        return SequenceMessage::onlyTrashed()->whereHas('schedules', $inCompleteSchedule, '=', 0);
     }
 }
