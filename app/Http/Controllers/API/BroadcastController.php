@@ -99,7 +99,7 @@ class BroadcastController extends APIController
     public function show($id)
     {
         $page = $this->page();
-        $broadcast = $this->broadcasts->find($page, $id);
+        $broadcast = $this->broadcasts->findByIdOrFail($id, $page);
 
         return $this->itemResponse($broadcast);
     }

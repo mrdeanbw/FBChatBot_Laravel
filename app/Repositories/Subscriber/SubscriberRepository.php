@@ -8,9 +8,16 @@ use Illuminate\Pagination\Paginator;
 
 interface SubscriberRepository
 {
-
+    
     /**
      * Find a subscriber by his artificial ID.
+     * @param int $id
+     * @return Subscriber|null
+     */
+    public function findById($id);
+
+    /**
+     * Find a page subscriber by his artificial ID.
      * @param int  $id
      * @param Page $page
      * @return Subscriber|null
@@ -18,7 +25,7 @@ interface SubscriberRepository
     public function findByIdForPage($id, Page $page);
 
     /**
-     * Find a subscriber by his Facebook ID.
+     * Find a page subscriber by his Facebook ID.
      * @param int  $id
      * @param Page $page
      * @return Subscriber|null
@@ -132,7 +139,7 @@ interface SubscriberRepository
      * @param array      $attributes
      * @param bool       $touch
      */
-    public function attachTags(Subscriber $subscriber, array $tags,  array $attributes = [], $touch = true);
+    public function attachTags(Subscriber $subscriber, array $tags, array $attributes = [], $touch = true);
 
     /**
      * Detach tags from a subscriber.
@@ -149,7 +156,7 @@ interface SubscriberRepository
      * @param bool       $detaching Whether or not to detach the attached tags which are not included in the passed $tags
      */
     public function syncSequences(Subscriber $subscriber, array $sequences, $detaching = true);
-    
+
     /**
      * Attach sequences to subscriber.
      * @param Subscriber $subscriber
@@ -166,4 +173,5 @@ interface SubscriberRepository
      * @param bool       $touch
      */
     public function detachSequences(Subscriber $subscriber, array $sequences, $touch = true);
+
 }

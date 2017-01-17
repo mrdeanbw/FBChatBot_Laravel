@@ -102,12 +102,26 @@ class MainMenuService
         return $success;
     }
 
+
+    /**
+     * Create the default main menu.
+     * @param Page $page
+     * @return MainMenu
+     */
+    public function createDefaultMainMenu(Page $page)
+    {
+        $mainMenu = $this->mainMenuRepo->create($page);
+        $this->attachDefaultButtonsToMainMenu($mainMenu);
+
+        return $mainMenu;
+    }
+
     /**
      * Attach the default "Powered By: Mr. Reply button" to the main menu,
      * and make it "disabled", so that it cannot be edited/removed.
      * @param $mainMenu
      */
-    public function attachDefaultButtonsToMainMenu(MainMenu $mainMenu)
+    private function attachDefaultButtonsToMainMenu(MainMenu $mainMenu)
     {
         $defaultButtons = [$this->copyrightedButton()];
         $messageBlocks = $this->messageBlocks->persist($mainMenu, $defaultButtons);

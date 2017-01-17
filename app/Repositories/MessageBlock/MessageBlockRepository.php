@@ -23,6 +23,13 @@ interface MessageBlockRepository
     public function batchDelete(array $ids);
 
     /**
+     * Find a message block by id.
+     * @param $id
+     * @return MessageBlock|null
+     */
+    public function findById($id);
+
+    /**
      * @param int                       $id
      * @param HasMessageBlocksInterface $model
      * @return MessageBlock|null
@@ -59,4 +66,11 @@ interface MessageBlockRepository
      * @param Template $template
      */
     public function associateTemplateWithButton(Button $button, Template $template);
+
+    /**
+     * Return the root context to which this message block belongs.
+     * @param MessageBlock $messageBlock
+     * @return HasMessageBlocksInterface
+     */
+    public function rootContext(MessageBlock $messageBlock);
 }

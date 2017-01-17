@@ -1,5 +1,4 @@
-<?php
-namespace App\Services;
+<?php namespace App\Services;
 
 use DB;
 use Exception;

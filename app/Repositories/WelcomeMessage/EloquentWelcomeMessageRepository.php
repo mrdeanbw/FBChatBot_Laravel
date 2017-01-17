@@ -15,4 +15,14 @@ class EloquentWelcomeMessageRepository implements WelcomeMessageRepository
     {
         return $page->welcomeMessage;
     }
+
+    /**
+     * Create welcome message.
+     * @param $page
+     * @return WelcomeMessage
+     */
+    public function create(Page $page)
+    {
+        return $page->welcomeMessage()->create([]);
+    }
 }

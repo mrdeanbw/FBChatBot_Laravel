@@ -31,16 +31,6 @@ class GreetingTextService
     }
 
     /**
-     * Get the default greeting text.
-     * @param Page $page
-     * @return GreetingText
-     */
-    public function defaultGreetingText(Page $page)
-    {
-        return $this->greetingTextRepo->make("Hello {{first_name}}, Welcome to {$page->name}! - Powered By: MrReply.com");
-    }
-
-    /**
      * Get a page's greeting text.
      * @param Page $page
      * @return GreetingText
@@ -61,7 +51,7 @@ class GreetingTextService
      * @param Page  $page
      * @return bool
      */
-    public function persist(array $input, Page $page)
+    public function update(array $input, Page $page)
     {
         $greetingText = $this->get($page);
         $this->greetingTextRepo->update($greetingText, trim($input['text']));
@@ -103,6 +93,28 @@ class GreetingTextService
             ['{{user_first_name}}', '{{user_last_name}}', '{{user_full_name}}'],
             $greetingText->text
         );
+    }
+
+    /**
+     * Create the default greeting text for a page.
+     * @param Page $page
+     * @return GreetingText
+     */
+    public function createDefaultGreetingText(Page $page)
+    {
+        $data = ['text' => $this->defaultGreetingText($page)];
+
+        return $this->greetingTextRepo->create($data, $page);
+    }
+
+    /**
+     * Get the default greeting text.
+     * @param Page $page
+     * @return string
+     */
+    private function defaultGreetingText(Page $page)
+    {
+        return "Hello {{first_name}}, Welcome to {$page->name}! - Powered By: MrReply.com";
     }
 
 }

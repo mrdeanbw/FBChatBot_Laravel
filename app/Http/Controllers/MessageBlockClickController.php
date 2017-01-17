@@ -13,7 +13,7 @@ class MessageBlockClickController extends Controller
      */
     public function handle($messageBlockHash, $subscriberHash, WebAppAdapter $WebAppAdapter)
     {
-        $redirectTo = $WebAppAdapter->messageBlockUrl($messageBlockHash, $subscriberHash);
+        $redirectTo = $WebAppAdapter->getMessageBlockRedirectURL($messageBlockHash, $subscriberHash);
         if (! $redirectTo) {
             return response("", 200);
         }

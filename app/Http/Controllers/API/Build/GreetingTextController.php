@@ -51,7 +51,7 @@ class GreetingTextController extends APIController
             $this->greetingTextValidationCallback($page)
         );
 
-        $this->greetingTexts->persist($request->all(), $page);
+        $this->greetingTexts->update($request->all(), $page);
 
         return $this->response->accepted();
     }

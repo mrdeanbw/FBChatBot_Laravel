@@ -7,13 +7,6 @@ interface GreetingTextRepository
 {
 
     /**
-     * Make a GreetingText object, without actually persisting it.
-     * @param string $text
-     * @return GreetingText
-     */
-    public function make($text);
-
-    /**
      * Get the greeting text for a given page.
      * @param Page $page
      * @return GreetingText
@@ -26,4 +19,12 @@ interface GreetingTextRepository
      * @param string       $text
      */
     public function update(GreetingText $greetingText, $text);
+
+    /**
+     * Create a greeting text for a page.
+     * @param array $data
+     * @param Page  $page
+     * @return GreetingText
+     */
+    public function create(array $data, Page $page);
 }

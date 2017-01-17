@@ -15,6 +15,7 @@
  * @property \Carbon\Carbon                $created_at
  * @property \Carbon\Carbon                $updated_at
  * @property-read \App\Models\MessageBlock $messageBlock
+ * @property-read \App\Models\MessageBlock $message_block
  * @property-read \App\Models\Subscriber   $subscriber
  * @property-read \App\Models\Page         $page
  * @method static \Illuminate\Database\Query\Builder|\App\Models\MessageInstance whereId($value)
@@ -45,6 +46,11 @@ class MessageInstance extends BaseModel
     public function messageBlock()
     {
         return $this->belongsTo(MessageBlock::class);
+    }
+
+    public function clicks()
+    {
+        return $this->hasMany(MessageInstanceClick::class);
     }
 
     public function subscriber()

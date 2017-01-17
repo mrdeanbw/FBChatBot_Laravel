@@ -12,4 +12,11 @@ interface WelcomeMessageRepository
      * @return WelcomeMessage|null
      */
     public function getForPage(Page $page);
+
+    /**
+     * Create welcome message.
+     * @param $page
+     * @return WelcomeMessage
+     */
+    public function create(Page $page);
 }

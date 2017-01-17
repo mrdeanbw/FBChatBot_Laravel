@@ -1,17 +1,18 @@
 <?php namespace App\Services;
 
-use App\Models\AutoReplyRule;
-use App\Models\DefaultReply;
-use App\Models\GreetingText;
-use App\Models\MainMenu;
-use App\Models\Page;
-use App\Models\WelcomeMessage;
-use App\Services\Facebook\Subscription;
-use App\Services\Facebook\Thread;
-use App\Models\User;
-use App\Services\Facebook\PageService as FacebookPage;
 use DB;
+use App\Models\User;
+use App\Models\Page;
+use App\Models\MainMenu;
+use App\Models\GreetingText;
+use App\Models\DefaultReply;
+use App\Models\WelcomeMessage;
+use App\Services\Facebook\Thread;
+use App\Services\Facebook\Subscription;
+use App\Repositories\Page\PageRepository;
+use App\Repositories\User\UserRepository;
 use Illuminate\Database\Eloquent\Collection;
+use App\Services\Facebook\PageService as FacebookPage;
 
 class PageService
 {
@@ -48,6 +49,18 @@ class PageService
      * @var TagService
      */
     private $tags;
+    /**
+     * @type UserRepository
+     */
+    private $userRepo;
+    /**
+     * @type PageRepository
+     */
+    private $pageRepo;
+    /**
+     * @type DefaultReplyService
+     */
+    private $defaultReplies;
 
     /**
      * PageService constructor.
@@ -58,8 +71,11 @@ class PageService
      * @param WelcomeMessageService $welcomeMessages
      * @param GreetingTextService   $greetingTexts
      * @param MainMenuService       $mainMenus
+     * @param DefaultReplyService   $defaultReplies
      * @param AutoReplyRuleService  $autoReplyRules
      * @param TagService            $tags
+     * @param UserRepository        $userRepo
+     * @param PageRepository        $pageRepository
      */
     public function __construct(
         FacebookPage $FacebookPages,
@@ -68,8 +84,11 @@ class PageService
         WelcomeMessageService $welcomeMessages,
         GreetingTextService $greetingTexts,
         MainMenuService $mainMenus,
+        DefaultReplyService $defaultReplies,
         AutoReplyRuleService $autoReplyRules,
-        TagService $tags
+        TagService $tags,
+        UserRepository $userRepo,
+        PageRepository $pageRepository
     ) {
         $this->FacebookPages = $FacebookPages;
         $this->FacebookSubscriptions = $FacebookSubscriptions;
@@ -79,9 +98,13 @@ class PageService
         $this->mainMenus = $mainMenus;
         $this->autoReplyRules = $autoReplyRules;
         $this->tags = $tags;
+        $this->userRepo = $userRepo;
+        $this->pageRepo = $pageRepository;
+        $this->defaultReplies = $defaultReplies;
     }
 
     /**
+     * Create bots for Facebook pages.
      * @param User $user
      * @param      $pageIds
      */
@@ -89,17 +112,22 @@ class PageService
     {
         DB::transaction(function () use ($user, $pageIds) {
 
-            $remotePages = $this->getUnmanagedPages($user)->keyBy('facebook_id');
+            // Get the list of Facebook pages, that don't have bots associated with them.
+            // Index them by Facebook ID.
+            $unmanagedPages = $this->getUnmanagedPages($user)->keyBy('facebook_id');
 
+            // Array to hold the created page IDs .
             $createdPageIds = [];
 
             foreach ($pageIds as $facebookId) {
-                $page = $remotePages->get($facebookId);
-
-                if (! $page) {
+                // Get the page from the collection, if not found,
+                // then it means the page id is invalid. Skip it.
+                if (! ($page = $unmanagedPages->get($facebookId))) {
                     continue;
                 }
 
+                // In some cases, the page may be created before (e.g. by another admin)
+                // If the page doesn't exist in our system, create it.
                 if (! $page->exists) {
                     $this->persistPage($page);
                 }
@@ -107,16 +135,18 @@ class PageService
                 $createdPageIds[] = $page->id;
             }
 
-            $user->pages()->sync($createdPageIds, false);
+            // Add the pages to the list of user pages.
+            $this->userRepo->syncPages($user, $createdPageIds, false);
         });
     }
 
     /**
+     * Save a page that has been "made", but not persisted.
      * @param Page $page
      */
     protected function persistPage(Page $page)
     {
-        $page->save();
+        $this->pageRepo->saveMadePage($page);
 
         $this->createDefaultTags($page);
         $this->createDefaultGreetingText($page);
@@ -129,71 +159,79 @@ class PageService
 
 
     /**
+     * Return a list of Facebook pages that don't have bots created for them.
      * @param User $user
-     *
      * @return Collection
      */
     public function getUnmanagedPages(User $user)
     {
         $remotePages = $this->FacebookPages->getManagePageList($user->access_token);
 
-        return $this->normalizeRemotePages($user, $remotePages);
+        return $this->normalizeUnmanagedPages($user, (array)$remotePages);
     }
 
     /**
      * @param User $user
-     *
      * @return Collection
      */
     public function activePageList(User $user)
     {
-        return $user->pages()->whereIsActive(1)->get();
+        return $this->pageRepo->getActiveForUser($user);
     }
-
 
     /**
      * @param User $user
-     *
      * @return Collection
      */
     public function inactivePageList($user)
     {
-        return $user->pages()->whereIsActive(0)->get();
+        return $this->pageRepo->getInactiveForUser($user);
     }
 
-
     /**
+     * Normalize the unmanaged pages by:
+     * 1. Removing the pages that have bots from the list.
+     * 2. Converting the unmanaged pages to our Page model (without actually saving them).
      * @param User  $user
-     * @param array $remotePages
+     * @param array $FacebookPages
      * @return Collection
      */
-    private function normalizeRemotePages(User $user, $remotePages)
+    private function normalizeUnmanagedPages(User $user, array $FacebookPages)
     {
-        $ret = new Collection();
-        foreach ((array)$remotePages as $remotePage) {
+        $clean = new Collection();
 
-            if ($user->pages()->whereFacebookId($remotePage->id)->exists()) {
+        foreach ($FacebookPages as $FacebookPage) {
+
+            // If the page is already managed by this user,
+            // then remove it from the list.
+            if ($this->userRepo->managesFacebookPage($user, $FacebookPage->id)) {
                 continue;
             }
 
-            if (! ($page = Page::whereFacebookId($remotePage->id)->first())) {
-                $page = new Page();
-                $page->facebook_id = $remotePage->id;
-                $page->name = $remotePage->name;
-                $page->access_token = $remotePage->access_token;
-                $page->avatar_url = $remotePage->picture->data->url;
-                $page->url = $remotePage->link;
+            // The page may be already in our system. (created by another admin).
+            // If so, add it to the list, otherwise, normalize it (without saving),
+            // then add it to the list.
+            $page = $this->findByFacebookId($FacebookPage->id);
+            if (! $page) {
+                $this->pageRepo->makePage([
+                    'facebook_id'  => $FacebookPage->id,
+                    'name'         => $FacebookPage->name,
+                    'access_token' => $FacebookPage->access_token,
+                    'avatar_url'   => $FacebookPage->picture->data->url,
+                    'url'          => $FacebookPages->link
+                ]);
             }
 
-            $ret->add($page);
+            $clean->add($page);
         }
 
-        return $ret;
+        return $clean;
     }
 
     /**
+     * Create the default tags for a page.
+     * Currently every pages ships off with a "new" tag.
      * @param Page $page
-     *
      * @return array
      */
     private function createDefaultTags(Page $page)
@@ -203,59 +241,38 @@ class PageService
 
     /**
      * @param Page $page
-     *
      * @return GreetingText
      */
     private function createDefaultGreetingText(Page $page)
     {
-        $greetingText = $this->greetingTexts->defaultGreetingText($page);
-        $page->greetingText()->save($greetingText);
-
-        return $greetingText;
+        return $this->greetingTexts->createDefaultGreetingText($page);
     }
 
     /**
      * @param Page $page
-     *
      * @return WelcomeMessage
      */
     private function createDefaultWelcomeMessage(Page $page)
     {
-        $welcomeMessage = new WelcomeMessage();
-        $page->welcomeMessage()->save($welcomeMessage);
-
-        $this->welcomeMessages->attachDefaultMessageBlocks($welcomeMessage);
-
-        return $welcomeMessage;
+        return $this->welcomeMessages->createDefaultWelcomeMessage($page);
     }
-
 
     /**
      * @param Page $page
-     *
      * @return MainMenu
      */
     private function createDefaultMainMenu(Page $page)
     {
-        $mainMenu = new MainMenu();
-        $page->mainMenu()->save($mainMenu);
-
-        $this->mainMenus->attachDefaultButtonsToMainMenu($mainMenu);
-
-        return $mainMenu;
+        return $this->mainMenus->createDefaultMainMenu($page);
     }
 
     /**
      * @param Page $page
-     *
      * @return DefaultReply
      */
     private function createDefaultDefaultReply(Page $page)
     {
-        $defaultReply = new DefaultReply();
-        $page->defaultReply()->save($defaultReply);
-
-        return $defaultReply;
+        return $this->defaultReplies->createDefaultDefaultReply($page);
     }
 
     /**
@@ -263,27 +280,11 @@ class PageService
      */
     private function createDefaultAutoReplyRules(Page $page)
     {
-        $data = [
-            'subscribe'   => ['start', 'subscribe'],
-            'unsubscribe' => ['stop', 'unsubscribe']
-        ];
-
-        $rules = [];
-
-        foreach ($data as $action => $keywords) {
-            foreach ($keywords as $keyword) {
-                $rule = new AutoReplyRule();
-                $rule->mode = 'is';
-                $rule->keyword = $keyword;
-                $rule->action = $action;
-                $rule->is_disabled = true;
-                $rules[] = $data;
-                $page->autoReplyRules()->save($rule);
-            }
-        }
+        $this->autoReplyRules->createDefaultAutoReplyRules($page);
     }
 
     /**
+     * Initialize Facebook Bot through Facebook API.
      * @param Page $page
      */
     private function initializeFacebookBot(Page $page)
@@ -303,8 +304,7 @@ class PageService
      */
     public function disableBot(Page $page)
     {
-        $page->is_active = false;
-        $page->save();
+        $this->pageRepo->update($page, ['is_active' => false]);
 
         return $page;
     }
@@ -315,10 +315,18 @@ class PageService
      */
     public function enableBot(Page $page)
     {
-        $page->is_active = true;
-        $page->save();
+        $this->pageRepo->update($page, ['is_active' => false]);
 
         return $page;
+    }
+
+    /**
+     * @param $pageId
+     * @return Page
+     */
+    public function findByFacebookId($pageId)
+    {
+        return $this->pageRepo->findByFacebookId($pageId);
     }
 
 }

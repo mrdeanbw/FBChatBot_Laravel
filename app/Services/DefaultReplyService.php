@@ -59,4 +59,13 @@ class DefaultReplyService
             $this->messageBlocks->persist($defaultReply, $input['message_blocks']);
         });
     }
+
+    /**
+     * @param Page $page
+     * @return DefaultReply
+     */
+    public function createDefaultDefaultReply(Page $page)
+    {
+        return $this->defaultReplyRepo->create($page);
+    }
 }

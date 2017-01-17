@@ -12,6 +12,16 @@ class EloquentSubscriberRepository extends BaseEloquentRepository implements Sub
 {
 
     /**
+     * Find a subscriber by his artificial ID.
+     * @param int $id
+     * @return Subscriber|null
+     */
+    public function findById($id)
+    {
+        return Subscriber::find($id);
+    }
+
+    /**
      * Find a subscriber by his ID.
      * @param int  $id
      * @param Page $page

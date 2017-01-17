@@ -83,4 +83,24 @@ class EloquentMessageBlockRepository implements MessageBlockRepository
     {
         $button->template()->associate($template);
     }
+
+    /**
+     * Find a message block by id.
+     * @param $id
+     * @return MessageBlock|null
+     */
+    public function findById($id)
+    {
+        return MessageBlock::find($id);
+    }
+
+    /**
+     * Return the root context to which this message block belongs.
+     * @param MessageBlock $messageBlock
+     * @return HasMessageBlocksInterface
+     */
+    public function rootContext(MessageBlock $messageBlock)
+    {
+        return $messageBlock->superContext();
+    }
 }

@@ -89,10 +89,19 @@ class AudienceService
 
     /**
      * @param      $id
+     * @return Subscriber
+     */
+    public function find($id)
+    {
+        return $this->subscriberRepo->findById($id);
+    }
+
+    /**
+     * @param      $id
      * @param Page $page
      * @return Subscriber
      */
-    public function find($id, Page $page)
+    public function findForPage($id, Page $page)
     {
         return $this->subscriberRepo->findByIdForPage($id, $page);
     }
@@ -108,13 +117,13 @@ class AudienceService
     }
 
     /**
-     * Create a new subscriber to a given page.
+     * Get or create a new subscriber to a given page.
      * @param      $id
      * @param Page $page
      * @param bool $isActive whether or not the user is actually an active subscriber or not.
      * @return Subscriber|null
      */
-    public function persist($id, Page $page, $isActive = false)
+    public function getByFacebookIdOrCreate($id, Page $page, $isActive = false)
     {
         if ($subscriber = $this->findByFacebookId($id, $page)) {
             return $subscriber;
@@ -405,7 +414,7 @@ class AudienceService
      */
     public function update(array $input, $subscriberId, Page $page)
     {
-        $subscriber = $this->find($subscriberId, $page);
+        $subscriber = $this->findForPage($subscriberId, $page);
 
         DB::transaction(function () use ($subscriber, $input, $page) {
             $tags = $this->tags->getOrCreateTags($input['tags'], $page);
@@ -426,12 +435,12 @@ class AudienceService
             $tagsToAdd = $this->tags->getOrCreateTags($input['tag'], $page);
             $tagsToRemove = $this->tags->getOrCreateTags($input['untag'], $page);
             foreach ($subscriberIds as $subscriberId) {
-                $subscriber = $this->find($subscriberId, $page);
+                $subscriber = $this->findForPage($subscriberId, $page);
                 if ($tagsToAdd) {
                     $this->syncTags($subscriber, $tagsToAdd, false);
                 }
                 if ($tagsToRemove) {
-                    $this->subscriberRepo->detachTags($subscriber, $tagsToRemove);
+                    $this->detachTags($subscriber, $tagsToRemove);
                 }
             }
         });
@@ -474,7 +483,19 @@ class AudienceService
         $this->subscriberRepo->syncTags($subscriber, $tags, $detaching);
         event(new SubscriberTagsWereAltered($subscriber));
     }
-    
+
+    /**
+     * Detach tags from a subscriber.
+     * @param Subscriber $subscriber
+     * @param array      $tags
+     * @param bool       $touch
+     */
+    public function detachTags(Subscriber $subscriber, array $tags, $touch = true)
+    {
+        $this->subscriberRepo->detachTags($subscriber, $tags, $touch);
+        event(new SubscriberTagsWereAltered($subscriber));
+    }
+
     /**
      * Subscribe to a sequence, and schedule the first message in that sequence for sending.
      * @todo [Needs discussion] if resubscribing to sequence, should we send the sequence from the beginning, or we continue from where he unsubscribed.

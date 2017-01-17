@@ -6,20 +6,7 @@ use App\Repositories\BaseEloquentRepository;
 
 class EloquentGreetingTextRepository extends BaseEloquentRepository implements GreetingTextRepository
 {
-
-    /**
-     * Make a GreetingText object, without actually persisting it.
-     * @param string $text
-     * @return GreetingText
-     */
-    public function make($text)
-    {
-        $ret = new GreetingText();
-        $ret->text = $text;
-
-        return $ret;
-    }
-
+    
     /**
      * Get the greeting text for a given page.
      * @param Page $page
@@ -39,5 +26,16 @@ class EloquentGreetingTextRepository extends BaseEloquentRepository implements G
     {
         $greetingText->text = $text;
         $greetingText->save();
+    }
+
+    /**
+     * Create a greeting text for a page.
+     * @param array $data
+     * @param Page  $page
+     * @return GreetingText
+     */
+    public function create(array $data, Page $page)
+    {
+        return $page->greetingText->create($data);
     }
 }

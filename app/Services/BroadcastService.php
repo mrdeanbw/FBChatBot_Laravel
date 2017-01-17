@@ -1,13 +1,15 @@
 <?php namespace App\Services;
 
+use DB;
+use Carbon\Carbon;
+use App\Models\Page;
 use App\Models\Broadcast;
+use App\Models\Subscriber;
 use App\Models\BroadcastSchedule;
 use App\Models\HasFilterGroupsInterface;
-use App\Models\Page;
-use App\Models\Subscriber;
-use Carbon\Carbon;
-use DB;
 use Illuminate\Database\Eloquent\Builder;
+use App\Repositories\Broadcast\BroadcastRepository;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class BroadcastService
 {
@@ -32,9 +34,14 @@ class BroadcastService
      * @type FilterGroupService
      */
     private $filterGroups;
+    /**
+     * @type BroadcastRepository
+     */
+    private $broadcastRepo;
 
     /**
      * BroadcastService constructor.
+     * @param BroadcastRepository $broadcastRepo
      * @param MessageBlockService $messageBlocks
      * @param AudienceService     $audience
      * @param TagService          $tags
@@ -42,6 +49,7 @@ class BroadcastService
      * @param FilterGroupService  $filterGroups
      */
     public function __construct(
+        BroadcastRepository $broadcastRepo,
         MessageBlockService $messageBlocks,
         AudienceService $audience,
         TagService $tags,
@@ -53,6 +61,7 @@ class BroadcastService
         $this->tags = $tags;
         $this->timezones = $timezones;
         $this->filterGroups = $filterGroups;
+        $this->broadcastRepo = $broadcastRepo;
     }
 
     /**
@@ -61,28 +70,79 @@ class BroadcastService
      */
     public function all(Page $page)
     {
-        return $page->broadcasts;
+        return $this->broadcastRepo->getAllForPage($page);
     }
 
     /**
-     * @param Page        $page
-     * @param             $id
-     * @param null|string $status
-     * @return Broadcast
+     * @param      $id
+     * @param Page $page
+     * @return Broadcast|null
      */
-    public function find(Page $page, $id, $status = null)
+    public function findById($id, Page $page)
     {
-        //        $query = $page->broadcasts()->with('blocks.blocks.blocks')->with('groups.rules');
-        $query = $page->broadcasts();
-        if ($status) {
-            $query->whereStatus($status);
+        return $this->broadcastRepo->findByIdForPage($id, $page);
+    }
+
+    /**
+     * Find a broadcast by ID, throw exception if it doesn't exist.
+     * @param      $id
+     * @param Page $page
+     * @return Broadcast|null
+     */
+    public function findByIdOrFail($id, Page $page)
+    {
+        if ($broadcast = $this->findById($id, $page)) {
+            return $broadcast;
         }
-        $broadcast = $query->findOrFail($id);
+        throw new ModelNotFoundException;
+    }
+
+    /**
+     * Find a broadcast by ID and status, throw exception if it doesn't exist.
+     * @param      $id
+     * @param Page $page
+     * @param      $status
+     * @return Broadcast|null
+     */
+    public function findByIdAndStatusOrFail($id, Page $page, $status)
+    {
+        if (! ($broadcast = $this->findById($id, $page))) {
+            throw new ModelNotFoundException;
+        }
+
+        if ($broadcast->status != $status) {
+            throw new ModelNotFoundException;
+        }
 
         return $broadcast;
     }
 
     /**
+     * Create a broadcast
+     * @param array $input
+     * @param Page  $page
+     * @return Broadcast
+     */
+    public function create(array $input, Page $page)
+    {
+        $broadcast = DB::transaction(function () use ($input, $page) {
+
+            $data = $this->cleanInput($input, $page->bot_timezone);
+            $broadcast = $this->broadcastRepo->createForPage($data, $page);
+
+            $this->filterGroups->persist($broadcast, $input['filter_groups']);
+            $this->messageBlocks->persist($broadcast, $input['message_blocks']);
+
+            $this->createBroadcastSchedules($broadcast);
+
+            return $broadcast;
+        });
+
+        return $broadcast;
+    }
+
+    /**
+     * Update a broadcast.
      * @param      $id
      * @param      $input
      * @param Page $page
@@ -90,109 +150,36 @@ class BroadcastService
     public function update($id, $input, Page $page)
     {
         DB::transaction(function () use ($id, $input, $page) {
-            $broadcast = $this->find($page, $id, 'pending');
-            $this->persist($input, $page, $broadcast);
+
+            $broadcast = $this->findByIdAndStatusOrFail($id, $page, 'pending');
+
+            $data = $this->cleanInput($input, $page->bot_timezone);
+            $this->broadcastRepo->update($broadcast, $data);
+
+            $this->filterGroups->persist($broadcast, $input['filter_groups']);
+            $this->messageBlocks->persist($broadcast, $input['message_blocks']);
+
+            $this->createBroadcastSchedules($broadcast);
         });
     }
 
     /**
-     * @param      $input
-     * @param Page $page
-     * @return Broadcast
-     */
-    public function create($input, Page $page)
-    {
-        $broadcast = new Broadcast();
-
-        DB::transaction(function () use ($input, $page, $broadcast) {
-            $this->persist($input, $page, $broadcast);
-        });
-
-        return $broadcast;
-    }
-
-
-    /**
-     * @param      $input
-     * @param Page $page
-     * @param      $broadcast
-     */
-    private function persist($input, Page $page, Broadcast $broadcast)
-    {
-        $this->setBroadcastAttributes($input, $page, $broadcast);
-
-        $page->broadcasts()->save($broadcast);
-
-        $broadcast->schedule()->delete();
-
-        BroadcastSchedule::insert($this->getBroadcastSchedules($broadcast));
-
-        $this->messageBlocks->persist($broadcast, $input['message_blocks']);
-
-        $this->filterGroups->persist($broadcast, $input['filter_groups']);
-    }
-
-    /**
-     * @param      $input
-     * @param Page $page
-     * @param      $broadcast
-     */
-    private function setBroadcastAttributes($input, Page $page, Broadcast $broadcast)
-    {
-        $broadcast->name = $input['name'];
-        $broadcast->notification = $input['notification'];
-        $broadcast->timezone = $input['timezone'];
-        $broadcast->date = $input['date'];
-        $broadcast->time = $input['time'];
-        $broadcast->filter_type = $input['filter_type'];
-        $broadcast->filter_enabled = 1;
-        $broadcast->send_from = $input['send_from'];
-        $broadcast->send_to = $input['send_to'];
-        $broadcast->send_at = $this->getTimeInUTC($input['date'], $input['time'], $page->bot_timezone);
-    }
-
-    /**
-     * @param $broadcast
+     * @param array $input
+     * @param int   $inputTimezoneUTCOffset
      * @return array
      */
-    private function getBroadcastSchedules(Broadcast $broadcast)
+    private function cleanInput(array $input, $inputTimezoneUTCOffset)
     {
-        $now = Carbon::now();
-        $timezoneOffsets = $this->timezones->utcOffsets();
+        $data = array_only($input, ['name', 'notification', 'timezone', 'date', 'time', 'send_from', 'send_to', 'filter_type']);
 
-        $sendingSchedule = [];
+        // Broadcast targeting is always enabled.
+        $data['filter_enabled'] = 1;
 
-        foreach ($timezoneOffsets as $offset) {
-            $sendAt = $broadcast->send_at->copy();
+        // Convert the input date & time into UTC (server time).
+        $data['send_at'] = $this->getTimeInUTC($input['date'], $input['time'], $inputTimezoneUTCOffset);
 
-            if ($broadcast->timezone != 'same_time') {
-                $sendAt->setTimezone($this->getPrettyTimezoneOffset($offset));
-            }
-
-            if ($broadcast->timezone == 'limit_time') {
-                $lowerBound = $sendAt->copy()->hour($broadcast->send_from);
-                $upperBound = $sendAt->copy()->hour($broadcast->send_to);
-                if ($upperBound->lt($lowerBound)) {
-                    $upperBound->addDay(1);
-                }
-                if (! $sendAt->between($lowerBound, $upperBound)) {
-                    $sendAt = $lowerBound;
-                }
-            }
-
-            $sendingSchedule[] = [
-                'broadcast_id' => $broadcast->id,
-                'timezone'     => $offset,
-                'send_at'      => $sendAt,
-                'created_at'   => $now,
-                'updated_at'   => $now,
-            ];
-
-        }
-
-        return $sendingSchedule;
+        return $data;
     }
-
 
     /**
      * @param string $date
@@ -202,56 +189,95 @@ class BroadcastService
      */
     private function getTimeInUTC($date, $time, $timezoneOffset)
     {
-        return Carbon::createFromFormat('Y-m-d H:i', "{$date} {$time}", $this->getPrettyTimezoneOffset($timezoneOffset))->setTimezone('UTC');
+        $dateTime = "{$date} {$time}";
+        $timezoneOffset = $this->getPrettyTimezoneOffset($timezoneOffset);
+
+        return Carbon::createFromFormat('Y-m-d H:i', $dateTime, $timezoneOffset)->setTimezone('UTC');
     }
 
     /**
-     * @param $timezoneOffset
+     * Create the broadcast schedule.
+     * For every UTC offset timezone, create a broadcast schedule record with the send date/time in UTC.
+     * In case of updates, we simply delete old schedules and regenerate them.
+     * @todo Don't call this method every time the broadcast is saved, but rather when the date/time changes.
+     * @param Broadcast $broadcast
+     */
+    private function createBroadcastSchedules(Broadcast $broadcast)
+    {
+        // Delete old schedule.
+        $this->broadcastRepo->deleteBroadcastSchedule($broadcast);
+
+        // Generate the list of broadcast schedules.
+        $schedule = [];
+        foreach ($this->timezones->utcOffsets() as $offset) {
+            $schedule[] = [
+                'timezone' => $offset,
+                'send_at'  => $this->calculateTimezoneSendAtDateTime($broadcast, $offset),
+            ];
+        }
+
+        // Persist them.
+        $this->broadcastRepo->createBroadcastSchedule($schedule, $broadcast);
+    }
+
+    /**
+     * Calculate the date/time when a specific timezone subscribers should receive the broadcast messages.
+     * @param Broadcast $broadcast
+     * @param double    $offset
+     * @return Carbon
+     */
+    private function calculateTimezoneSendAtDateTime(Broadcast $broadcast, $offset)
+    {
+        // start by creating a copy from the original broadcast send at date/time.
+        $sendAt = $broadcast->send_at->copy();
+
+        // If the timezone mode is "same time", then we will send it exactly the same time.
+        if ($broadcast->timezone == 'same_time') {
+            return $sendAt;
+        }
+
+        // Otherwise, we will send it in every user's timezone.
+        $sendAt->setTimezone($this->getPrettyTimezoneOffset($offset));
+
+        // If the timezone mode is limit time, then we will make sure that the send date / time falls in this limit.
+        if ($broadcast->timezone == 'limit_time') {
+            $lowerBound = $sendAt->copy()->hour($broadcast->send_from);
+            $upperBound = $sendAt->copy()->hour($broadcast->send_to);
+
+            // If the upper bound date is less than the lower bound, then add 1 day to the upper bound to fix it.
+            if ($upperBound->lt($lowerBound)) {
+                $upperBound->addDay(1);
+            }
+
+            // If the send at date/time is less than the lower bound. Send it at the lower bound date/time.
+            if ($sendAt->lt($lowerBound)) {
+                $sendAt = $lowerBound;
+            }
+
+            // If the send at date/time is greater than the upper bound. Send it at the upper bound date/time.
+            if ($sendAt->gt($upperBound)) {
+                $sendAt = $upperBound;
+            }
+
+            // Otherwise, it falls between lower and upper bound. Don't change it.
+        }
+
+        return $sendAt;
+    }
+
+    /**
+     * Convert a decimal value of UTC offset to the HH:MM format accepted b
+     * Carbon::createFromFormat static constructor.
+     * I/O: Examples
+     * 2 => "+02:00"
+     * -9.5 => "-09:30"
+     * 5.75 => "+05:45"
+     * @param double $timezoneOffset
      * @return string
      */
     private function getPrettyTimezoneOffset($timezoneOffset)
     {
         return ($timezoneOffset >= 0? '+' : '-') . date("H:i", abs($timezoneOffset) * 3600);
-    }
-
-
-    /**
-     * @param HasFilterGroupsInterface $model
-     * @return Builder
-     */
-    public function targetAudienceQuery(HasFilterGroupsInterface $model)
-    {
-        return Subscriber::where(function ($query) use ($model) {
-            foreach ($model->filter_groups as $group) {
-                $methodPrefix = $model->filter_type == 'or'? 'or' : '';
-                $methodName = "{$methodPrefix}Where";
-                $query->{$methodName}($this->filterAudienceGroups($group));
-            }
-        });
-    }
-
-    /**
-     * @param $group
-     * @return \Closure
-     */
-    private function filterAudienceGroups($group)
-    {
-        return function ($query) use ($group) {
-            /** @type Subscriber $query */
-            foreach ($group->rules as $rule) {
-                switch ($rule->key) {
-                    case 'gender':
-                        $query->where('gender', '=', $rule->value, $group->type);
-                        break;
-
-                    case 'tag':
-                        $query->has('tags', '>=', 1, $group->type, function ($tagQuery) use ($rule) {
-                            /** @type \App\Models\Tag $tagQuery */
-                            $tagQuery->whereId($rule->value);
-                        });
-                }
-            }
-        };
     }
 
     /**
@@ -260,20 +286,24 @@ class BroadcastService
      */
     public function delete($id, $page)
     {
-        $broadcast = $this->find($page, $id, 'pending');
+        $broadcast = $this->findByIdAndStatusOrFail($id, $page, 'pending');
         DB::transaction(function () use ($broadcast) {
-            $broadcast->delete();
+            $this->broadcastRepo->delete($broadcast);
         });
     }
 
-
-    /**
-     * @return Builder
-     */
-    public function dueBroadcastsQuery()
+    public function incrementBroadcastSubscriberClicks(Broadcast $broadcast, Subscriber $subscriber, $incrementBy = 1)
     {
-        return Broadcast::whereStatus('pending')->whereHas('schedule', function ($query) {
-            $query->where('send_at', '<=', Carbon::now()->toDateTimeString());
-        });
+        $this->broadcastRepo->updateBroadcastSubscriberClicks($broadcast, $subscriber, $incrementBy);
+    }
+
+    public function updateBroadcastSubscriberDeliveredAt(Subscriber $subscriber, $dateTime)
+    {
+        $this->broadcastRepo->updateBroadcastSubscriberDeliveredAt($subscriber, $dateTime);
+    }
+
+    public function updateBroadcastSubscriberReadAt(Subscriber $subscriber, $dateTime)
+    {
+        $this->broadcastRepo->updateBroadcastSubscriberReadAt($subscriber, $dateTime);
     }
 }

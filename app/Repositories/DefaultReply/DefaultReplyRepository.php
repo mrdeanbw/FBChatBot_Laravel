@@ -12,4 +12,11 @@ interface DefaultReplyRepository
      * @return DefaultReply|null
      */
     public function getForPage(Page $page);
+
+    /**
+     * Create default reply.
+     * @param Page $page
+     * @return DefaultReply
+     */
+    public function create(Page $page);
 }

@@ -12,4 +12,12 @@ interface MainMenuRepository
      * @return MainMenu|null
      */
     public function getForPage(Page $page);
+
+    /**
+     * Create main menu.
+     * @param $page
+     * @return MainMenu
+     */
+    public function create(Page $page);
+
 }

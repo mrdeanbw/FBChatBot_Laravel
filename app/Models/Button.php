@@ -52,7 +52,6 @@ class Button extends MessageBlock
     public function tags()
     {
         return $this->belongsToMany(Tag::class)->withPivot(['add']);
-        //        return $this->belongsToMany(Tag::class, 'button_tag', 'button_id', 'tag_id')->withPivot('add');
     }
 
     public function template()

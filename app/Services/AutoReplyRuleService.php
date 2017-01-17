@@ -125,4 +125,31 @@ class AutoReplyRuleService
     {
         return $this->autoReplyRuleRepo->getMatchingRuleForPage($text, $page);
     }
+
+    /**
+     * Create the default (subscription/unsubscription) auto reply rules.
+     * @param Page $page
+     */
+    public function createDefaultAutoReplyRules(Page $page)
+    {
+        // The default subscription / unsubscription auto reply rules.
+        $defaultRules = [
+            'subscribe'   => ['start', 'subscribe'],
+            'unsubscribe' => ['stop', 'unsubscribe']
+        ];
+
+        // Exact Match
+        $mode = 'is';
+        
+        // Non-editable
+        $is_disabled = true;
+
+        // Loop and save everyone of them
+        foreach ($defaultRules as $action => $keywords) {
+            foreach ($keywords as $keyword) {
+                $data = compact('mode', 'action', 'keyword', 'is_disabled');
+                $this->autoReplyRuleRepo->createForPage($data, $page);
+            }
+        }
+    }
 }

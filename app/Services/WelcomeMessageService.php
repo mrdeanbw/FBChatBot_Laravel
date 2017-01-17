@@ -29,6 +29,20 @@ class WelcomeMessageService
         $this->welcomeMessageRepo = $welcomeMessageRepo;
     }
 
+
+    /**
+     * Create the default welcome message for a page.
+     * @param Page $page
+     * @return WelcomeMessage
+     */
+    public function createDefaultWelcomeMessage(Page $page)
+    {
+        $welcomeMessage = $this->welcomeMessageRepo->create($page);
+        $this->attachDefaultMessageBlocks($welcomeMessage);
+
+        return $welcomeMessage;
+    }
+
     /**
      * Attach the default message blocks to the welcome message,
      * The "copyright message" / second message blocks which contains
@@ -36,7 +50,7 @@ class WelcomeMessageService
      * or removing it.
      * @param WelcomeMessage $welcomeMessage
      */
-    public function attachDefaultMessageBlocks(WelcomeMessage $welcomeMessage)
+    private function attachDefaultMessageBlocks(WelcomeMessage $welcomeMessage)
     {
         $messageBlocks = $this->messageBlocks->persist($welcomeMessage, $this->getDefaultBlocks());
         $copyrightBlock = $messageBlocks->get(1);
@@ -65,7 +79,7 @@ class WelcomeMessageService
             'text' => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
         ];
     }
-    
+
     /**
      * @return array
      */

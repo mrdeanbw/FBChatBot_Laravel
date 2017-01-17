@@ -4,11 +4,16 @@ use Log;
 use Carbon\Carbon;
 use App\Models\Page;
 use App\Models\Subscriber;
+use App\Services\Facebook\Thread;
 
 class FacebookWebhookReceiver
 {
 
+    /**
+     * @type array
+     */
     private $data;
+
     /**
      * @type WebAppAdapter
      */
@@ -57,35 +62,47 @@ class FacebookWebhookReceiver
     {
         $page = $this->adapter->page($event['recipient']['id']);
 
+        // If the page is not in our system, then do nothing.
         if (! $page) {
             return;
         }
 
+        // If echo, then do nothing.
         if (array_get($event, 'message.is_echo')) {
             return;
         }
 
+        // Get the subscriber who sent the message.
         $subscriber = $this->adapter->subscriber($event['sender']['id'], $page);
 
+        // If it is a delivery notification, then mark messages as delivered.
         if (array_get($event, 'delivery')) {
-            $this->adapter->markMessageBlocksAsDelivered($subscriber, $event['delivery']['watermark']);
+            if ($subscriber) {
+                $this->adapter->markMessageBlocksAsDelivered($subscriber, $event['delivery']['watermark']);
+            }
 
             return;
         }
 
+        // If it is a read notification, then mark messages as read.
         if (array_get($event, 'read')) {
-            $this->adapter->markMessageBlocksAsRead($subscriber, $event['read']['watermark']);
+            if ($subscriber) {
+                $this->adapter->markMessageBlocksAsRead($subscriber, $event['read']['watermark']);
+            }
 
             return;
         }
 
-
+        // If a text message is received
         if ($text = array_get($event, 'message.text')) {
 
+            // Find a matching auto reply rule.
             $rule = $this->adapter->matchingAutoReplyRule($text, $page);
 
+            // If found
             if ($rule) {
 
+                // If the auto reply rule is a subscription message, subscribe the user.
                 if ($this->adapter->isSubscriptionMessage($rule)) {
                     $subscriber = $this->adapter->subscribe($page, $event['sender']['id']);
                     $this->updateLastContactedAt($subscriber);
@@ -93,6 +110,7 @@ class FacebookWebhookReceiver
                     return;
                 }
 
+                // If the auto reply rule is a unsubscription message, send the "do you want to unsubscribe?" message .
                 if ($this->adapter->isUnsubscriptionMessage($rule)) {
                     $this->updateLastContactedAt($subscriber);
                     $this->adapter->initiateUnsubscripingProcess($page, $subscriber, $event['sender']['id']);
@@ -100,17 +118,21 @@ class FacebookWebhookReceiver
                     return;
                 }
 
+                // Otherwise, send the auto reply message.
+                // But before then, if the current message sender is not a subscriber,
+                // Subscribe them silently.
                 if (! $subscriber) {
                     $subscriber = $this->adapter->subscribeSilently($page, $event['sender']['id']);
                 }
                 $this->updateLastContactedAt($subscriber);
-
-                $this->adapter->autoReply($rule, $subscriber);
+                $this->adapter->sendAutoReply($rule, $subscriber);
 
                 return;
             }
 
-
+            // If no matching auto reply rule is found, then send the default reply.
+            // But before then, if the current message sender is not a subscriber,
+            // Subscribe them silently.
             if (! $subscriber) {
                 $subscriber = $this->adapter->subscribeSilently($page, $event['sender']['id']);
             }
@@ -120,16 +142,17 @@ class FacebookWebhookReceiver
             return;
         }
 
-
+        // Handle postbacks (button clicks).
         if (array_get($event, 'postback')) {
             $this->handlePostbackEvent($page, $subscriber, $event);
 
             return;
         }
 
+        // Handle optin (send to messenger plugin)
         if (array_get($event, 'optin')) {
             $payload = array_get($event, 'optin.ref');
-            $this->adapter->subscribeOwner($payload, $page, $event['sender']['id']);
+            $this->adapter->subscribePageUser($payload, $page, $event['sender']['id']);
 
             return;
         }
@@ -140,6 +163,7 @@ class FacebookWebhookReceiver
     }
 
     /**
+     * Handle button clicks (postback)
      * @param Page            $page
      * @param Subscriber|null $subscriber
      * @param                 $event
@@ -147,27 +171,25 @@ class FacebookWebhookReceiver
      */
     private function handlePostbackEvent(Page $page, $subscriber, $event)
     {
+        // If clicked on the get started button, then subscribe the user.
         if ($event['postback']['payload'] == Thread::GET_STARTED_PAYLOAD) {
             $this->adapter->subscribe($page, $event['sender']['id']);
 
             return;
         }
 
-        //        if ($event['postback']['payload'] == WebAppAdapter::SUBSCRIBE_PAYLOAD) {
-        //            $this->adapter->concludeSubscriptionProcess($event['recipient']['id'], $event['sender']['id']);
-        //
-        //            return;
-        //        }
-
+        // If the user clicks on the button to confirm unsubscription, then unsubscribe him.
         if ($event['postback']['payload'] == WebAppAdapter::UNSUBSCRIBE_PAYLOAD) {
             $this->adapter->concludeUnsubscriptionProcess($page, $subscriber);
 
             return;
         }
 
+        // If the user clicks on any other button, then subscribe him silently!
         $this->adapter->subscribeSilently($page, $event['sender']['id']);
+
         // payload is a hashed button.
-        if (! $this->adapter->clickButton($page, $subscriber, $event['postback']['payload'])) {
+        if (! $this->adapter->handleButtonClick($page, $subscriber, $event['postback']['payload'])) {
             Log::debug("Unknown postback payload: " . $event['postback']['payload']);
         }
     }

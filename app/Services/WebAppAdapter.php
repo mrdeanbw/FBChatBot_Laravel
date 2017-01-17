@@ -1,23 +1,22 @@
 <?php namespace App\Services;
 
+use App\Repositories\User\UserRepository;
 use DB;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Page;
 use App\Models\Button;
-use App\Models\Template;
 use App\Models\MainMenu;
 use App\Models\Broadcast;
 use App\Models\Subscriber;
 use App\Models\AutoReplyRule;
 use App\Models\MessageInstance;
 use App\Services\Facebook\Sender;
-use App\Models\MessageInstanceClick;
+use App\Repositories\MessageInstance\MessageInstanceRepository;
 
 class WebAppAdapter
 {
 
-    //    const SUBSCRIBE_PAYLOAD = "SUBSCRIBE";
     const UNSUBSCRIBE_PAYLOAD = "UNSUBSCRIBE";
     /**
      * @type Sender
@@ -47,17 +46,37 @@ class WebAppAdapter
      * @type AutoReplyRuleService
      */
     private $AIResponses;
+    /**
+     * @type MessageInstanceRepository
+     */
+    private $messageInstanceRepo;
+    /**
+     * @type PageService
+     */
+    private $pages;
+    /**
+     * @type BroadcastService
+     */
+    private $broadcasts;
+    /**
+     * @type UserRepository
+     */
+    private $userRepo;
 
     /**
      * WebAppAdapter constructor.
      *
-     * @param AudienceService       $audience
-     * @param WelcomeMessageService $welcomeMessage
-     * @param FacebookAPIAdapter    $FacebookAdapter
-     * @param Sender                $FacebookSender
-     * @param MessageBlockService   $messageBlocks
-     * @param DefaultReplyService   $defaultReplies
-     * @param AutoReplyRuleService  $AIResponses
+     * @param AudienceService           $audience
+     * @param WelcomeMessageService     $welcomeMessage
+     * @param FacebookAPIAdapter        $FacebookAdapter
+     * @param Sender                    $FacebookSender
+     * @param MessageBlockService       $messageBlocks
+     * @param DefaultReplyService       $defaultReplies
+     * @param AutoReplyRuleService      $AIResponses
+     * @param MessageInstanceRepository $messageInstanceRepo
+     * @param PageService               $pages
+     * @param BroadcastService          $broadcasts
+     * @param UserRepository            $userRepo
      */
     public function __construct(
         AudienceService $audience,
@@ -66,7 +85,11 @@ class WebAppAdapter
         Sender $FacebookSender,
         MessageBlockService $messageBlocks,
         DefaultReplyService $defaultReplies,
-        AutoReplyRuleService $AIResponses
+        AutoReplyRuleService $AIResponses,
+        MessageInstanceRepository $messageInstanceRepo,
+        PageService $pages,
+        BroadcastService $broadcasts,
+        UserRepository $userRepo
     ) {
         $this->audience = $audience;
         $this->welcomeMessage = $welcomeMessage;
@@ -75,19 +98,24 @@ class WebAppAdapter
         $this->defaultReplies = $defaultReplies;
         $this->AIResponses = $AIResponses;
         $this->FacebookSender = $FacebookSender;
+        $this->messageInstanceRepo = $messageInstanceRepo;
+        $this->pages = $pages;
+        $this->broadcasts = $broadcasts;
+        $this->userRepo = $userRepo;
     }
 
     /**
+     * Subscribe a message sender to the page.
      * @param Page $page
      * @param      $senderId
      * @param bool $silentMode
-     *
      * @return Subscriber
      */
     public function subscribe(Page $page, $senderId, $silentMode = false)
     {
         $subscriber = $this->subscriber($senderId, $page);
 
+        // If already subscribed
         if ($subscriber && $subscriber->is_active) {
             if (! $silentMode) {
                 $message = [
@@ -101,14 +129,17 @@ class WebAppAdapter
             return $subscriber;
         }
 
+        // If first time, then create subscriber.
         if (! $subscriber) {
             $subscriber = $this->persistSubscriber($page, $senderId, true);
         }
 
+        // If not first time (unsubscribed before), resubscribe him.
         if (! $subscriber->is_active) {
             $this->audience->resubscribe($senderId, $page);
         }
 
+        // If not silent mode, send the welcome message!
         if (! $silentMode) {
             $welcomeMessage = $this->welcomeMessage->getOrFail($page);
             $this->FacebookAdapter->sendBlocks($welcomeMessage, $subscriber);
@@ -118,9 +149,9 @@ class WebAppAdapter
     }
 
     /**
+     * Subscribe a user without actually sending him the welcome message.
      * @param Page $page
      * @param      $senderId
-     *
      * @return Subscriber
      */
     public function subscribeSilently(Page $page, $senderId)
@@ -130,12 +161,14 @@ class WebAppAdapter
 
 
     /**
-     * @param Page       $page
-     * @param Subscriber $subscriber
-     * @param            $facebookId
+     * Send a message to the user, asking if he really wants to unsubscribe.
+     * @param Page            $page
+     * @param Subscriber|null $subscriber
+     * @param                 $facebookId
      */
     public function initiateUnsubscripingProcess(Page $page, $subscriber, $facebookId)
     {
+        // If a non-subscribed user, tries to initiate the unsubscription process, handle it properly.
         if (! $subscriber) {
             $message = [
                 'message'   => [
@@ -150,8 +183,8 @@ class WebAppAdapter
             return;
         }
 
+        // already unsubscribed
         if (! $subscriber->is_active) {
-            // already unsubscribed
             $message = [
                 'message' => [
                     'text' => 'You have already unsubscribed from this page.'
@@ -162,6 +195,7 @@ class WebAppAdapter
             return;
         }
 
+        // Send asking for confirmation message
         $message = [
             'message' => [
                 'attachment' => [
@@ -181,18 +215,18 @@ class WebAppAdapter
             ]
         ];
 
-
         $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
     }
 
     /**
+     * User has confirmed his willingness to unsubscribe, so unsubscribe him!
      * @param Page       $page
      * @param Subscriber $subscriber
      */
     public function concludeUnsubscriptionProcess(Page $page, $subscriber)
     {
+        // already unsubscribed
         if (! $subscriber || ! $subscriber->is_active) {
-            // already unsubscribed
             $message = [
                 'message' => [
                     'text' => 'You have already unsubscribed from this page.'
@@ -215,75 +249,112 @@ class WebAppAdapter
     }
 
     /**
+     * Send the default reply.
      * @param Page       $page
      * @param Subscriber $subscriber
      */
     public function sendDefaultReply(Page $page, Subscriber $subscriber)
     {
         $defaultReply = $this->defaultReplies->get($page);
-
         $this->FacebookAdapter->sendBlocks($defaultReply, $subscriber);
     }
 
     /**
+     * Handle button click.
      * @param Page       $page
      * @param Subscriber $subscriber
-     * @param            $hash
-     *
+     * @param            $payload
      * @return bool
      */
-    public function clickButton($page, $subscriber, $hash)
+    public function handleButtonClick($page, $subscriber, $payload)
     {
         if (! $page || ! $subscriber) {
             return false;
         }
 
-        $isMainMenuButton = false;
-
-        if (starts_with($hash, "MAIN_MENU_")) {
-            $isMainMenuButton = true;
-            $hash = substr($hash, strlen("MAIN_MENU_"));
+        // If main menu button
+        if (starts_with($payload, "MAIN_MENU_")) {
+            return $this->handleMainMenuButtonClick($page, $subscriber, $payload);
         }
 
-        if (! ($id = SimpleEncryptionService::decode($hash))) {
+        return $this->handleNonMainMenuButtonClick($page, $subscriber, $payload);
+    }
+
+    /**
+     * Handle a main menu button click.
+     * @param Page       $page
+     * @param Subscriber $subscriber
+     * @param            $payload
+     * @return bool
+     */
+    private function handleMainMenuButtonClick(Page $page, Subscriber $subscriber, $payload)
+    {
+        $payload = substr($payload, strlen("MAIN_MENU_"));
+
+        if (! ($id = SimpleEncryptionService::decode($payload))) {
             return false;
         }
 
-        if ($isMainMenuButton) {
-            $button = Button::find($id);
-        } else {
-            $instance = MessageInstance::find($id);
-            $button = $instance->message_block;
-        }
+        $block = $this->messageBlocks->findMessageBlockForPage($id, $page);
 
-        if (! $button || $button->type != 'button') {
+        // Make sure that the message block is button
+        if (! $block || $block->type != 'button') {
             return false;
         }
 
-        if (isset($instance)) {
-            $this->updateMessageBlockClicked($instance);
-        }
-
-        $this->handleButtonClick($button, $subscriber);
+        $this->carryOutButtonActions($block, $subscriber);
 
         return true;
     }
 
     /**
-     * @param $messageBlockHash
-     * @param $subscriberHash
-     *
-     * @return bool|string
+     * @param Page       $page
+     * @param Subscriber $subscriber
+     * @param            $payload
+     * @return bool
      */
-    public function messageBlockUrl($messageBlockHash, $subscriberHash)
+    private function handleNonMainMenuButtonClick(Page $page, Subscriber $subscriber, $payload)
     {
-        if (! ($modelId = SimpleEncryptionService::decode($messageBlockHash))) {
+        // decrypt to the model id.
+        if (! ($id = SimpleEncryptionService::decode($payload))) {
             return false;
         }
 
+        if (! ($instance = $this->messageInstanceRepo->findByIdForPage($id, $page))) {
+            return false;
+        }
+
+        $block = $instance->message_block;
+
+        // Make sure that the message block is button
+        if (! $block || $block->type != 'button') {
+            return false;
+        }
+
+        $this->incrementMessageInstanceClicks($instance);
+
+        $this->carryOutButtonActions($block, $subscriber);
+
+        return true;
+    }
+
+    /**
+     * Return the redirect URL from a button/card, via the message block hash.
+     * @param $messageBlockHash
+     * @param $subscriberHash
+     * @return bool|string
+     */
+    public function getMessageBlockRedirectURL($messageBlockHash, $subscriberHash)
+    {
+        if (! ($blockId = SimpleEncryptionService::decode($messageBlockHash))) {
+            return false;
+        }
+
+        // If the subscriber hash is that placeholder hash for main menu
+        // then the message block is a main menu button, validate this assumption and
         if ($subscriberHash == FacebookAPIAdapter::NO_HASH_PLACEHOLDER) {
-            $mainMenuButton = Button::find($modelId);
-            if (! $mainMenuButton || $mainMenuButton->context_type != MainMenu::class) {
+            $mainMenuButton = $this->messageBlocks->findMessageBlock($blockId);
+            if (! $mainMenuButton || $mainMenuButton->type != 'button' || $mainMenuButton->context_type != MainMenu::class) {
                 return false;
             }
 
@@ -291,46 +362,46 @@ class WebAppAdapter
         }
 
         if (! ($subscriberId = SimpleEncryptionService::decode($subscriberHash))) {
+            // Invalid subscriber hash
             return false;
         }
 
-        $subscriber = Subscriber::find($subscriberId);
-        if (! $subscriber) {
+        if (! ($subscriber = $this->audience->find($subscriberId))) {
+            // Invalid subscriber hash
             return false;
         }
 
-        $messageInstance = MessageInstance::find($modelId);
-        if (! $messageInstance) {
+        if (! ($messageInstance = $this->messageInstanceRepo->findById($blockId))) {
+            // Invalid message block hash
             return false;
         }
+
+        $this->incrementMessageInstanceClicks($messageInstance);
 
         $messageBlock = $messageInstance->message_block;
 
-        $this->updateMessageBlockClicked($messageInstance);
-
         if ($messageBlock->type == 'button') {
-            $this->handleButtonClick($messageBlock, $subscriber);
+            $this->carryOutButtonActions($messageBlock, $subscriber);
         }
 
         return $messageBlock->url;
     }
 
-
     /**
+     * Execute the actions associate with a button.
      * @param Button     $button
      * @param Subscriber $subscriber
      */
-    private function handleButtonClick(Button $button, Subscriber $subscriber)
+    private function carryOutButtonActions(Button $button, Subscriber $subscriber)
     {
         if ($button->addTags->count()) {
-            $subscriber->syncTags($button->addTags, false);
+            $this->audience->syncTags($subscriber, $button->addTags, false);
         }
 
         if ($button->removeTags->count()) {
-            $subscriber->detachTags($button->removeTags);
+            $this->audience->detachTags($subscriber, $button->removeTags);
         }
 
-        /** @type Template $template */
         if ($template = $button->template) {
             $this->FacebookAdapter->sendBlocks($template, $subscriber);
         }
@@ -338,19 +409,19 @@ class WebAppAdapter
 
 
     /**
+     * Get a page by facebook ID.
      * @param $pageId
-     *
      * @return Page
      */
     public function page($pageId)
     {
-        return Page::whereFacebookId($pageId)->first();
+        return $this->pages->findByFacebookId($pageId);
     }
 
     /**
+     * Get a subscriber by Facebook ID.
      * @param      $senderId
      * @param Page $page
-     *
      * @return Subscriber|null
      */
     public function subscriber($senderId, Page $page)
@@ -359,9 +430,9 @@ class WebAppAdapter
     }
 
     /**
+     * Get matching AI Rules.
      * @param      $message
      * @param Page $page
-     *
      * @return AutoReplyRule
      */
     public function matchingAutoReplyRule($message, Page $page)
@@ -370,65 +441,60 @@ class WebAppAdapter
     }
 
     /**
+     * Send an auto reply.
      * @param AutoReplyRule $rule
      * @param Subscriber    $subscriber
      */
-    public function autoReply(AutoReplyRule $rule, Subscriber $subscriber)
+    public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber)
     {
         $this->FacebookAdapter->sendBlocks($rule->template, $subscriber);
     }
 
     /**
+     * Mark all messages sent to a subscriber before a specific date as read.
      * @param Subscriber $subscriber
-     * @param            $timestamp
+     * @param int        $timestamp
      */
-    public function markMessageBlocksAsDelivered($subscriber, $timestamp)
+    public function markMessageBlocksAsDelivered(Subscriber $subscriber, $timestamp)
     {
-        if (! $subscriber) {
-            return;
-        }
-
         $timestamp = $this->normalizeTimestamp($timestamp);
-        $subscriber->messageInstances()->where('delivered_at', null)->where('sent_at', '<=', $timestamp)->update(['delivered_at' => $timestamp]);
+
+        $this->messageInstanceRepo->markAsDelivered($subscriber, $timestamp);
         $this->updateBroadcastDeliveredStats($subscriber, $timestamp);
     }
 
     /**
+     * Mark all messages sent to a subscriber before a specific date as read.
      * @param Subscriber $subscriber
      * @param            $timestamp
      */
-    public function markMessageBlocksAsRead($subscriber, $timestamp)
+    public function markMessageBlocksAsRead(Subscriber $subscriber, $timestamp)
     {
-        if (! $subscriber) {
-            return;
-        }
         // if a message is read, then it is definitely delivered.
-        // this is to handle facebook sometimes not sending the delivery callback.
+        // this is to handle Facebook sometimes not sending the delivery callback.
         $this->markMessageBlocksAsDelivered($subscriber, $timestamp);
 
         $timestamp = $this->normalizeTimestamp($timestamp);
-        $subscriber->messageInstances()->where('read_at', null)->where('sent_at', '<=', $timestamp)->update(['read_at' => $timestamp]);
+
+        $this->messageInstanceRepo->markAsRead($subscriber, $timestamp);
         $this->updateBroadcastReadStats($subscriber, $timestamp);
     }
 
     /**
+     * Increase the number of clicks for a given message instance
      * @param MessageInstance $instance
+     * @param int             $incrementBy
      */
-    private function updateMessageBlockClicked(MessageInstance $instance)
+    private function incrementMessageInstanceClicks(MessageInstance $instance, $incrementBy = 1)
     {
-        $instance->clicks = $instance->clicks + 1;
-        $instance->save();
-
-        $click = new MessageInstanceClick();
-        $click->message_instance_id = $instance->id;
-        $click->save();
-
-        $this->updateBroadcastClicksStats($instance);
+        $this->messageInstanceRepo->update($instance, ['clicks' => $instance->clicks + $incrementBy]);
+        $this->messageInstanceRepo->createMessageInstanceClick($instance);
+        $this->incrementBroadcastClicks($instance, $incrementBy);
     }
 
     /**
+     * If the auto reply rule should trigger unsubscription action
      * @param AutoReplyRule $rule
-     *
      * @return bool
      */
     public function isUnsubscriptionMessage(AutoReplyRule $rule)
@@ -437,8 +503,8 @@ class WebAppAdapter
     }
 
     /**
+     * If the auto reply rule should trigger subscription action
      * @param AutoReplyRule $rule
-     *
      * @return bool
      */
     public function isSubscriptionMessage(AutoReplyRule $rule)
@@ -447,8 +513,8 @@ class WebAppAdapter
     }
 
     /**
-     * @param $timestamp
-     *
+     * Convert the timestamp sent by Facebook (in milliseconds) to date-time string.
+     * @param int $timestamp
      * @return string
      */
     private function normalizeTimestamp($timestamp)
@@ -459,53 +525,69 @@ class WebAppAdapter
     }
 
     /**
+     * Increment the number of clicks for a broadcast/subscriber.
      * @param MessageInstance $instance
+     * @param int             $incrementBy
      */
-    private function updateBroadcastClicksStats(MessageInstance $instance)
+    private function incrementBroadcastClicks(MessageInstance $instance, $incrementBy = 1)
     {
-        $broadcast = $instance->message_block->superContext();
-        if ($broadcast && is_a($broadcast, Broadcast::class)) {
-            DB::statement("update `broadcast_subscriber` SET `clicks` = `clicks` + 1 WHERE `subscriber_id` = {$instance->subscriber->id} AND `broadcast_id` = {$broadcast->id}");
+        $rootContext = $this->messageBlocks->getRootContext($instance->message_block);
+
+        if ($rootContext && is_a($rootContext, Broadcast::class)) {
+            $this->broadcasts->incrementBroadcastSubscriberClicks($rootContext, $instance->subscriber, $incrementBy);
         }
     }
 
     /**
+     * Mark the broadcast as delivered to subscriber
      * @param Subscriber $subscriber
-     * @param            $timestamp
+     * @param            $dateTime
      */
-    private function updateBroadcastReadStats(Subscriber $subscriber, $timestamp)
+    private function updateBroadcastDeliveredStats(Subscriber $subscriber, $dateTime)
     {
-        DB::statement("update `broadcast_subscriber` SET `read_at` = '{$timestamp}' WHERE `subscriber_id` = {$subscriber->id} AND  `read_at` IS NULL AND `sent_at` <= '{$timestamp}'");
+        $this->broadcasts->updateBroadcastSubscriberDeliveredAt($subscriber, $dateTime);
     }
 
     /**
+     * Mark the broadcast as read by subscriber
      * @param Subscriber $subscriber
-     * @param            $timestamp
+     * @param            $dateTime
      */
-    private function updateBroadcastDeliveredStats(Subscriber $subscriber, $timestamp)
+    private function updateBroadcastReadStats(Subscriber $subscriber, $dateTime)
     {
-        DB::statement("update `broadcast_subscriber` SET `delivered_at` = '{$timestamp}' WHERE `subscriber_id` = {$subscriber->id} AND `delivered_at` IS NULL AND `sent_at` <= '{$timestamp}'");
+        $this->broadcasts->updateBroadcastSubscriberReadAt($subscriber, $dateTime);
     }
 
-    public function subscribeOwner($payload, Page $page, $senderId)
+    /**
+     * Make a user (page admin) into "subscriber" for a page.
+     * @param      $payload
+     * @param Page $page
+     * @param      $senderId
+     * @return bool
+     */
+    public function subscribePageUser($payload, Page $page, $senderId)
     {
+        // The page admin payload has a special prefix, followed by his internal artificial ID.
         $prefix = 'SUBSCRIBE_OWNER_';
-
         if (! starts_with($payload, $prefix)) {
             return false;
         }
 
-        $ownerId = (int)substr($payload, strlen($prefix));
-
-        /** @type User $owner */
-        $owner = $page->users()->whereId($ownerId)->first();
-        if (! $owner) {
+        // Parsing his ID.
+        if (! ($userId = (int)substr($payload, strlen($prefix)))) {
+            return false;
+        }
+        
+        // Getting user.
+        if (! ($user = $this->userRepo->findForPage($userId, $page))) {
             return false;
         }
 
+        // Subscribing user (message sender)
         $subscriber = $this->subscribeSilently($page, $senderId);
 
-        $owner->pages()->updateExistingPivot($page->id, ['subscriber_id' => $subscriber->id]);
+        // Associating user with subscriber.
+        $this->userRepo->associateWithPageAsSubscriber($user, $page, $subscriber);
 
         return true;
     }
@@ -518,7 +600,7 @@ class WebAppAdapter
      */
     public function persistSubscriber(Page $page, $senderId, $isActive)
     {
-        return $this->audience->persist($senderId, $page, $isActive);
+        return $this->audience->getByFacebookIdOrCreate($senderId, $page, $isActive);
     }
 
 }

@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use App\Models\MessageInstance;
 use App\Models\Page;
 use App\Models\Button;
 use App\Models\Template;
@@ -325,5 +326,46 @@ class MessageBlockService
     public function update(MessageBlock $block, array $data)
     {
         $this->messageBlockRepo->update($block, $data);
+    }
+    
+    /**
+     * Find a message block by ID.
+     * @param      $id
+     * @return MessageBlock|null
+     */
+    public function findMessageBlock($id)
+    {
+        return $this->messageBlockRepo->findById($id);
+    }
+
+    /**
+     * Find a message block that belongs to a certain page.
+     * @param      $id
+     * @param Page $page
+     * @return MessageBlock|null
+     */
+    public function findMessageBlockForPage($id, Page $page)
+    {
+        $block = $this->findMessageBlock($id);
+
+        if (! $block) {
+            return null;
+        }
+        
+        if ($block->page->id != $page->id) {
+            return null;
+        }
+
+        return;
+    }
+
+    /**
+     * Return the root model, to which this message block belongs.
+     * @param MessageBlock $messageBlock
+     * @return HasMessageBlocksInterface
+     */
+    public function getRootContext(MessageBlock $messageBlock)
+    {
+        return $this->messageBlockRepo->rootContext($messageBlock);
     }
 }

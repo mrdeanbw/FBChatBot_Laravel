@@ -17,4 +17,8 @@
 class MessageInstanceClick extends BaseModel
 {
 
+    public function messageInstance()
+    {
+        return $this->belongsTo(MessageInstance::class);
+    }
 }

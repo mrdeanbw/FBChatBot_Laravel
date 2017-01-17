@@ -53,7 +53,7 @@ class SubscriberController extends APIController
     public function show($id)
     {
         $page = $this->page();
-        $subscriber = $this->audience->find($id, $page);
+        $subscriber = $this->audience->findForPage($id, $page);
 
         return $this->itemResponse($subscriber);
     }
