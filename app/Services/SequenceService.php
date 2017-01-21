@@ -14,6 +14,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SequenceService
 {
+
     /**
      * @type MessageBlockService
      */
@@ -142,15 +143,13 @@ class SequenceService
         $data = [
             'name' => $input['name']
         ];
-        $sequence = new Sequence();
 
-        DB::transaction(function () use ($sequence, $data, $page) {
-            $this->sequenceRepo->create($data, $page);
+        return DB::transaction(function () use ($data, $page) {
+            $sequence = $this->sequenceRepo->create($data, $page);
             $this->createDefaultSequenceMessages($sequence);
+
+            return $sequence;
         });
-
-
-        return $sequence;
     }
 
     /**
@@ -170,12 +169,11 @@ class SequenceService
      */
     private function persistMessages(array $messages, Sequence $sequence)
     {
-        foreach ($messages as $data) {
-            $clean = array_only($data, ['name', 'days', 'order']);
-            $clean['is_live'] = array_get($data, 'is_live', false);
-
-            $message = $this->sequenceRepo->createMessage($data, $sequence);
-            $this->messageBlocks->persist($message, $data['message_blocks']);
+        foreach ($messages as $messageData) {
+            $clean = array_only($messageData, ['name', 'days', 'order']);
+            $clean['is_live'] = array_get($messageData, 'is_live', false);
+            $message = $this->sequenceRepo->createMessage($clean, $sequence);
+            $this->messageBlocks->persist($message, $messageData['message_blocks']);
         }
     }
 
@@ -222,7 +220,7 @@ class SequenceService
     public function updateMessage(array $input, $id, $sequenceId, Page $page)
     {
         DB::transaction(function () use ($input, $id, $sequenceId, $page) {
-            $data = array_only('name', 'days');
+            $data = array_only($input, ['name', 'days']);
             $data['is_live'] = array_get($input, 'is_live', false);
 
             $sequence = $this->findOrFail($sequenceId, $page);
@@ -260,10 +258,10 @@ class SequenceService
     public function scheduleMessage(SequenceMessage $message, Subscriber $subscriber, Carbon $previousMessagesWasSentAt)
     {
         $data = [
-            'status' => 'pending',
+            'status'  => 'pending',
             'send_at' => $previousMessagesWasSentAt->copy()->addDays($message->days)
         ];
-        
+
         return $this->sequenceRepo->createMessageSchedule($data, $message, $subscriber);
     }
 
