@@ -356,7 +356,7 @@ class MessageBlockService
             return null;
         }
 
-        return;
+        return $block;
     }
 
     /**

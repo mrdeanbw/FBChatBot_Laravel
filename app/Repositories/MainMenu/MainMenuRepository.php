@@ -20,4 +20,11 @@ interface MainMenuRepository
      */
     public function create(Page $page);
 
+    /**
+     * Return a fresh instance of the main menu.
+     * @param MainMenu $mainMenu
+     * @return MainMenu
+     */
+    public function fresh(MainMenu $mainMenu);
+
 }

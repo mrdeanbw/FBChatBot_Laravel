@@ -15,4 +15,14 @@ class EloquentMessagePreviewRepository implements MessagePreviewRepository
     {
         return $page->messagePreviews()->create([]);
     }
+
+    /**
+     * Return a fresh instance of the message preview model.
+     * @param MessagePreview $messagePreview
+     * @return MessagePreview
+     */
+    public function fresh(MessagePreview $messagePreview)
+    {
+        return $messagePreview->fresh();
+    }
 }

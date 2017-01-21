@@ -64,7 +64,7 @@ class MainMenuService
      * Updates the main menu (buttons).
      * @param Page $page
      * @param      $input
-     * @return bool
+     * @return MainMenu|null
      */
     public function update($input, Page $page)
     {
@@ -73,7 +73,11 @@ class MainMenuService
             $mainMenu = $this->getOrFail($page);
             $this->messageBlocks->persist($mainMenu, $blocks);
 
-            return $this->setupFacebookPagePersistentMenu($mainMenu, $page);
+            if ($this->setupFacebookPagePersistentMenu($mainMenu, $page)) {
+                return $this->mainMenuRepo->fresh($mainMenu);
+            }
+
+            return null;
         });
 
         return $success;

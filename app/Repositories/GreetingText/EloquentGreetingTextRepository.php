@@ -1,7 +1,7 @@
 <?php namespace App\Repositories\GreetingText;
 
-use App\Models\GreetingText;
 use App\Models\Page;
+use App\Models\GreetingText;
 use App\Repositories\BaseEloquentRepository;
 
 class EloquentGreetingTextRepository extends BaseEloquentRepository implements GreetingTextRepository
@@ -36,6 +36,6 @@ class EloquentGreetingTextRepository extends BaseEloquentRepository implements G
      */
     public function create(array $data, Page $page)
     {
-        return $page->greetingText->create($data);
+        return $page->greetingText()->create($data);
     }
 }

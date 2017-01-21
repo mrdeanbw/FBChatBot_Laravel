@@ -83,7 +83,7 @@ class MessagePreviewService
 
         $this->messageBlocks->persist($messagePreview, $input['message_blocks']);
 
-        return $messagePreview;
+        return $this->messagePreviewRepo->fresh($messagePreview);
     }
 
     /**

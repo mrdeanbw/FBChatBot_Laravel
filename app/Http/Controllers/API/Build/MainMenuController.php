@@ -51,11 +51,11 @@ class MainMenuController extends APIController
             $this->errorsResponse($validator->errors());
         }
 
-        if (! $this->mainMenu->update($request->all(), $page)) {
+        if (! ($mainMenu = $this->mainMenu->update($request->all(), $page))) {
             $this->errorsResponse(['Failed to add the menu to your facebook page. Try again later.']);
         }
 
-        return $this->itemResponse($this->mainMenu->getOrFail($page));
+        return $this->itemResponse($mainMenu);
     }
 
     /** @return BaseTransformer */

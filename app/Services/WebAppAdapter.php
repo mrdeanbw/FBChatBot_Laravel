@@ -395,11 +395,13 @@ class WebAppAdapter
     private function carryOutButtonActions(Button $button, Subscriber $subscriber)
     {
         if ($button->addTags->count()) {
-            $this->audience->syncTags($subscriber, $button->addTags, false);
+            $tags = $button->addTags->pluck('id')->toArray();
+            $this->audience->syncTags($subscriber, $tags, false);
         }
 
         if ($button->removeTags->count()) {
-            $this->audience->detachTags($subscriber, $button->removeTags);
+            $tags = $button->removeTags->pluck('id')->toArray();
+            $this->audience->detachTags($subscriber, $tags);
         }
 
         if ($template = $button->template) {

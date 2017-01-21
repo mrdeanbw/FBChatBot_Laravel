@@ -12,4 +12,11 @@ interface MessagePreviewRepository
      * @return MessagePreview
      */
     public function create(Page $page);
+
+    /**
+     * Return a fresh instance of the message preview model.
+     * @param MessagePreview $messagePreview
+     * @return MessagePreview
+     */
+    public function fresh(MessagePreview $messagePreview);
 }

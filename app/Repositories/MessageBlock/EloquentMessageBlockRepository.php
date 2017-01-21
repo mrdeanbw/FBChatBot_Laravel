@@ -82,6 +82,7 @@ class EloquentMessageBlockRepository implements MessageBlockRepository
     public function associateTemplateWithButton(Button $button, Template $template)
     {
         $button->template()->associate($template);
+        $button->save();
     }
 
     /**

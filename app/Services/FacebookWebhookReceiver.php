@@ -132,8 +132,8 @@ class FacebookWebhookReceiver
 
             // If no matching auto reply rule is found, then send the default reply.
             // But before then, if the current message sender is not a subscriber,
-            // Subscribe them silently.
-            if (! $subscriber) {
+            // or if inactive subscriber, subscribe them silently.
+            if (! $subscriber || ! $subscriber->is_active) {
                 $subscriber = $this->adapter->subscribeSilently($page, $event['sender']['id']);
             }
             $this->updateLastContactedAt($subscriber);

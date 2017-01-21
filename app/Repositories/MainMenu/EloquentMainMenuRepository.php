@@ -25,4 +25,14 @@ class EloquentMainMenuRepository implements MainMenuRepository
     {
         return $page->mainMenu()->create([]);
     }
+
+    /**
+     * Return a fresh instance of the main menu.
+     * @param MainMenu $mainMenu
+     * @return MainMenu
+     */
+    public function fresh(MainMenu $mainMenu)
+    {
+        return $mainMenu->fresh();
+    }
 }

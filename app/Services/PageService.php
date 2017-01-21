@@ -213,12 +213,12 @@ class PageService
             // then add it to the list.
             $page = $this->findByFacebookId($FacebookPage->id);
             if (! $page) {
-                $this->pageRepo->makePage([
+                $page = $this->pageRepo->makePage([
                     'facebook_id'  => $FacebookPage->id,
                     'name'         => $FacebookPage->name,
                     'access_token' => $FacebookPage->access_token,
                     'avatar_url'   => $FacebookPage->picture->data->url,
-                    'url'          => $FacebookPages->link
+                    'url'          => $FacebookPage->link
                 ]);
             }
 
