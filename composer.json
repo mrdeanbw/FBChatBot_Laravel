@@ -19,7 +19,8 @@
     "guzzlehttp/guzzle": "^6.2",
     "tymon/jwt-auth": "1.0.*@dev",
     "rap2hpoutre/laravel-log-viewer": "^0.7.0",
-    "nanigans/single-table-inheritance": "0.7.*"
+    "nanigans/single-table-inheritance": "0.7.*",
+    "mongodb/mongodb": "^1.1"
   },
   "require-dev": {
     "fzaninotto/faker": "~1.4",
