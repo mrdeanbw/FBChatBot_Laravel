@@ -77,9 +77,9 @@ $app->singleton(Illuminate\Cache\CacheManager::class, function (Application $app
 //    App\Http\Middleware\ExampleMiddleware::class
 // ]);
 
-// $app->routeMiddleware([
-//     'auth' => App\Http\Middleware\Authenticate::class,
-// ]);
+$app->routeMiddleware([
+    'fb.webhook.verify' => App\Http\Middleware\FacebookWebhookMiddleware::class,
+]);
 
 /*
 |--------------------------------------------------------------------------

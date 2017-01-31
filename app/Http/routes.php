@@ -100,7 +100,7 @@ $api->version('v1', $options, function (Router $api) {
 
 $app->group(['prefix' => 'callback'], function () use ($app) {
     $app->get('facebook/web-hook', 'FacebookWebhookController@verify');
-    $app->post('facebook/web-hook', 'FacebookWebhookController@handle');
+    $app->post('facebook/web-hook', ['uses'=>'FacebookWebhookController@handle','middleware'=>'fb.webhook.verify']);
     $app->get('facebook/de-authorize', 'FacebookWebhookController@deauthorize');
     $app->post('stripe/web-hook', '\Laravel\Cashier\Http\Controllers\WebhookController@handleWebhook');
 });
