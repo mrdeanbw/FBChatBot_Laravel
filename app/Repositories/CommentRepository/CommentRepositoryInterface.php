@@ -25,13 +25,4 @@ interface CommentRepositoryInterface
      */
 
     public function getById($commentId, $bugId);
-
-    /**
-     * Get all child comments by parent id
-     *
-     * @param $parentId
-     * @return mixed
-     */
-
-    public function getChildComments($parentId);
 }

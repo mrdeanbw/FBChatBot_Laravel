@@ -1,25 +1,28 @@
 <?php namespace App\Http\Controllers\API;
 
 use App\Repositories\BugRepository\BugRepositoryInterface;
-use App\Repositories\CommentRepository\CommentRepositoryInterface;
-use Illuminate\Http\Request;
 use App\Services\BugService;
+use Illuminate\Http\Request;
 
 class BugController extends APIController
 {
     private $bugRepository;
-    private $commentRepository;
     private $bugService;
 
-    public function __construct(BugRepositoryInterface $bugRepository, CommentRepositoryInterface $commentRepository, BugService $bugService)
+    public function __construct(BugRepositoryInterface $bugRepository, BugService $bugService)
     {
         $this->bugRepository = $bugRepository;
-        $this->commentRepository = $commentRepository;
         $this->bugService = $bugService;
     }
 
-    public function get($newest = false, $popular = false, $status = false)
+    public function getAll(Request $request)
     {
+        return $this->bugService->getBugs($request->all());
+    }
+
+    public function getSingle($bugId)
+    {
+        return $this->bugRepository->getById($bugId);
     }
 
     public function transformer()

@@ -20,13 +20,12 @@ class DBBugRepository implements BugRepositoryInterface
 
     public function getAll($count)
     {
-        return DB::table('bug_reports')->take($count)->get();
+        return Bug::take($count)->get();
     }
 
     public function getNewest($count)
     {
-        return DB::table('bug_reports')
-            ->whereNull('deleted_at')
+        return Bug::whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->take($count)
             ->get();
@@ -34,8 +33,7 @@ class DBBugRepository implements BugRepositoryInterface
 
     public function getSortedByVotes($table, $order, $count)
     {
-        return DB::table('bug_reports')
-            ->whereNull('deleted_at')
+        return Bug::whereNull('deleted_at')
             ->orderBy($table, $order)
             ->take($count)
             ->get();
@@ -43,8 +41,7 @@ class DBBugRepository implements BugRepositoryInterface
 
     public function getByStatus($status, $count)
     {
-        return DB::table('bug_reports')
-            ->whereNull('deleted_at')
+        return Bug::whereNull('deleted_at')
             ->where('status', '=', $status)
             ->take($count)
             ->get();

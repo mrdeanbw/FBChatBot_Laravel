@@ -76,7 +76,7 @@ $api->version('v1', $options, function (Router $api) {
         $api->post('/bots/{botId}/sequences', 'SequenceController@store');
         $api->delete('/bots/{botId}/sequences/{id}', 'SequenceController@destroy');
         $api->put('/bots/{botId}/sequences/{id}', 'SequenceController@update');
-        
+
         // Sequence Messages
         $api->get('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@show');
         $api->post('/bots/{botId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
@@ -93,6 +93,10 @@ $api->version('v1', $options, function (Router $api) {
 
         // Stats & Metrics
         $api->get('/bots/{botId}/stats', 'StatsController@index');
+
+        // Bugs & features
+        $api->get('/bugtracker/{bugId}', 'BugController@getSingle');
+        $api->get('/bugtracker', 'BugController@getAll');
     });
 
 });

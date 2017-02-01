@@ -19,8 +19,8 @@ class BugService
     /**
      * BugService constructor
      *
-     * @param UserRepository $userRepo
-     * @param AuthService    $FacebookAuth
+     * @param BugRepositoryInterface $bugRepo
+     * @param CommentRepositoryInterface $commentRepo
      */
 
     public function __construct(BugRepositoryInterface $bugRepo, CommentRepositoryInterface $commentRepo)
@@ -29,26 +29,24 @@ class BugService
         $this->commentRepository = $commentRepo;
     }
 
-    /*
-     * Return a tree of nested comments using recursion
-     *
-     * @param $parentId
-     */
-
-    private function getNestedComments($parentId)
+    public function getBugs($inputs)
     {
-        $result = [];
-
-        $children = $this->commentRepository->getChildComments($parentId);
-
-        $result[$parentId] = $children;
-
-        foreach($children as $k => $v)
+        if(isset($inputs['newest']))
         {
-            $result[$v->id][$v->parent_id] = $this->commentRepository->getChildComments($v->id);
+            return $this->bugRepository->getAll($inputs['newest']);
         }
-
-        return $result;
+        else if(isset($inputs['table']) && isset($inputs['order']) && isset($inputs['count']))
+        {
+            return $this->bugRepository->getSortedByVotes($inputs['table'], $inputs['order'], $inputs['count']);
+        }
+        else if(isset($inputs['status']) && isset($inputs['count']))
+        {
+            return $this->bugRepository->getByStatus($inputs['status'], $inputs['count']);
+        }
+        else
+        {
+            return $this->bugRepository->getAll(isset($inputs['count']) ? $inputs['count'] : 20);
+        }
     }
 
 }

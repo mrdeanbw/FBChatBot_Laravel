@@ -16,24 +16,15 @@ class DBCommentRepository implements CommentRepositoryInterface
 
     public function getAll($bugId)
     {
-        return Bug::find($bugId)->comments();
+        return Bug::find($bugId)
+            ->comments();
     }
-
-    /*
-     * ToDo: rewrite to use eloquent relation approach
-     */
 
     public function getById($commentId, $bugId)
     {
-        return DB::table('bug_comments')
-            ->where('id', '=', $commentId)
+        return Comment::find($commentId)
             ->where('bug_id', '=', $bugId)
             ->whereNull('deleted_at')
-            ->get();
-    }
-
-    public function getChildComments($parentId)
-    {
-        return Comment::where('parent_id', '=', $parentId)->comments();
+            ->first();
     }
 }
