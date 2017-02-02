@@ -51,4 +51,31 @@ interface BugRepositoryInterface
      */
 
     public function getByStatus($status, $count);
+
+    /**
+     * Create a single bug
+     *
+     * @param $inputs
+     * @return mixed
+     */
+
+    public function create($inputs);
+
+    /**
+     * Update a single bug
+     *
+     * @param $inputs
+     * @return boolean
+     */
+
+    public function update($inputs);
+
+    /**
+     * Delete a single bug
+     *
+     * @param $bugId
+     * @return boolean
+     */
+
+    public function destroy($bugId);
 }

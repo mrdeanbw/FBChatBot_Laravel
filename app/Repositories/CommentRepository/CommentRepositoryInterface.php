@@ -20,9 +20,29 @@ interface CommentRepositoryInterface
     /**
      * Get all comments
      *
-     * @param $bugId
+     * @param $commentId
      * @return mixed
      */
 
-    public function getById($commentId, $bugId);
+    public function getById($commentId);
+
+    public function create($inputs);
+
+    /**
+     * Update a single comment
+     *
+     * @param $inputs
+     * @return boolean
+     */
+
+    public function update($inputs);
+
+    /**
+     * Delete a single comment
+     *
+     * @param $bugId
+     * @return boolean
+     */
+
+    public function destroy($commentId);
 }

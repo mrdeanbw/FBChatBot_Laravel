@@ -46,4 +46,42 @@ class DBBugRepository implements BugRepositoryInterface
             ->take($count)
             ->get();
     }
+
+    public function create($inputs)
+    {
+        $bug = new Bug;
+
+        $bug->title = isset($inputs['title']) ? $inputs['title'] : null;
+        $bug->content = isset($inputs['content']) ? $inputs['content'] : null;
+        $bug->author_id = isset($inputs['author']) ? $inputs['author'] : 1;
+        $bug->title = isset($inputs['title']) ? $inputs['title'] : null;
+        $bug->upvotes = 0;
+        $bug->downvotes = 0;
+        $bug->status = 'pending';
+
+        return $bug->save();
+
+    }
+
+    public function update($inputs)
+    {
+        if(isset($inputs['id']))
+        {
+            $bug = $this->getById($inputs['id']);
+
+            $updateData = [
+                'content' => isset($inputs['content']) ? $inputs['content'] : $bug->content,
+                'status' => isset($inputs['status']) ? $inputs['status'] : $bug->status
+            ];
+
+            return Bug::find($inputs['id'])->update($inputs['id'], $updateData);
+        }
+
+        return false;
+    }
+
+    public function destroy($bugId)
+    {
+        return Bug::destroy($bugId);
+    }
 }

@@ -95,8 +95,12 @@ $api->version('v1', $options, function (Router $api) {
         $api->get('/bots/{botId}/stats', 'StatsController@index');
 
         // Bugs & features
-        $api->get('/bugtracker/{bugId}', 'BugController@getSingle');
-        $api->get('/bugtracker', 'BugController@getAll');
+        $api->get('/bugtracker', 'BugController@getAllBugs');
+        $api->get('/bugtracker/single', 'BugController@getSingleBug');
+        $api->post('/bugtracker/updateBug', 'BugController@updateBug');
+        $api->delete('/bugtracker/deleteBug', 'BugController@deleteBug');
+        $api->post('/bugtracker/updateComment', 'BugController@updateComment');
+        $api->delete('/bugtracker/destroyComment', 'BugController@destroyComment');
     });
 
 });

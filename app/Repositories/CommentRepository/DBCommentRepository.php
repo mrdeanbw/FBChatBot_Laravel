@@ -20,11 +20,46 @@ class DBCommentRepository implements CommentRepositoryInterface
             ->comments();
     }
 
-    public function getById($commentId, $bugId)
+    public function getById($commentId)
     {
         return Comment::find($commentId)
-            ->where('bug_id', '=', $bugId)
             ->whereNull('deleted_at')
             ->first();
+    }
+
+    public function create($inputs)
+    {
+        $comment = new Comment;
+
+        $comment->content = isset($inputs['content']) ? $inputs['content'] : null;
+        $comment->author_id = isset($inputs['author']) ? $inputs['author'] : 1;
+        $comment->bug_id = isset($inputs['bug_id']) ? $inputs['bug_id'] : 0;
+        $comment->parent_id = isset($inputs['parent_id']) ? $inputs['bug_id'] : 0;
+        $comment->status = 'pending';
+
+        return $comment->save();
+    }
+
+    public function update($inputs)
+    {
+        if(isset($inputs['id']))
+        {
+            $comment = $this->getById($inputs['id']);
+
+            $updateData = [
+                'content' => isset($inputs['content']) ? $inputs['content'] : $comment->content,
+            ];
+
+            Comment::find($inputs['id'])->update($inputs['id'], $updateData);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function destroy($bugId)
+    {
+        return Comment::destroy($bugId);
     }
 }
