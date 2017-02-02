@@ -96,10 +96,14 @@ $api->version('v1', $options, function (Router $api) {
 
         // Bugs & features
         $api->get('/bugtracker', 'BugController@getAllBugs');
-        $api->get('/bugtracker/single', 'BugController@getSingleBug');
-        $api->post('/bugtracker/updateBug', 'BugController@updateBug');
+        $api->put('/bugtracker/single', 'BugController@getSingleBug');
+
+        $api->put('/bugtracker/createBug', 'BugController@createBug');
+        $api->put('/bugtracker/updateBug', 'BugController@updateBug');
         $api->delete('/bugtracker/deleteBug', 'BugController@deleteBug');
-        $api->post('/bugtracker/updateComment', 'BugController@updateComment');
+
+        $api->put('/bugtracker/createComment', 'BugController@createComment');
+        $api->put('/bugtracker/updateComment', 'BugController@updateComment');
         $api->delete('/bugtracker/destroyComment', 'BugController@destroyComment');
     });
 
