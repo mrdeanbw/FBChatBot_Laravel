@@ -61,4 +61,25 @@ interface UserRepositoryInterface extends BaseRepositoryInterface
      * @param Subscriber $subscriber
      */
     public function associateWithPageAsSubscriber(User $user, Bot $page, Subscriber $subscriber);
+
+    /**
+     * Persist the subscriber info, on the user-page relation
+     *
+     * @param $userId
+     *
+     * @return String
+     */
+
+    public function generateReferralLink($userId);
+
+    /**
+     * Create a referral(child) between for a given user(parent)
+     *
+     * @param $parentId
+     * @param $childId
+     *
+     * @return mixed
+     */
+
+    public function makeReferral($parentId, $childId);
 }

@@ -4,6 +4,7 @@ use DB;
 use App\Models\Bot;
 use App\Models\User;
 use App\Models\Subscriber;
+use Illuminate\Support\Facades\Crypt;
 use App\Repositories\DBBaseRepository;
 
 class DBUserBaseRepository extends DBBaseRepository implements UserRepositoryInterface
@@ -113,4 +114,25 @@ class DBUserBaseRepository extends DBBaseRepository implements UserRepositoryInt
         $user->pages()->updateExistingPivot($page->id, ['subscriber_id' => $subscriber->id]);
     }
 
+
+    public function generateReferralLink($userId)
+    {
+        $user = User::find($userId);
+
+        $string = $user->first_name . '::' . $user->last_name . '::' . $user->email;
+
+        $user->referral_code = Crypt::encryptString($string);
+
+        $user->save();
+
+        return $string;
+    }
+
+    public function makeReferral($parentId, $childId)
+    {
+        $child = User::find($childId);
+        $child->referral = $parentId;
+
+        return $child->save();
+    }
 }
