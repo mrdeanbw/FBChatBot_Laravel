@@ -54,7 +54,6 @@ class DBBugRepository implements BugRepositoryInterface
         $bug->title = isset($inputs['title']) ? $inputs['title'] : null;
         $bug->content = isset($inputs['content']) ? $inputs['content'] : null;
         $bug->author_id = isset($inputs['author']) ? $inputs['author'] : 1;
-        $bug->title = isset($inputs['title']) ? $inputs['title'] : null;
         $bug->upvotes = 0;
         $bug->downvotes = 0;
         $bug->status = 'pending';
