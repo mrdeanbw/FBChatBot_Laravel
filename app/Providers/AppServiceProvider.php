@@ -24,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
             $this->registerLocalServiceProviders();
         }
 
+        $this->registerJWTApiRateLimiter();
+
     }
 
     private function registerMessageBlockValidation()
@@ -40,5 +42,17 @@ class AppServiceProvider extends ServiceProvider
                 $this->app->register($serviceProvider);
             }
         }
+    }
+
+    private function registerJWTApiRateLimiter ()
+    {
+        app('Dingo\Api\Http\RateLimit\Handler')->setRateLimiter(function ($app, $request) {
+            $jwt =  $app['tymon.jwt.auth']->getToken();
+            if(!$jwt) {
+                //fallback to IP if for somereason jwt token couldn't be retrive
+                return app('request')->ip();
+            }
+            return $jwt;
+        });
     }
 }

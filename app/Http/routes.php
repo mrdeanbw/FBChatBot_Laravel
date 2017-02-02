@@ -22,7 +22,7 @@ $api->version('v1', $options, function (Router $api) {
     $api->post('/users/login', 'UserController@login');
     $api->post('/users/refresh-token', 'UserController@refreshToken');
 
-    $api->group(['middleware' => ['api.auth']], function (Router $api) {
+    $api->group(['middleware' => ['api.auth','api.throttle'], 'limit'=>config('api.throttle.limit'),'expires'=>config('api.throttle.expires')], function (Router $api) {
 
         $api->get('/users/current', 'UserController@current');
 

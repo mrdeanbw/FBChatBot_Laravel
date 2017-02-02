@@ -187,6 +187,11 @@ return [
 
     ],
 
+    'throttle' => [
+        'limit'  => env('API_THROTTLE_LIMIT',60), //request per route 
+        'expires' => env('API_THROTTLE_EXPIRES',1) //window time in minutes
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Response Transformer
