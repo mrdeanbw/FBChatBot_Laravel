@@ -4,14 +4,20 @@ use DB;
 use App\Models\User;
 use App\Repositories\User\UserRepository;
 
-class PageService
+class ReferralService
 {
     /**
      * @type UserRepository
      */
 
     private $userRepository;
+    /*
+     * Amount of credits that the user is rewarded with
+     */
     private $rewardAmount;
+    /*
+     * Unlimited amount of templates, replies and sequences
+     */
     private $unlimitedAmount;
 
 
