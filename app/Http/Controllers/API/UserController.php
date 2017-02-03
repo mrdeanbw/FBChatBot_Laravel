@@ -94,7 +94,7 @@ class UserController extends APIController
 
     public function getReferralCode(Request $request)
     {
-        $user = isset($request->input('id')) ? User::find($request->input('id')) : 1);
+        $user = !is_null($request->input('id')) ? User::find($request->input('id')) : 1;
         return $user->referral_code;
     }
 
@@ -107,7 +107,7 @@ class UserController extends APIController
 
     public function makeReferral(Request $request)
     {
-        if(isset($request->input('referralCode')) && isset($request->input('childId')))
+        if(!is_null($request->input('referralCode')) && !is_null($request->input('childId')))
         {
             $child = User::find($request->input('childId'));
             return $this->refService->createConnection($child, $request->input('referralCode'));
