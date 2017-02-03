@@ -105,6 +105,10 @@ $api->version('v1', $options, function (Router $api) {
         $api->put('/bugtracker/createComment', 'BugController@createComment');
         $api->put('/bugtracker/updateComment', 'BugController@updateComment');
         $api->delete('/bugtracker/destroyComment', 'BugController@destroyComment');
+
+        // Referral system
+        $api->put('/referral/code', 'UserController@getReferralCode');
+        $api->put('/referral/connect', 'UserController@makeReferral');
     });
 
 });

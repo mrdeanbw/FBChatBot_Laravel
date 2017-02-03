@@ -114,25 +114,33 @@ class DBUserBaseRepository extends DBBaseRepository implements UserRepositoryInt
         $user->pages()->updateExistingPivot($page->id, ['subscriber_id' => $subscriber->id]);
     }
 
-
-    public function generateReferralLink($userId)
+    public function generateReferralLink(User $user)
     {
-        $user = User::find($userId);
+        $string = $user->first_name . '::' . $user->last_name . '::' . $user->id;
 
-        $string = $user->first_name . '::' . $user->last_name . '::' . $user->email;
-
-        $user->referral_code = Crypt::encryptString($string);
+        $user->referral_code = Crypt::encrypt($string);
 
         $user->save();
 
         return $string;
     }
 
-    public function makeReferral($parentId, $childId)
+    public function getDecryptedCode(User $user)
     {
-        $child = User::find($childId);
-        $child->referral = $parentId;
+        return Crypt::decrypt($user->referral_code);
+    }
+
+    public function connectReferrals(User $parent, User $child)
+    {
+        $child->referral = $parent->id;
 
         return $child->save();
+    }
+
+    public function addCredits(User $user, $amount)
+    {
+        $user->credits += $amount;
+
+        return $user->save();
     }
 }

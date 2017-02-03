@@ -70,16 +70,37 @@ interface UserRepositoryInterface extends BaseRepositoryInterface
      * @return String
      */
 
-    public function generateReferralLink($userId);
+    public function generateReferralLink(USer $user);
 
     /**
-     * Create a referral(child) between for a given user(parent)
+     * Returns a user's referral code - decrypted
      *
-     * @param $parentId
-     * @param $childId
+     * @param User $user
      *
      * @return mixed
      */
 
-    public function makeReferral($parentId, $childId);
+    public function getDecryptedCode(User $user);
+
+    /**
+     * Create a referral(child) between for a given user(parent)
+     *
+     * @param User $parent
+     * @param User $child
+     *
+     * @return mixed
+     */
+
+    public function connectReferrals(User $parent, User $child);
+
+    /**
+     * Update a user's amount of credits
+     *
+     * @param $userId
+     * @param $amount
+     *
+     * @return mixed
+     */
+
+    public function addCredits(User $user, $amount);
 }

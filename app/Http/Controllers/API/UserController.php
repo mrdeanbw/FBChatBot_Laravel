@@ -9,6 +9,9 @@ use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use App\Repositories\User\UserRepository;
+use App\Models\User;
+use App\Services\ReferralService;
 
 class UserController extends APIController
 {
@@ -22,6 +25,8 @@ class UserController extends APIController
      * @type  JWTAuth
      */
     private $JWTAuth;
+    private $userRepository;
+    private $refService;
 
     /**
      * AuthController constructor.
@@ -31,6 +36,8 @@ class UserController extends APIController
     {
         $this->account = $account;
         $this->JWTAuth = app('tymon.jwt.auth');
+        $this->userRepository = $userRepo;
+        $this->refService = $refService;
     }
 
     /**
@@ -66,7 +73,7 @@ class UserController extends APIController
         if (! $facebookAuthToken) {
             throw new BadRequestHttpException;
         }
-        
+
         $user = $this->account->loginUserByFacebookAccessToken($facebookAuthToken);
 
         $JWTToken = $this->JWTAuth->fromUser($user);
@@ -85,6 +92,27 @@ class UserController extends APIController
         return $this->itemResponse($user);
     }
 
+    public function getReferralCode(Request $request)
+    {
+        $user = isset($request->input('id')) ? User::find($request->input('id')) : 1);
+        return $user->referral_code;
+    }
+
+    /*
+     * Creates the connection between the parent and child.
+     * The post parameter referralCode is encrypted!
+     *
+     * @param Request $request
+     */
+
+    public function makeReferral(Request $request)
+    {
+        if(isset($request->input('referralCode')) && isset($request->input('childId')))
+        {
+            $child = User::find($request->input('childId'));
+            return $this->refService->createConnection($child, $request->input('referralCode'));
+        }
+    }
     /** @return BaseTransformer */
     protected function transformer()
     {
