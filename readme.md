@@ -1,6 +1,6 @@
 # Mr. Reply Lumen Backend
 
-##Installation
+## Installation
 - Create a Facebook app with Facebook Login, Messenger and Webhooks products.
 - Copy `.env.example` to `.env` and fill in the app key, JWT secret, database credentials, Facebook app credentials and verify token.
 - Navigate to the root directory and run
