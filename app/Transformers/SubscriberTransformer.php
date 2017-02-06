@@ -18,7 +18,7 @@ class SubscriberTransformer extends BaseTransformer
             'last_name'            => $subscriber->last_name,
             'avatar_url'           => $subscriber->avatar_url,
             'gender'               => $subscriber->gender,
-            'is_active'            => (bool)$subscriber->is_active,
+            'active'            => $subscriber->active,
             'last_contacted_at'    => $subscriber->last_contacted_at? $subscriber->last_contacted_at->toDateTimeString() : null,
             'last_subscribed_at'   => $subscriber->last_subscribed_at? $subscriber->last_subscribed_at->toDateTimeString() : null,
             'last_unsubscribed_at' => $subscriber->last_unsubscribed_at? $subscriber->last_unsubscribed_at->toDateTimeString() : null,

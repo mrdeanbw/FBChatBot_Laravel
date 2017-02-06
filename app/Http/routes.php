@@ -18,91 +18,82 @@ $api->version('v1', $options, function (Router $api) {
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');
-    $api->get('/auth/token', 'AuthController@refresh');
-    $api->post('/auth', 'AuthController@login');
+
+    $api->post('/users/login', 'UserController@login');
+    $api->post('/users/refresh-token', 'UserController@refreshToken');
 
     $api->group(['middleware' => ['api.auth']], function (Router $api) {
 
-        // Pages
+        $api->get('/users/current', 'UserController@current');
+
+        // Page
         $api->get('/pages', 'PageController@index');
-        $api->post('/pages', 'PageController@store');
-        $api->get('/pages/{id}', 'PageController@show');
-        $api->get('/pages/{id}/user-status', 'PageController@userStatus');
-        $api->patch('/pages/{id}', 'PageController@update');
-        $api->delete('/pages/{id}', 'PageController@disableBot');
-        $api->post('/pages/{id}/subscription', 'PageController@subscribe');
 
-        // Invoices
-        $api->get('/pages/{pageId}/invoices', 'InvoiceController@index');
-        $api->get('/pages/{pageId}/invoices/{id}', 'InvoiceController@show');
-
-        // Tags
-        $api->get('/pages/{pageId}/tags', 'TagController@index');
-
-        // Message Trees
-        $api->get('/pages/{pageId}/build/trees', 'Build\TreeController@index');
-        $api->post('/pages/{pageId}/build/trees', 'Build\TreeController@store');
-        $api->get('/pages/{pageId}/build/trees/{id}', 'Build\TreeController@show');
-        $api->put('/pages/{pageId}/build/trees/{id}', 'Build\TreeController@update');
-
-        // Main Menu
-        $api->get('/pages/{pageId}/build/main-menu/{id}', 'Build\MainMenuController@show');
-        $api->put('/pages/{pageId}/build/main-menu/{id}', 'Build\MainMenuController@update');
+        // Bot
+        $api->get('/bots', 'BotController@index');
+        $api->post('/bots', 'BotController@store');
+        $api->get('/bots/{id}', 'BotController@show');
+        $api->patch('/bots/{id}', 'BotController@update');
+        $api->post('/bots/{id}/enable', 'BotController@enable');
+        $api->delete('/bots/{id}/enable', 'BotController@disable');
 
         // Greeting Text.
-        $api->get('/pages/{pageId}/build/greeting-text/{id}', 'Build\GreetingTextController@show');
-        $api->put('/pages/{pageId}/build/greeting-text/{id}', 'Build\GreetingTextController@update');
-
-        // Welcome Message
-        $api->get('/pages/{pageId}/build/welcome-message/{id}', 'Build\WelcomeMessageController@show');
-        $api->put('/pages/{pageId}/build/welcome-message/{id}', 'Build\WelcomeMessageController@update');
+        $api->put('/bots/{botId}/greeting-text', 'GreetingTextController@update');
 
         // Default Reply
-        $api->get('/pages/{pageId}/build/default-reply/{id}', 'Build\DefaultReplyController@show');
-        $api->put('/pages/{pageId}/build/default-reply/{id}', 'Build\DefaultReplyController@update');
+        $api->put('/bots/{botId}/default-reply', 'DefaultReplyController@update');
+
+        // Welcome Message
+        $api->put('/bots/{botId}/welcome-message/', 'WelcomeMessageController@update');
+
+        // Main Menu
+        $api->put('/bots/{botId}/main-menu', 'MainMenuController@update');
 
         // Auto Reply Rules
-        $api->get('/pages/{pageId}/build/ai-response/rules', 'Build\AutoReplyController@rules');
-        $api->post('/pages/{pageId}/build/ai-response/rules', 'Build\AutoReplyController@createRule');
-        $api->put('/pages/{pageId}/build/ai-response/rules/{id}', 'Build\AutoReplyController@updateRule');
-        $api->delete('/pages/{pageId}/build/ai-response/rules/{id}', 'Build\AutoReplyController@deleteRule');
+        $api->get('/bots/{botId}/auto-reply/rules', 'AutoReplyRuleController@index');
+        $api->post('/bots/{botId}/auto-reply/rules', 'AutoReplyRuleController@create');
+        $api->put('/bots/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@update');
+        $api->delete('/bots/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@destroy');
+
+        // Tags
+        $api->get('/bots/{botId}/tags', 'TagController@index');
+
+        // Message Trees
+        $api->get('/bots/{botId}/templates/explicit', 'TemplateController@index');
+        $api->post('/bots/{botId}/templates/explicit', 'TemplateController@store');
+        $api->get('/bots/{botId}/templates/explicit/{id}', 'TemplateController@show');
+        $api->put('/bots/{botId}/templates/explicit/{id}', 'TemplateController@update');
 
         // Message Previews
-        $api->post('/pages/{pageId}/message-previews', 'MessagePreviewController@store');
-
-        // Sequences
-        $api->get('/pages/{pageId}/sequences', 'SequenceController@index');
-        $api->get('/pages/{pageId}/sequences/{id}', 'SequenceController@show');
-        $api->post('/pages/{pageId}/sequences', 'SequenceController@store');
-        $api->delete('/pages/{pageId}/sequences/{id}', 'SequenceController@destroy');
-        $api->put('/pages/{pageId}/sequences/{id}', 'SequenceController@update');
-        // Sequence Messages
-        $api->post('/pages/{pageId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
-        $api->put('/pages/{pageId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@update');
-        $api->delete('/pages/{pageId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
-
-        // Broadcasts
-        $api->get('/pages/{pageId}/broadcasts', 'BroadcastController@index');
-        $api->post('/pages/{pageId}/broadcasts', 'BroadcastController@store');
-        $api->get('/pages/{pageId}/broadcasts/{id}', 'BroadcastController@show');
-        $api->put('/pages/{pageId}/broadcasts/{id}', 'BroadcastController@update');
-        $api->delete('/pages/{pageId}/broadcasts/{id}', 'BroadcastController@destroy');
-
-        // Widgets
-        //        $api->get('/pages/{pageId}/widgets', 'WidgetController@index');
-        //        $api->post('/pages/{pageId}/widgets', 'WidgetController@store');
-        //        $api->get('/pages/{pageId}/widgets/{id}', 'WidgetController@show');
-        //        $api->put('/pages/{pageId}/widgets/{id}', 'WidgetController@update');
-        //        $api->delete('/pages/{pageId}/widgets/{id}', 'WidgetController@destroy');
+        $api->post('/bots/{botId}/message-previews', 'MessagePreviewController@store');
 
         // Subscribers
-        $api->get('/pages/{pageId}/subscribers', 'SubscriberController@index');
-        $api->get('/pages/{pageId}/subscribers/{id}', 'SubscriberController@show');
-        $api->put('/pages/{pageId}/subscribers/{id}', 'SubscriberController@update');
-        $api->post('/pages/{pageId}/subscribers', 'SubscriberController@batchUpdate');
+        $api->get('/bots/{botId}/subscribers', 'SubscriberController@index');
+        $api->get('/bots/{botId}/subscribers/{id}', 'SubscriberController@show');
+        $api->patch('/bots/{botId}/subscribers/{id}', 'SubscriberController@update');
+        $api->patch('/bots/{botId}/subscribers', 'SubscriberController@batchUpdate');
+
+        // Sequences
+        $api->get('/bots/{botId}/sequences', 'SequenceController@index');
+        $api->get('/bots/{botId}/sequences/{id}', 'SequenceController@show');
+        $api->post('/bots/{botId}/sequences', 'SequenceController@store');
+        $api->delete('/bots/{botId}/sequences/{id}', 'SequenceController@destroy');
+        $api->put('/bots/{botId}/sequences/{id}', 'SequenceController@update');
+
+        // Sequence Messages
+        $api->post('/bots/{botId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
+        $api->put('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@update');
+        $api->delete('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
+
+        // Broadcasts
+        $api->get('/bots/{botId}/broadcasts', 'BroadcastController@index');
+        $api->post('/bots/{botId}/broadcasts', 'BroadcastController@store');
+        $api->get('/bots/{botId}/broadcasts/{id}', 'BroadcastController@show');
+        $api->put('/bots/{botId}/broadcasts/{id}', 'BroadcastController@update');
+        $api->delete('/bots/{botId}/broadcasts/{id}', 'BroadcastController@destroy');
 
         // Stats & Metrics
-        $api->get('/pages/{pageId}/stats', 'StatsController@index');
+        $api->get('/bots/{botId}/stats', 'StatsController@index');
     });
 
 });
@@ -115,4 +106,5 @@ $app->group(['prefix' => 'callback'], function () use ($app) {
     $app->post('stripe/web-hook', '\Laravel\Cashier\Http\Controllers\WebhookController@handleWebhook');
 });
 
-$app->get('/ba/{messageBlockHash}/{subscriberHash}', 'MessageBlockClickController@handle');
+$app->get('/ba/{messageBlockHash}/{subscriberHash}', 'ClickHandlingController@handle');
+$app->get('/mb/{payload}', 'ClickHandlingController@mainMenuButton');

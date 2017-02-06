@@ -1,18 +1,14 @@
-<?php
-namespace App\Transformers;
-
+<?php namespace App\Transformers;
 
 use App\Models\WelcomeMessage;
 
 class WelcomeMessageTransformer extends BaseTransformer
 {
 
-    protected $defaultIncludes = ['message_blocks'];
-    
+    protected $defaultIncludes = ['template'];
+
     public function transform(WelcomeMessage $welcomeMessage)
     {
-        return [
-            'id' => $welcomeMessage->id,
-        ];
+        return [];
     }
 }

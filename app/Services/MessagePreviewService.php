@@ -1,11 +1,10 @@
 <?php namespace App\Services;
 
-use DB;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\User;
 use App\Models\Subscriber;
 use App\Models\MessagePreview;
-use App\Repositories\User\UserRepository;
+use App\Repositories\Bot\BotRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\MessagePreview\MessagePreviewRepository;
 
@@ -13,9 +12,9 @@ class MessagePreviewService
 {
 
     /**
-     * @type MessageBlockService
+     * @type TemplateService
      */
-    private $messageBlocks;
+    private $templates;
     /**
      * @type FacebookAPIAdapter
      */
@@ -25,46 +24,43 @@ class MessagePreviewService
      */
     private $messagePreviewRepo;
     /**
-     * @type UserRepository
+     * @type BotRepositoryInterface
      */
-    private $userRepo;
+    private $botRepo;
 
     /**
      * MessagePreviewService constructor.
-     * @param MessagePreviewRepository $messagePreviewRepo
-     * @param UserRepository           $userRepo
-     * @param MessageBlockService      $messageBlockService
+     * @param TemplateService          $templates
+     * @param BotRepositoryInterface   $botRepo
      * @param FacebookAPIAdapter       $FacebookAdapter
+     * @param MessagePreviewRepository $messagePreviewRepo
      */
     public function __construct(
-        MessagePreviewRepository $messagePreviewRepo,
-        UserRepository $userRepo,
-        MessageBlockService $messageBlockService,
-        FacebookAPIAdapter $FacebookAdapter
+        TemplateService $templates,
+        BotRepositoryInterface $botRepo,
+        FacebookAPIAdapter $FacebookAdapter,
+        MessagePreviewRepository $messagePreviewRepo
     ) {
-        $this->messageBlocks = $messageBlockService;
+        $this->botRepo = $botRepo;
+        $this->templates = $templates;
         $this->FacebookAdapter = $FacebookAdapter;
         $this->messagePreviewRepo = $messagePreviewRepo;
-        $this->userRepo = $userRepo;
     }
 
     /**
      * Create a message preview model, and send it to the user.
      * @param array $input
      * @param User  $user
-     * @param Page  $page
+     * @param Bot   $bot
      * @return MessagePreview
      */
-    public function createAndSend(array $input, User $user, Page $page)
+    public function createAndSend(array $input, User $user, Bot $bot)
     {
-        $subscriber = $this->userToSubscriber($user, $page);
+        $subscriber = $this->getSubscriberForUserOrFail($user, $bot);
 
-        $messagePreview = DB::transaction(function () use ($input, $page, $subscriber) {
-            $messagePreview = $this->create($input, $page);
-            $this->FacebookAdapter->sendBlocks($messagePreview, $subscriber);
+        $messagePreview = $this->create($input, $user, $bot);
 
-            return $messagePreview;
-        });
+        $this->FacebookAdapter->sendTemplate($messagePreview->template, $subscriber, $bot);
 
         return $messagePreview;
     }
@@ -72,33 +68,40 @@ class MessagePreviewService
     /**
      * Create a message preview.
      * @param array $input
-     * @param Page  $page
+     * @param User  $user
+     * @param Bot   $bot
      * @return MessagePreview
      */
-    private function create(array $input, Page $page)
+    private function create(array $input, User $user, Bot $bot)
     {
-        $messagePreview = $this->messagePreviewRepo->create($page);
+        $input['template']['messages'] = $this->removeMessageIds($input['template']['messages']);
 
-        $input['message_blocks'] = $this->removeMessageBlockIds($input['message_blocks']);
+        $template = $this->templates->createImplicit($input['template']['messages'], $bot->id);
 
-        $this->messageBlocks->persist($messagePreview, $input['message_blocks']);
+        /** @type MessagePreview $messagePreview */
+        $messagePreview = $this->messagePreviewRepo->create([
+            'user_id'     => $user->id,
+            'bot_id'      => $bot->id,
+            'template_id' => $template->id
+        ]);
 
-        return $this->messagePreviewRepo->fresh($messagePreview);
+        $messagePreview->template = $template;
+
+        return $messagePreview;
     }
 
     /**
-     * Return the to-a-certain-page subscriber model out of a user.
+     * Return the to-a-certain-bot subscriber model out of a user.
      * @param User $user
-     * @param Page $page
+     * @param Bot  $bot
      * @return Subscriber
      */
-    private function userToSubscriber(User $user, Page $page)
+    private function getSubscriberForUserOrFail(User $user, Bot $bot)
     {
-        if (! $this->userRepo->isSubscribedToPage($user, $page)) {
+        $subscriber = $this->botRepo->getSubscriberForUser($user, $bot);
+        if (! $subscriber) {
             throw new ModelNotFoundException;
         }
-
-        $subscriber = $this->userRepo->asSubscriber($user, $page);
 
         return $subscriber;
     }
@@ -107,16 +110,16 @@ class MessagePreviewService
      * Message previews can be created from existing message blocks. The message preview
      * is like a "snapshot" of current message blocks. This method removes "ids" from message blocks,
      * so that they can be treated as if they were totally independent (clone).
-     * @param array $messageBlocks
+     * @param array $messages
      * @return array
      */
-    private function removeMessageBlockIds(array $messageBlocks)
+    private function removeMessageIds(array $messages)
     {
-        return array_map(function ($block) {
-            unset($block['id']);
+        return array_map(function ($message) {
+            unset($message['id']);
 
-            return $block;
-        }, $messageBlocks);
+            return $message;
+        }, $messages);
     }
 
 }

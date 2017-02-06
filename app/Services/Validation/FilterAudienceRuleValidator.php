@@ -1,23 +1,17 @@
 <?php namespace App\Services\Validation;
 
-use App\Models\Page;
-use App\Services\TagService;
+use App\Models\Bot;
 
 trait FilterAudienceRuleValidator
 {
 
     /**
-     * @param Page $page
+     * @param Bot $bot
      * @return callable
      */
-    public function filterGroupRuleValidationCallback(Page $page)
+    public function filterGroupRuleValidationCallback(Bot $bot)
     {
-        /** @type TagService $tags */
-        $tags = app(TagService::class);
-
-        $tagList = $tags->tagList($page)->toArray();
-
-        return function ($validator, $input) use ($tagList) {
+        return function ($validator, $input) use ($bot) {
 
             foreach (array_get($input, 'filter_groups', []) as $group) {
 
@@ -29,7 +23,7 @@ trait FilterAudienceRuleValidator
                         return $validator;
                     }
 
-                    if (array_get($rule, 'key') == 'tag' && ! in_array(array_get($rule, 'value'), $tagList)) {
+                    if (array_get($rule, 'key') == 'tag' && ! in_array(array_get($rule, 'value'), $bot->tags)) {
                         $validator->errors()->add('groups', "You must select a valid tag.");
 
                         return $validator;

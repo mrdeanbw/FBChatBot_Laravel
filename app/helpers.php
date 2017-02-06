@@ -76,22 +76,6 @@ if (! function_exists('date_boundaries')) {
     }
 }
 
-if (! function_exists('extract_attribute')) {
-    /**
-     * Return an array of a specific attribute in a collection of objects.
-     * @param        $array
-     * @param string $attribute
-     * @return array
-     */
-    function extract_attribute($array, $attribute = 'id')
-    {
-        $attributes = array_map(function ($object) use ($attribute) {
-            return $object[$attribute];
-        }, (array)$array);
-
-        return $attributes;
-    }
-}
 
 if (! function_exists('stable_usort')) {
     /**
@@ -154,6 +138,23 @@ if (! function_exists('parse_Facebook_signed_request')) {
         if ($sig !== $expected_sig) {
             return null;
         }
+
         return $data;
+    }
+}
+
+if (! function_exists('notify_frontend')) {
+    /**
+     * @param string $channel
+     * @param string $event
+     * @param array  $data
+     * @return bool|string
+     */
+    function notify_frontend($channel, $event, array $data)
+    {
+        /** @type Pusher $pusher */
+        $pusher = app('pusher');
+
+        return $pusher->trigger($channel, $event, $data);
     }
 }

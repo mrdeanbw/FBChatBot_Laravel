@@ -1,16 +1,10 @@
 <?php namespace App\Services;
 
 use App\Models\AudienceFilterGroup;
-use App\Models\HasFilterGroupsInterface;
 use App\Repositories\Filter\FilterRepository;
 
 class FilterGroupService
 {
-
-    /**
-     * @type TagService
-     */
-    private $tags;
     /**
      * @type FilterRepository
      */
@@ -18,12 +12,10 @@ class FilterGroupService
 
     /**
      * MessageBlockService constructor.
-     * @param FilterRepository $filterRepo
-     * @param TagService       $tags
+     * @param FilterRepository  $filterRepo
      */
-    public function __construct(FilterRepository $filterRepo, TagService $tags)
+    public function __construct(FilterRepository $filterRepo)
     {
-        $this->tags = $tags;
         $this->filterRepo = $filterRepo;
     }
 

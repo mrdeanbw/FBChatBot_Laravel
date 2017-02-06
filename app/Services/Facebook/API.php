@@ -17,7 +17,7 @@ abstract class API
      *
      * @var string
      */
-    protected $version = 'v2.6';
+    protected $version = 'v2.8';
 
     /**
      * @type Client
@@ -29,7 +29,7 @@ abstract class API
      */
     public function __construct()
     {
-        $this->guzzle = new Client(['http_errors' => false]);
+        $this->guzzle = new Client();
     }
 
     /**

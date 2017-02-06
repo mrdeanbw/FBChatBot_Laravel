@@ -1,57 +1,37 @@
 <?php namespace App\Services;
 
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\AutoReplyRule;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Repositories\AutoReplyRule\AutoReplyRuleRepository;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 
 class AutoReplyRuleService
 {
 
     /**
-     * @type AutoReplyRuleRepository
+     * @type AutoReplyRuleRepositoryInterface
      */
     private $autoReplyRuleRepo;
 
     /**
      * AutoReplyRuleService constructor.
-     * @param AutoReplyRuleRepository $autoReplyRuleRepo
+     * @param AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
      */
-    public function __construct(AutoReplyRuleRepository $autoReplyRuleRepo)
+    public function __construct(AutoReplyRuleRepositoryInterface $autoReplyRuleRepo)
     {
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
     }
 
     /**
-     * Get all auto reply rules associated with a page.
-     * @param Page $page
-     * @return Collection
-     */
-    public function all(Page $page)
-    {
-        return $this->autoReplyRuleRepo->getAllForPage($page);
-    }
-
-    /**
-     * @param $ruleId
-     * @param $page
-     * @return AutoReplyRule
-     */
-    private function find($ruleId, $page)
-    {
-        return $this->autoReplyRuleRepo->findByIdForPage($ruleId, $page);
-    }
-
-    /**
      * @param      $ruleId
-     * @param Page $page
+     * @param Bot  $bot
      * @return AutoReplyRule
      */
-    private function findOrFail($ruleId, Page $page)
+    private function findOrFail($ruleId, Bot $bot)
     {
-        $rule = $this->find($ruleId, $page);
+        $rule = $this->autoReplyRuleRepo->findByIdForBot($ruleId, $bot);
 
         if (! $rule) {
             throw new ModelNotFoundException;
@@ -61,49 +41,59 @@ class AutoReplyRuleService
     }
 
     /**
-     * Delete an auto reply rule.
-     * @param      $ruleId
-     * @param Page $page
+     * @param Bot   $bot
+     * @param int   $page
+     * @param array $filterBy
+     * @param array $orderBy
+     * @param int   $perPage
+     * @return Paginator
      */
-    public function delete($ruleId, Page $page)
+    public function paginate(Bot $bot, $page = 1, $filterBy = [], $orderBy = [], $perPage = 20)
     {
-        $rule = $this->findOrFail($ruleId, $page);
-
-        if ($rule->is_disabled) {
-            throw new BadRequestHttpException("Default rules cannot be edited.");
+        if ($keyword = array_get($filterBy, 'keyword')) {
+            $filterBy = [
+                [
+                    'type'      => 'contains',
+                    'attribute' => 'keyword',
+                    'value'     => $keyword
+                ]
+            ];
+        } else {
+            $filterBy = [];
         }
 
-        $this->autoReplyRuleRepo->delete($rule);
+        return $this->autoReplyRuleRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
 
     /**
-     * @param      $input
-     * @param Page $page
+     * @param array $input
+     * @param Bot   $bot
      * @return AutoReplyRule
      */
-    public function create($input, Page $page)
+    public function create(array $input, Bot $bot)
     {
         $data = [
+            'action'      => 'send',
             'mode'        => $input['mode'],
             'keyword'     => $input['keyword'],
-            'action'      => 'send',
             'template_id' => $input['template']['id'],
+            'bot_id'      => $bot->id,
         ];
 
-        return $this->autoReplyRuleRepo->createForPage($data, $page);
+        return $this->autoReplyRuleRepo->create($data);
     }
 
     /**
-     * @param      $id
-     * @param      $input
-     * @param Page $page
+     * @param string $id
+     * @param array  $input
+     * @param Bot    $bot
      * @return AutoReplyRule
      */
-    public function update($id, $input, Page $page)
+    public function update($id, array $input, Bot $bot)
     {
-        $rule = $this->findOrFail($id, $page);
+        $rule = $this->findOrFail($id, $bot);
 
-        if ($rule->is_disabled) {
+        if ($rule->readonly) {
             throw new BadRequestHttpException("Default rules cannot be edited.");
         }
 
@@ -114,23 +104,42 @@ class AutoReplyRuleService
         ];
 
         $this->autoReplyRuleRepo->update($rule, $data);
+
+        return $rule;
+    }
+
+    /**
+     * Delete an auto reply rule.
+     * @param      $ruleId
+     * @param Bot  $page
+     */
+    public function delete($ruleId, Bot $page)
+    {
+        $rule = $this->findOrFail($ruleId, $page);
+
+        if ($rule->readonly) {
+            throw new BadRequestHttpException("Default rules cannot be edited.");
+        }
+
+        $this->autoReplyRuleRepo->delete($rule);
     }
 
     /**
      * @param string $text
-     * @param Page   $page
+     * @param Bot    $page
      * @return AutoReplyRule
      */
-    public function getMatchingRule($text, Page $page)
+    public function getMatchingRule($text, Bot $page)
     {
         return $this->autoReplyRuleRepo->getMatchingRuleForPage($text, $page);
     }
 
     /**
      * Create the default (subscription/unsubscription) auto reply rules.
-     * @param Page $page
+     * @param Bot $bot
+     * @return bool
      */
-    public function createDefaultAutoReplyRules(Page $page)
+    public function createDefaultAutoReplyRules(Bot $bot)
     {
         // The default subscription / unsubscription auto reply rules.
         $defaultRules = [
@@ -138,18 +147,23 @@ class AutoReplyRuleService
             'unsubscribe' => ['stop', 'unsubscribe']
         ];
 
+        $bot_id = $bot->id;
+
         // Exact Match
         $mode = 'is';
-        
+
         // Non-editable
-        $is_disabled = true;
+        $readonly = true;
+
+        $data = [];
 
         // Loop and save everyone of them
         foreach ($defaultRules as $action => $keywords) {
             foreach ($keywords as $keyword) {
-                $data = compact('mode', 'action', 'keyword', 'is_disabled');
-                $this->autoReplyRuleRepo->createForPage($data, $page);
+                $data[] = compact('mode', 'action', 'keyword', 'readonly', 'bot_id');
             }
         }
+
+        return $this->autoReplyRuleRepo->bulkCreate($data);
     }
 }

@@ -1,23 +1,25 @@
 <?php namespace App\Services;
 
-use DB;
-use Log;
-use App\Models\Page;
+use App\Models\Bot;
+use App\Models\User;
+use App\Models\Button;
 use App\Models\MainMenu;
-use App\Services\Facebook\Thread;
-use App\Repositories\MainMenu\MainMenuRepository;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use MongoDB\BSON\ObjectID;
+use App\Jobs\UpdateMainMenuOnFacebook;
+use App\Repositories\Bot\DBBotRepository;
+use App\Services\Facebook\MessengerThread;
+use Dingo\Api\Exception\ValidationHttpException;
 
 class MainMenuService
 {
 
     /**
-     * @type MessageBlockService
+     * @type MessageService
      */
-    private $messageBlocks;
+    private $messages;
 
     /**
-     * @type Thread
+     * @type MessengerThread
      */
     private $FacebookThread;
     /**
@@ -25,125 +27,114 @@ class MainMenuService
      */
     private $FacebookAdapter;
     /**
-     * @type MainMenuRepository
+     * @type DBBotRepository
      */
-    private $mainMenuRepo;
+    private $botRepo;
 
     /**
      * MainMenuService constructor.
-     * @param MainMenuRepository  $mainMenuRepo
-     * @param MessageBlockService $messageBlocks
-     * @param Thread              $facebookThread
-     * @param FacebookAPIAdapter  $FacebookAdapter
+     * @param MessageService     $messages
+     * @param MessengerThread    $facebookThread
+     * @param FacebookAPIAdapter $FacebookAdapter
+     * @param DBBotRepository    $botRepo
      */
     public function __construct(
-        MainMenuRepository $mainMenuRepo,
-        MessageBlockService $messageBlocks,
-        Thread $facebookThread,
-        FacebookAPIAdapter $FacebookAdapter
+        MessageService $messages,
+        MessengerThread $facebookThread,
+        FacebookAPIAdapter $FacebookAdapter,
+        DBBotRepository $botRepo
     ) {
-        $this->messageBlocks = $messageBlocks;
+        $this->botRepo = $botRepo;
+        $this->messages = $messages;
         $this->FacebookThread = $facebookThread;
         $this->FacebookAdapter = $FacebookAdapter;
-        $this->mainMenuRepo = $mainMenuRepo;
-    }
-
-    /**
-     * @param Page $page
-     * @return MainMenu
-     */
-    public function getOrFail(Page $page)
-    {
-        if ($mainMenu = $this->mainMenuRepo->getForPage($page)) {
-            return $mainMenu;
-        }
-        throw new ModelNotFoundException;
     }
 
     /**
      * Updates the main menu (buttons).
-     * @param Page $page
-     * @param      $input
-     * @return MainMenu|null
-     */
-    public function update($input, Page $page)
-    {
-        $success = DB::transaction(function () use ($input, $page) {
-            $blocks = $input['message_blocks'];
-            $mainMenu = $this->getOrFail($page);
-            $this->messageBlocks->persist($mainMenu, $blocks);
-
-            if ($this->setupFacebookPagePersistentMenu($mainMenu, $page)) {
-                return $this->mainMenuRepo->fresh($mainMenu);
-            }
-
-            return null;
-        });
-
-        return $success;
-    }
-
-    /**
-     * Use Facebook API to actually setup and display the main menu.
-     * @param MainMenu $mainMenu
-     * @param Page     $page
-     * @return bool
-     */
-    public function setupFacebookPagePersistentMenu(MainMenu $mainMenu, Page $page)
-    {
-        $blocks = $this->FacebookAdapter->mapButtons($mainMenu->message_blocks);
-
-        $response = $this->FacebookThread->setPersistentMenu($page->access_token, $blocks);
-
-        $success = isset($response->result) && starts_with($response->result, "Successfully");
-
-        if (! $success) {
-            Log::error("Failed to create menu [$mainMenu->id]");
-            Log::error(json_encode($blocks));
-            Log::error(json_encode($response));
-        }
-
-        return $success;
-    }
-
-
-    /**
-     * Create the default main menu.
-     * @param Page $page
+     * @param array $input
+     * @param Bot   $bot
+     * @param User  $user
      * @return MainMenu
      */
-    public function createDefaultMainMenu(Page $page)
+    public function update(array $input, Bot $bot, User $user)
     {
-        $mainMenu = $this->mainMenuRepo->create($page);
-        $this->attachDefaultButtonsToMainMenu($mainMenu);
+        $mainMenu = $bot->main_menu;
+
+        $buttons = $this->messages->normalizeMessages($input['buttons']);
+        $buttons = $this->messages->makeMessages($buttons, $mainMenu->buttons);
+
+        $this->validateCopyrightButton($buttons);
+
+        $this->botRepo->update($bot, ['main_menu.buttons' => $buttons]);
+        $mainMenu->buttons = $buttons;
+
+        dispatch(new UpdateMainMenuOnFacebook($bot, $user->id));
 
         return $mainMenu;
     }
 
     /**
-     * Attach the default "Powered By: Mr. Reply button" to the main menu,
-     * and make it "disabled", so that it cannot be edited/removed.
-     * @param $mainMenu
+     * Create the default main menu.
+     * @return Button[]
      */
-    private function attachDefaultButtonsToMainMenu(MainMenu $mainMenu)
+    public function defaultMainMenu()
     {
-        $defaultButtons = [$this->copyrightedButton()];
-        $messageBlocks = $this->messageBlocks->persist($mainMenu, $defaultButtons);
-        $copyrightBlock = $messageBlocks->get(0);
-        $this->messageBlocks->update($copyrightBlock, ['is_disabled' => true]);
+        return new MainMenu([
+            'buttons' => [$this->copyrightedButton()]
+        ]);
     }
 
     /**
      * The button array for the button.
-     * @return array
+     * @return Button
      */
     private function copyrightedButton()
     {
-        return [
-            'type'  => 'button',
-            'title' => 'Powered By ' . config('app.name'),
-            'url'   => 'https://www.mrreply.com',
-        ];
+        return new Button([
+            'id'       => with(new ObjectID())->__toString(),
+            'order'    => 1,
+            'title'    => 'Powered By Mr. Reply',
+            'readonly' => true,
+            'url'      => 'https://www.mrreply.com',
+        ]);
+    }
+
+    /**
+     * @param Button[] $buttons
+     */
+    private function validateCopyrightButton(array $buttons)
+    {
+        $lastButton = end($buttons);
+
+        // @todo: and on a free plan.
+        if (! $lastButton || ! $lastButton->id || ! $lastButton->readonly || ! $this->sameAsCopyrightButton($lastButton)) {
+            throw new ValidationHttpException([
+                "buttons" => ["Missing copyright button."]
+            ]);
+        }
+    }
+
+    /**
+     * @param Button $button
+     * @return bool
+     */
+    private function sameAsCopyrightButton(Button $button)
+    {
+        return $this->buttonAttributes($button) == $this->buttonAttributes($this->copyrightedButton());
+    }
+
+    /**
+     * @param Button $button
+     * @return array
+     */
+    private function buttonAttributes(Button $button)
+    {
+        $attributes = get_object_vars($button);
+        unset($attributes['id']);
+        unset($attributes['order']);
+
+        return $attributes;
     }
 
 }

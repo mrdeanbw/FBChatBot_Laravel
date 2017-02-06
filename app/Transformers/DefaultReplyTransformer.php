@@ -1,18 +1,14 @@
-<?php
-namespace App\Transformers;
-
+<?php namespace App\Transformers;
 
 use App\Models\DefaultReply;
 
 class DefaultReplyTransformer extends BaseTransformer
 {
 
-    protected $defaultIncludes = ['message_blocks'];
-    
+    protected $defaultIncludes = ['template'];
+
     public function transform(DefaultReply $defaultReply)
     {
-        return [
-            'id' => $defaultReply->id,
-        ];
+        return [];
     }
 }

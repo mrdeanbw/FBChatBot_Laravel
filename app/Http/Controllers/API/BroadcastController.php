@@ -3,13 +3,13 @@
 use Illuminate\Http\Request;
 use App\Services\BroadcastService;
 use App\Transformers\BroadcastTransformer;
-use App\Services\Validation\MessageBlockRuleValidator;
+use App\Services\Validation\MessageValidationHelper;
 use App\Services\Validation\FilterAudienceRuleValidator;
 
 class BroadcastController extends APIController
 {
 
-    use MessageBlockRuleValidator, FilterAudienceRuleValidator;
+    use MessageValidationHelper, FilterAudienceRuleValidator;
 
     /**
      * @type BroadcastService
@@ -31,7 +31,7 @@ class BroadcastController extends APIController
      */
     public function index()
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         return $this->collectionResponse($this->broadcasts->all($page));
     }
@@ -43,7 +43,7 @@ class BroadcastController extends APIController
      */
     public function destroy($id)
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         $this->broadcasts->delete($id, $page);
 
@@ -58,7 +58,7 @@ class BroadcastController extends APIController
      */
     public function update($id, Request $request)
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         $validator = $this->makeBroadcastValidator($request, $page);
 
@@ -78,7 +78,7 @@ class BroadcastController extends APIController
      */
     public function store(Request $request)
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         $validator = $this->makeBroadcastValidator($request, $page);
 
@@ -98,7 +98,7 @@ class BroadcastController extends APIController
      */
     public function show($id)
     {
-        $page = $this->page();
+        $page = $this->bot();
         $broadcast = $this->broadcasts->findByIdOrFail($id, $page);
 
         return $this->itemResponse($broadcast);

@@ -9,9 +9,7 @@ class TagController extends APIController
      */
     public function index()
     {
-        $tags = $this->page()->tags()->pluck('tag')->toArray();
-
-        return $this->arrayResponse($tags);
+        return $this->arrayResponse($this->bot()->tags);
     }
 
     protected function transformer()

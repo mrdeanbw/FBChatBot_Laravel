@@ -14,7 +14,7 @@ return [
     |
     */
     'stripe' => [
-        'model'  => \App\Models\Page::class,
+        'model'  => \App\Models\Bot::class,
         'key'    => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
     ],
@@ -24,5 +24,11 @@ return [
         'client_secret' => env('FACEBOOK_APP_SECRET'),
         'verify_token'  => env('FACEBOOK_VERIFY_TOKEN'),
     ],
+
+    'pusher' => [
+        'app_id'     => env('PUSHER_APP_ID'),
+        'app_key'    => env('PUSHER_APP_KEY'),
+        'app_secret' => env('PUSHER_APP_SECRET'),
+    ]
 
 ];

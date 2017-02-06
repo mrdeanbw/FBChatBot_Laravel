@@ -1,15 +1,15 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Models\Page;
+use App\Models\Bot;
 use Illuminate\Http\Request;
 use App\Services\SequenceService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\SequenceMessageTransformer;
-use App\Services\Validation\MessageBlockRuleValidator;
+use App\Services\Validation\MessageValidationHelper;
 
 class SequenceMessageController extends APIController
 {
-    use MessageBlockRuleValidator;
+    use MessageValidationHelper;
 
     /**
      * @type SequenceService
@@ -29,7 +29,7 @@ class SequenceMessageController extends APIController
      */
     public function store($sequenceId, Request $request)
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         $validator = $this->validator($request, $page);
 
@@ -51,7 +51,7 @@ class SequenceMessageController extends APIController
      */
     public function update($id, $sequenceId, Request $request)
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         $validator = $this->validator($request, $page);
 
@@ -72,7 +72,7 @@ class SequenceMessageController extends APIController
      */
     public function destroy($id, $sequenceId)
     {
-        $page = $this->page();
+        $page = $this->bot();
         
         $this->sequences->deleteMessage($id, $sequenceId, $page);
 
@@ -90,7 +90,7 @@ class SequenceMessageController extends APIController
      * @param         $page
      * @return \Illuminate\Validation\Validator
      */
-    protected function validator(Request $request, Page $page)
+    protected function validator(Request $request, Bot $page)
     {
         $rules = [
             'name' => 'required|max:255',

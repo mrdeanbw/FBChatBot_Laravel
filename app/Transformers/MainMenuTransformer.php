@@ -1,18 +1,19 @@
-<?php
-namespace App\Transformers;
-
+<?php namespace App\Transformers;
 
 use App\Models\MainMenu;
 
 class MainMenuTransformer extends BaseTransformer
 {
 
-    protected $defaultIncludes = ['message_blocks'];
-    
+    public $defaultIncludes = ['buttons'];
+
     public function transform(MainMenu $mainMenu)
     {
-        return [
-            'id' => $mainMenu->id,
-        ];
+        return [];
+    }
+
+    public function includeButtons(MainMenu $mainMenu)
+    {
+        return $this->collection($mainMenu->buttons, new ButtonTransformer(), false);
     }
 }

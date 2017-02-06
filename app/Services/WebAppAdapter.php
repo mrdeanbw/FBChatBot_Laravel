@@ -1,17 +1,17 @@
 <?php namespace App\Services;
 
-use App\Repositories\User\UserRepository;
-use DB;
 use Carbon\Carbon;
-use App\Models\User;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\Button;
 use App\Models\MainMenu;
+use App\Models\Template;
 use App\Models\Broadcast;
 use App\Models\Subscriber;
 use App\Models\AutoReplyRule;
-use App\Models\MessageInstance;
 use App\Services\Facebook\Sender;
+use App\Repositories\Bot\BotRepositoryInterface;
+use App\Repositories\User\UserRepositoryInterface;
+use App\Repositories\Template\TemplateRepositoryInterface;
 use App\Repositories\MessageInstance\MessageInstanceRepository;
 
 class WebAppAdapter
@@ -23,9 +23,9 @@ class WebAppAdapter
      */
     protected $FacebookSender;
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
-    private $audience;
+    private $subscribers;
     /**
      * @type WelcomeMessageService
      */
@@ -35,7 +35,7 @@ class WebAppAdapter
      */
     private $FacebookAdapter;
     /**
-     * @type MessageBlockService
+     * @type MessageService
      */
     private $messageBlocks;
     /**
@@ -51,47 +51,65 @@ class WebAppAdapter
      */
     private $messageInstanceRepo;
     /**
-     * @type PageService
+     * @type BotService
      */
-    private $pages;
+    private $bots;
     /**
      * @type BroadcastService
      */
     private $broadcasts;
     /**
-     * @type UserRepository
+     * @type UserRepositoryInterface
      */
     private $userRepo;
+    /**
+     * @type TemplateService
+     */
+    private $templates;
+    /**
+     * @type BotRepositoryInterface
+     */
+    private $botRepo;
+    /**
+     * @type TemplateRepositoryInterface
+     */
+    private $templateRepo;
 
     /**
      * WebAppAdapter constructor.
      *
-     * @param AudienceService           $audience
-     * @param WelcomeMessageService     $welcomeMessage
-     * @param FacebookAPIAdapter        $FacebookAdapter
-     * @param Sender                    $FacebookSender
-     * @param MessageBlockService       $messageBlocks
-     * @param DefaultReplyService       $defaultReplies
-     * @param AutoReplyRuleService      $AIResponses
-     * @param MessageInstanceRepository $messageInstanceRepo
-     * @param PageService               $pages
-     * @param BroadcastService          $broadcasts
-     * @param UserRepository            $userRepo
+     * @param SubscriberService           $subscribers
+     * @param WelcomeMessageService       $welcomeMessage
+     * @param FacebookAPIAdapter          $FacebookAdapter
+     * @param Sender                      $FacebookSender
+     * @param MessageService              $messageBlocks
+     * @param DefaultReplyService         $defaultReplies
+     * @param AutoReplyRuleService        $AIResponses
+     * @param MessageInstanceRepository   $messageInstanceRepo
+     * @param BotService                  $pages
+     * @param BroadcastService            $broadcasts
+     * @param TemplateService             $templates
+     * @param UserRepositoryInterface     $userRepo
+     * @param BotRepositoryInterface      $botRepo
+     * @param TemplateRepositoryInterface $templateRepo
      */
     public function __construct(
-        AudienceService $audience,
+        SubscriberService $subscribers,
         WelcomeMessageService $welcomeMessage,
         FacebookAPIAdapter $FacebookAdapter,
         Sender $FacebookSender,
-        MessageBlockService $messageBlocks,
+        MessageService $messageBlocks,
         DefaultReplyService $defaultReplies,
         AutoReplyRuleService $AIResponses,
         MessageInstanceRepository $messageInstanceRepo,
-        PageService $pages,
+        BotService $pages,
         BroadcastService $broadcasts,
-        UserRepository $userRepo
+        TemplateService $templates,
+        UserRepositoryInterface $userRepo,
+        BotRepositoryInterface $botRepo,
+        TemplateRepositoryInterface $templateRepo
     ) {
-        $this->audience = $audience;
+        $this->subscribers = $subscribers;
         $this->welcomeMessage = $welcomeMessage;
         $this->FacebookAdapter = $FacebookAdapter;
         $this->messageBlocks = $messageBlocks;
@@ -99,31 +117,34 @@ class WebAppAdapter
         $this->AIResponses = $AIResponses;
         $this->FacebookSender = $FacebookSender;
         $this->messageInstanceRepo = $messageInstanceRepo;
-        $this->pages = $pages;
+        $this->bots = $pages;
         $this->broadcasts = $broadcasts;
         $this->userRepo = $userRepo;
+        $this->templates = $templates;
+        $this->botRepo = $botRepo;
+        $this->templateRepo = $templateRepo;
     }
 
     /**
      * Subscribe a message sender to the page.
-     * @param Page $page
-     * @param      $senderId
-     * @param bool $silentMode
+     * @param Bot    $bot
+     * @param string $senderId
+     * @param bool   $silentMode
      * @return Subscriber
      */
-    public function subscribe(Page $page, $senderId, $silentMode = false)
+    public function subscribe(Bot $bot, $senderId, $silentMode = false)
     {
-        $subscriber = $this->subscriber($senderId, $page);
+        $subscriber = $this->subscriber($senderId, $bot);
 
         // If already subscribed
-        if ($subscriber && $subscriber->is_active) {
+        if ($subscriber && $subscriber->active) {
             if (! $silentMode) {
                 $message = [
                     'message' => [
                         'text' => 'You are already subscribed to the page.'
                     ],
                 ];
-                $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
+                $this->FacebookAdapter->sendMessage($message, $subscriber, $bot);
             }
 
             return $subscriber;
@@ -131,18 +152,19 @@ class WebAppAdapter
 
         // If first time, then create subscriber.
         if (! $subscriber) {
-            $subscriber = $this->persistSubscriber($page, $senderId, true);
+            $subscriber = $this->persistSubscriber($bot, $senderId, true);
         }
 
         // If not first time (unsubscribed before), resubscribe him.
-        if (! $subscriber->is_active) {
-            $this->audience->resubscribe($senderId, $page);
+        if (! $subscriber->active) {
+            $this->subscribers->resubscribe($senderId, $bot);
         }
 
         // If not silent mode, send the welcome message!
         if (! $silentMode) {
-            $welcomeMessage = $this->welcomeMessage->getOrFail($page);
-            $this->FacebookAdapter->sendBlocks($welcomeMessage, $subscriber);
+            /** @type Template $template */
+            $template = $this->templateRepo->findByIdOrFail($bot->welcome_message->template_id);
+            $this->FacebookAdapter->sendTemplate($template, $subscriber, $bot);
         }
 
         return $subscriber;
@@ -150,23 +172,23 @@ class WebAppAdapter
 
     /**
      * Subscribe a user without actually sending him the welcome message.
-     * @param Page $page
+     * @param Bot  $bot
      * @param      $senderId
      * @return Subscriber
      */
-    public function subscribeSilently(Page $page, $senderId)
+    public function subscribeSilently(Bot $bot, $senderId)
     {
-        return $this->subscribe($page, $senderId, true);
+        return $this->subscribe($bot, $senderId, true);
     }
 
 
     /**
      * Send a message to the user, asking if he really wants to unsubscribe.
-     * @param Page            $page
+     * @param Bot             $page
      * @param Subscriber|null $subscriber
      * @param                 $facebookId
      */
-    public function initiateUnsubscripingProcess(Page $page, $subscriber, $facebookId)
+    public function initiateUnsubscripingProcess(Bot $page, $subscriber, $facebookId)
     {
         // If a non-subscribed user, tries to initiate the unsubscription process, handle it properly.
         if (! $subscriber) {
@@ -184,7 +206,7 @@ class WebAppAdapter
         }
 
         // already unsubscribed
-        if (! $subscriber->is_active) {
+        if (! $subscriber->active) {
             $message = [
                 'message' => [
                     'text' => 'You have already unsubscribed from this page.'
@@ -220,13 +242,13 @@ class WebAppAdapter
 
     /**
      * User has confirmed his willingness to unsubscribe, so unsubscribe him!
-     * @param Page       $page
+     * @param Bot        $page
      * @param Subscriber $subscriber
      */
-    public function concludeUnsubscriptionProcess(Page $page, $subscriber)
+    public function concludeUnsubscriptionProcess(Bot $page, $subscriber)
     {
         // already unsubscribed
-        if (! $subscriber || ! $subscriber->is_active) {
+        if (! $subscriber || ! $subscriber->active) {
             $message = [
                 'message' => [
                     'text' => 'You have already unsubscribed from this page.'
@@ -237,7 +259,7 @@ class WebAppAdapter
             return;
         }
 
-        $this->audience->unsubscribe($subscriber);
+        $this->subscribers->unsubscribe($subscriber);
 
         $message = [
             'message' => [
@@ -250,18 +272,17 @@ class WebAppAdapter
 
     /**
      * Send the default reply.
-     * @param Page       $page
+     * @param Bot        $bot
      * @param Subscriber $subscriber
      */
-    public function sendDefaultReply(Page $page, Subscriber $subscriber)
+    public function sendDefaultReply(Bot $bot, Subscriber $subscriber)
     {
-        $defaultReply = $this->defaultReplies->get($page);
-        $this->FacebookAdapter->sendBlocks($defaultReply, $subscriber);
+        $this->FacebookAdapter->sendTemplate($bot->default_reply, $subscriber);
     }
 
     /**
      * Handle button click.
-     * @param Page       $page
+     * @param Bot        $page
      * @param Subscriber $subscriber
      * @param            $payload
      * @return bool
@@ -282,12 +303,12 @@ class WebAppAdapter
 
     /**
      * Handle a main menu button click.
-     * @param Page       $page
+     * @param Bot        $page
      * @param Subscriber $subscriber
      * @param            $payload
      * @return bool
      */
-    private function handleMainMenuButtonClick(Page $page, Subscriber $subscriber, $payload)
+    private function handleMainMenuButtonClick(Bot $page, Subscriber $subscriber, $payload)
     {
         $payload = substr($payload, strlen("MAIN_MENU_"));
 
@@ -308,12 +329,12 @@ class WebAppAdapter
     }
 
     /**
-     * @param Page       $page
+     * @param Bot        $page
      * @param Subscriber $subscriber
      * @param            $payload
      * @return bool
      */
-    private function handleNonMainMenuButtonClick(Page $page, Subscriber $subscriber, $payload)
+    private function handleNonMainMenuButtonClick(Bot $page, Subscriber $subscriber, $payload)
     {
         // decrypt to the model id.
         if (! ($id = SimpleEncryptionService::decode($payload))) {
@@ -336,6 +357,40 @@ class WebAppAdapter
         $this->carryOutButtonActions($block, $subscriber);
 
         return true;
+    }
+
+
+    /**
+     * @param string $payload
+     * @return null|string
+     */
+    public function getMainMenuButtonUrl($payload)
+    {
+        $payload = explode(':', $payload);
+
+        if (count($payload) !== 3 || $payload[1] !== 'MM') {
+            return null;
+        }
+
+        if (! ($bot = $this->bots->findById($payload[0]))) {
+            return null;
+        }
+
+        $buttonId = $payload[2];
+        $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
+            return $button->id === $buttonId;
+        });
+
+        if (! $button) {
+            return null;
+        }
+
+        $button->clicks = $button->clicks++;
+
+        //@todo move to repo
+        $bot->save();
+
+        return $button->url;
     }
 
     /**
@@ -366,7 +421,7 @@ class WebAppAdapter
             return false;
         }
 
-        if (! ($subscriber = $this->audience->find($subscriberId))) {
+        if (! ($subscriber = $this->subscribers->find($subscriberId))) {
             // Invalid subscriber hash
             return false;
         }
@@ -396,16 +451,16 @@ class WebAppAdapter
     {
         if ($button->addTags->count()) {
             $tags = $button->addTags->pluck('id')->toArray();
-            $this->audience->syncTags($subscriber, $tags, false);
+            $this->subscribers->syncTags($subscriber, $tags, false);
         }
 
         if ($button->removeTags->count()) {
             $tags = $button->removeTags->pluck('id')->toArray();
-            $this->audience->detachTags($subscriber, $tags);
+            $this->subscribers->detachTags($subscriber, $tags);
         }
 
         if ($template = $button->template) {
-            $this->FacebookAdapter->sendBlocks($template, $subscriber);
+            $this->FacebookAdapter->sendTemplate($template, $subscriber);
         }
     }
 
@@ -413,31 +468,31 @@ class WebAppAdapter
     /**
      * Get a page by facebook ID.
      * @param $pageId
-     * @return Page
+     * @return Bot
      */
     public function page($pageId)
     {
-        return $this->pages->findByFacebookId($pageId);
+        return $this->bots->findByFacebookId($pageId);
     }
 
     /**
      * Get a subscriber by Facebook ID.
      * @param      $senderId
-     * @param Page $page
+     * @param Bot  $page
      * @return Subscriber|null
      */
-    public function subscriber($senderId, Page $page)
+    public function subscriber($senderId, Bot $page)
     {
-        return $this->audience->findByFacebookId($senderId, $page);
+        return $this->subscribers->findByFacebookId($senderId, $page);
     }
 
     /**
      * Get matching AI Rules.
      * @param      $message
-     * @param Page $page
+     * @param Bot  $page
      * @return AutoReplyRule
      */
-    public function matchingAutoReplyRule($message, Page $page)
+    public function matchingAutoReplyRule($message, Bot $page)
     {
         return $this->AIResponses->getMatchingRule($message, $page);
     }
@@ -449,7 +504,7 @@ class WebAppAdapter
      */
     public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber)
     {
-        $this->FacebookAdapter->sendBlocks($rule->template, $subscriber);
+        $this->FacebookAdapter->sendTemplate($rule->template, $subscriber);
     }
 
     /**
@@ -533,6 +588,7 @@ class WebAppAdapter
      */
     private function incrementBroadcastClicks(MessageInstance $instance, $incrementBy = 1)
     {
+        // @todo the root context Should be identified from the payload itself.
         $rootContext = $this->messageBlocks->getRootContext($instance->message_block);
 
         if ($rootContext && is_a($rootContext, Broadcast::class)) {
@@ -563,11 +619,11 @@ class WebAppAdapter
     /**
      * Make a user (page admin) into "subscriber" for a page.
      * @param      $payload
-     * @param Page $page
+     * @param Bot  $bot
      * @param      $senderId
      * @return bool
      */
-    public function subscribePageUser($payload, Page $page, $senderId)
+    public function subscribePageUser($payload, Bot $bot, $senderId)
     {
         // The page admin payload has a special prefix, followed by his internal artificial ID.
         $prefix = 'SUBSCRIBE_OWNER_';
@@ -576,33 +632,34 @@ class WebAppAdapter
         }
 
         // Parsing his ID.
-        if (! ($userId = (int)substr($payload, strlen($prefix)))) {
+        if (! ($userId = substr($payload, strlen($prefix)))) {
             return false;
         }
-        
+
         // Getting user.
-        if (! ($user = $this->userRepo->findForPage($userId, $page))) {
+        if (! ($user = $this->userRepo->findByIdForBot($userId, $bot))) {
             return false;
         }
 
         // Subscribing user (message sender)
-        $subscriber = $this->subscribeSilently($page, $senderId);
+        $subscriber = $this->subscribeSilently($bot, $senderId);
 
         // Associating user with subscriber.
-        $this->userRepo->associateWithPageAsSubscriber($user, $page, $subscriber);
+        $this->botRepo->setSubscriberForUser($user, $subscriber, $bot);
+
+        notify_frontend("{$bot->id}_{$user->id}_subscriptions", 'subscribed', ['subscriber_id' => $subscriber->id]);
 
         return true;
     }
 
     /**
-     * @param Page $page
+     * @param Bot  $page
      * @param      $senderId
      * @param      $isActive
      * @return Subscriber|null
      */
-    public function persistSubscriber(Page $page, $senderId, $isActive)
+    public function persistSubscriber(Bot $page, $senderId, $isActive)
     {
-        return $this->audience->getByFacebookIdOrCreate($senderId, $page, $isActive);
+        return $this->subscribers->getByFacebookIdOrCreate($senderId, $page, $isActive);
     }
-
 }

@@ -7,7 +7,7 @@ use DB;
 class BroadcastTransformer extends BaseTransformer
 {
 
-    protected $defaultIncludes = ['message_blocks', 'filter_groups'];
+    protected $defaultIncludes = ['messages', 'filter_groups'];
 
     public function transform(Broadcast $broadcast)
     {

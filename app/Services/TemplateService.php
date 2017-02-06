@@ -1,64 +1,52 @@
 <?php namespace App\Services;
 
-use DB;
-use App\Models\Page;
+use App\Models\Bot;
+use App\Models\Message;
 use App\Models\Template;
-use App\Repositories\Template\TemplateRepository;
+use App\Repositories\Template\TemplateRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class TemplateService
 {
 
     /**
-     * @type MessageBlockService
+     * @type MessageService
      */
-    private $messageBlocks;
+    private $messages;
     /**
-     * @type TemplateRepository
+     * @type TemplateRepositoryInterface
      */
     private $templateRepo;
 
     /**
      * TemplateService constructor.
-     * @param TemplateRepository  $templateRepo
-     * @param MessageBlockService $messageBlocks
+     * @param TemplateRepositoryInterface $templateRepo
+     * @param MessageService              $messages
      */
-    public function __construct(TemplateRepository $templateRepo, MessageBlockService $messageBlocks)
+    public function __construct(TemplateRepositoryInterface $templateRepo, MessageService $messages)
     {
-        $this->messageBlocks = $messageBlocks;
+        $this->messages = $messages;
         $this->templateRepo = $templateRepo;
     }
 
+
     /**
-     * @param Page $page
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param Bot $page
+     * @return \Illuminate\Support\Collection
      */
-    public function explicitList(Page $page)
+    public function explicitTemplates(Bot $page)
     {
-        return $this->templateRepo->explicitTemplatesForPage($page);
+        return $this->templateRepo->explicitTemplatesForBot($page);
     }
 
     /**
      * @param      $id
-     * @param Page $page
+     * @param Bot  $page
      * @return Template
      */
-    public function findExplicitOrFail($id, Page $page)
+    public function findExplicitOrFail($id, Bot $page)
     {
-        if ($template = $this->templateRepo->FindExplicitByIdForPage($id, $page)) {
-            return $template;
-        }
-        throw new ModelNotFoundException;
-    }
-
-    /**
-     * @param      $id
-     * @param Page $page
-     * @return Template
-     */
-    public function findOrFail($id, Page $page)
-    {
-        if ($template = $this->templateRepo->findByIdForPage($id, $page)) {
+        if ($template = $this->templateRepo->findExplicitByIdForBot($id, $page)) {
             return $template;
         }
         throw new ModelNotFoundException;
@@ -66,38 +54,98 @@ class TemplateService
 
     /**
      * Create a new explicit template.
-     * @param Page  $page
+     * @param Bot   $bot
      * @param array $input
      * @return Template
      */
-    public function createExplicit(array $input, Page $page)
+    public function createExplicit(array $input, Bot $bot)
     {
-        $template = DB::transaction(function () use ($input, $page) {
-            $template = $this->templateRepo->create(['name' => $input['name'], 'is_explicit' => 1], $page);
-            $this->messageBlocks->persist($template, $input['message_blocks']);
+        $input['explicit'] = true;
+        $input['bot_id'] = $bot->id;
 
-            return $template;
-        });
+        return $this->create($input);
+    }
 
-        return $template;
+    /**
+     * @param array $messages
+     * @param       $botId
+     * @return Template
+     */
+    public function createImplicit(array $messages, $botId)
+    {
+        $input['bot_id'] = $botId;
+        $input['explicit'] = false;
+        $input['messages'] = $messages;
+
+        return $this->create($input);
+    }
+
+    /**
+     * @param array $input
+     * @return \App\Models\BaseModel
+     */
+    private function create(array $input)
+    {
+        return $this->templateRepo->create([
+            'bot_id'   => $input['bot_id'],
+            'name'     => $input['name'],
+            'explicit' => $input['explicit'],
+            'messages' => $this->normalizeMessages($input['messages'])
+        ]);
     }
 
     /**
      * Update a message template.
      * @param       $id
-     * @param Page  $page
+     * @param Bot   $page
      * @param array $input
      * @return Template
      */
-    public function update($id, array $input, Page $page)
+    public function updateExplicit($id, array $input, Bot $page)
     {
-        $template = $this->findOrFail($id, $page);
+        $template = $this->findExplicitOrFail($id, $page);
 
-        DB::transaction(function () use ($input, $template) {
-            $this->templateRepo->update($template, ['name' => $input['name']]);
-            $this->messageBlocks->persist($template, $input['message_blocks']);
-        });
-
-        return $template->fresh();
+        return $this->templateRepo->update(array_only($input, ['input', 'messages']), $template);
     }
+
+    /**
+     * @param string $templateId
+     * @param array  $data
+     * @return Template
+     */
+    public function updateImplicit($templateId, array $data)
+    {
+        /** @type Template $template */
+        $template = $this->templateRepo->findByIdOrFail($templateId);
+
+        return $this->update(array_only($data, 'messages'), $template);
+    }
+
+    /**
+     * @param array    $input
+     * @param Template $template
+     * @return Template
+     */
+    private function update(array $input, Template $template)
+    {
+        $template->messages = $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages);
+
+        $this->templateRepo->update($template, $input);
+
+        return $template;
+    }
+
+    /**
+     * @param array     $messages
+     * @param Message[] $original
+     * @return Message[]
+     */
+    private function normalizeMessages(array $messages, array $original = [])
+    {
+        $messages = $this->messages->normalizeMessages($messages);
+        $messages = $this->messages->makeMessages($messages, $original);
+
+        return $messages;
+    }
+
 }

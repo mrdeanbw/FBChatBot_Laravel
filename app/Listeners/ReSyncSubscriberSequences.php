@@ -1,28 +1,28 @@
 <?php namespace App\Listeners;
 
 use App\Events\SubscriberTagsWereAltered;
-use App\Repositories\Sequence\SequenceRepository;
-use App\Services\AudienceService;
+use App\Repositories\Sequence\SequenceRepositoryInterface;
+use App\Services\SubscriberService;
 
 class ReSyncSubscriberSequences
 {
 
     /**
-     * @type SequenceRepository
+     * @type SequenceRepositoryInterface
      */
     private $sequenceRepo;
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
     private $audience;
 
     /**
      * Create the event listener.
      *
-     * @param SequenceRepository $sequenceRepo
-     * @param AudienceService    $audience
+     * @param SequenceRepositoryInterface $sequenceRepo
+     * @param SubscriberService           $audience
      */
-    public function __construct(SequenceRepository $sequenceRepo, AudienceService $audience)
+    public function __construct(SequenceRepositoryInterface $sequenceRepo, SubscriberService $audience)
     {
         $this->sequenceRepo = $sequenceRepo;
         $this->audience = $audience;
@@ -39,7 +39,7 @@ class ReSyncSubscriberSequences
     {
         $subscriber = $event->subscriber;
 
-        $allSequences = $this->sequenceRepo->getAllForPage($subscriber->page);
+        $allSequences = $this->sequenceRepo->getAllForBot($subscriber->page);
 
         $subscribedSequences = $this->sequenceRepo->getAllForSubscriber($subscriber);
 

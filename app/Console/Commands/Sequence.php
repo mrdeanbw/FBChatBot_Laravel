@@ -5,11 +5,11 @@ use Carbon\Carbon;
 use App\Models\Subscriber;
 use Illuminate\Console\Command;
 use App\Models\SequenceMessage;
-use App\Services\AudienceService;
+use App\Services\SubscriberService;
 use App\Services\SequenceService;
 use App\Services\FacebookAPIAdapter;
 use App\Models\SequenceMessageSchedule;
-use App\Repositories\Sequence\SequenceRepository;
+use App\Repositories\Sequence\SequenceRepositoryInterface;
 
 class Sequence extends Command
 {
@@ -36,26 +36,26 @@ class Sequence extends Command
      */
     private $FacebookAdapter;
     /**
-     * @type SequenceRepository
+     * @type SequenceRepositoryInterface
      */
     private $sequenceRepo;
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
     private $audience;
 
 
     /**
      * Broadcast constructor.
-     * @param SequenceRepository $sequenceRepo
-     * @param SequenceService    $sequences
-     * @param AudienceService    $audience
-     * @param FacebookAPIAdapter $FacebookAdapter
+     * @param SequenceRepositoryInterface $sequenceRepo
+     * @param SequenceService             $sequences
+     * @param SubscriberService           $audience
+     * @param FacebookAPIAdapter          $FacebookAdapter
      */
     public function __construct(
-        SequenceRepository $sequenceRepo,
+        SequenceRepositoryInterface $sequenceRepo,
         SequenceService $sequences,
-        AudienceService $audience,
+        SubscriberService $audience,
         FacebookAPIAdapter $FacebookAdapter
     ) {
         parent::__construct();
@@ -141,7 +141,7 @@ class Sequence extends Command
         }
 
         $this->info("Sending using facebook API.");
-        $this->FacebookAdapter->sendBlocks($sequenceMessage, $subscriber);
+        $this->FacebookAdapter->sendTemplate($sequenceMessage, $subscriber);
 
         return true;
     }

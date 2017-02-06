@@ -8,7 +8,6 @@ class GreetingTextTransformer extends BaseTransformer
     public function transform(GreetingText $greetingText)
     {
         return [
-            'id'   => $greetingText->id,
             'text' => $greetingText->text
         ];
     }

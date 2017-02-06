@@ -1,15 +1,14 @@
 <?php namespace App\Services;
 
-use App\Repositories\DefaultReply\DefaultReplyRepository;
-use DB;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\DefaultReply;
+use App\Repositories\Bot\BotRepositoryInterface;
 
 class DefaultReplyService
 {
 
     /**
-     * @type MessageBlockService
+     * @type MessageService
      */
     private $messageBlocks;
     /**
@@ -17,55 +16,44 @@ class DefaultReplyService
      */
     private $templates;
     /**
-     * @type DefaultReplyRepository
+     * @var BotRepositoryInterface
      */
-    private $defaultReplyRepo;
+    private $botRepo;
 
     /**
      * DefaultReplyService constructor.
-     * @param DefaultReplyRepository $defaultReplyRepo
-     * @param MessageBlockService    $messageBlockService
+     * @param BotRepositoryInterface $botRepo
+     * @param MessageService         $messageBlockService
      * @param TemplateService        $templates
      */
-    public function __construct(
-        DefaultReplyRepository $defaultReplyRepo,
-        MessageBlockService $messageBlockService,
-        TemplateService $templates
-    ) {
-        $this->messageBlocks = $messageBlockService;
-        $this->templates = $templates;
-        $this->defaultReplyRepo = $defaultReplyRepo;
-    }
-
-    /**
-     * Get the default reply for this page.
-     * @param Page $page
-     * @return DefaultReply
-     */
-    public function get(Page $page)
+    public function __construct(BotRepositoryInterface $botRepo, MessageService $messageBlockService, TemplateService $templates)
     {
-        return $this->defaultReplyRepo->getForPage($page);
+        $this->botRepo = $botRepo;
+        $this->templates = $templates;
+        $this->messageBlocks = $messageBlockService;
     }
 
     /**
      * Update the default reply.
      * @param array $input
-     * @param       $page
+     * @param Bot   $bot
+     * @return DefaultReply
      */
-    public function update($input, $page)
+    public function update(array $input, Bot $bot)
     {
-        DB::transaction(function () use ($input, $page) {
-            $defaultReply = $this->get($page);
-            $this->messageBlocks->persist($defaultReply, $input['message_blocks']);
-        });
+        $bot->default_reply->template = $this->templates->updateImplicit($bot->default_reply->template_id, $input['template']);
+
+        return $bot->default_reply;
     }
 
     /**
-     * @param Page $page
+     * @param $botId
      * @return DefaultReply
      */
-    public function createDefaultDefaultReply(Page $page)
+    public function defaultDefaultReply($botId)
     {
-        return $this->defaultReplyRepo->create($page);
+        return new DefaultReply([
+            'template_id' => $this->templates->createImplicit([], $botId)->id
+        ]);
     }
 }

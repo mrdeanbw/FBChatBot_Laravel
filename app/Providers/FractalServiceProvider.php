@@ -1,5 +1,5 @@
-<?php
-namespace App\Providers;
+<?php namespace App\Providers;
+
 use App\Services\CustomFractalSerializer;
 use Dingo\Api\Transformer\Adapter\Fractal;
 use Illuminate\Support\ServiceProvider;

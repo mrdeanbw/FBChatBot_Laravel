@@ -1,6 +1,6 @@
 <?php namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Jenssegers\Mongodb\Eloquent\Model;
 
 /**
  * App\Models\Models
@@ -11,7 +11,13 @@ abstract class BaseModel extends Model
 {
 
     protected $guarded = ['id'];
-
+    
+    /**
+     * @param $query
+     * @param $columnName
+     * @param $value
+     * @return mixed
+     */
     public function scopeDate($query, $columnName, $value)
     {
         $boundaries = date_boundaries($value);

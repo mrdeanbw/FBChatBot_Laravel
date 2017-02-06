@@ -1,22 +1,24 @@
 <?php namespace App\Services;
 
+use App\Repositories\Template\TemplateRepositoryInterface;
 use DB;
 use Carbon\Carbon;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\Sequence;
 use App\Models\Subscriber;
 use App\Models\SequenceMessage;
 use App\Models\SequenceMessageSchedule;
 use App\Events\SequenceTargetingWasAltered;
-use App\Repositories\Sequence\SequenceRepository;
+use App\Repositories\Sequence\SequenceRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use MongoDB\BSON\ObjectID;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SequenceService
 {
 
     /**
-     * @type MessageBlockService
+     * @type MessageService
      */
     private $messageBlocks;
     /**
@@ -28,59 +30,66 @@ class SequenceService
      */
     private $filterGroups;
     /**
-     * @type SequenceRepository
+     * @type SequenceRepositoryInterface
      */
     private $sequenceRepo;
+    /**
+     * @type TemplateRepositoryInterface
+     */
+    private $templateRepo;
 
     /**
      * SequenceService constructor.
-     * @param SequenceRepository  $sequenceRepo
-     * @param MessageBlockService $messageBlocks
-     * @param TimezoneService     $timezones
-     * @param FilterGroupService  $filterGroups
+     * @param SequenceRepositoryInterface $sequenceRepo
+     * @param MessageService              $messageBlocks
+     * @param TimezoneService             $timezones
+     * @param FilterGroupService          $filterGroups
+     * @param TemplateRepositoryInterface $templateRepo
      */
     public function __construct(
-        SequenceRepository $sequenceRepo,
-        MessageBlockService $messageBlocks,
+        SequenceRepositoryInterface $sequenceRepo,
+        MessageService $messageBlocks,
         TimezoneService $timezones,
-        FilterGroupService $filterGroups
+        FilterGroupService $filterGroups,
+        TemplateRepositoryInterface $templateRepo
     ) {
         $this->messageBlocks = $messageBlocks;
         $this->timezones = $timezones;
         $this->filterGroups = $filterGroups;
         $this->sequenceRepo = $sequenceRepo;
+        $this->templateRepo = $templateRepo;
     }
 
     /**
      * Return all sequences for page.
-     * @param Page $page
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param Bot $bot
+     * @return \Illuminate\Support\Collection
      */
-    public function all(Page $page)
+    public function all(Bot $bot)
     {
-        return $this->sequenceRepo->getAllForPage($page);
+        return $this->sequenceRepo->getAllForBot($bot);
     }
 
     /**
      * Find a sequence for a page.
      * @param             $id
-     * @param Page        $page
+     * @param Bot         $bot
      * @return Sequence
      */
-    public function find($id, Page $page)
+    public function findByIdForBot($id, Bot $bot)
     {
-        return $this->sequenceRepo->findByIdForPage($id, $page);
+        return $this->sequenceRepo->findByIdForBot($id, $bot);
     }
 
     /**
      * Find a sequence for page, or thrown an exception if the sequence doesn't exit.
      * @param             $id
-     * @param Page        $page
+     * @param Bot         $page
      * @return Sequence
      */
-    public function findOrFail($id, Page $page)
+    public function findByIdForBotOrFail($id, Bot $page)
     {
-        if ($sequence = $this->find($id, $page)) {
+        if ($sequence = $this->findByIdForBot($id, $page)) {
             return $sequence;
         }
         throw new ModelNotFoundException;
@@ -102,13 +111,33 @@ class SequenceService
     }
 
     /**
+     * Create a sequence
+     * @param array $input
+     * @param Bot   $bot
+     * @return Sequence
+     */
+    public function create(array $input, Bot $bot)
+    {
+        $data = [
+            'name'     => $input['name'],
+            'bot_id'   => $bot->id,
+            'filters'  => null,
+            'messages' => $this->defaultSequenceMessages($bot),
+        ];
+
+        $sequence = $this->sequenceRepo->create($data);
+
+        return $sequence;
+    }
+
+    /**
      * Update a sequence.
      * @param      $id
      * @param      $input
-     * @param Page $page
+     * @param Bot  $page
      * @return Sequence
      */
-    public function update($id, $input, Page $page)
+    public function update($id, $input, Bot $page)
     {
         $data = [
             'name'           => $input['name'],
@@ -119,72 +148,27 @@ class SequenceService
         $filterGroups = $input['filter_groups'];
 
         DB::transaction(function () use ($id, $data, $filterGroups, $page) {
-            $sequence = $this->findOrFail($id, $page);
+            $sequence = $this->findByIdForBotOrFail($id, $page);
             $this->sequenceRepo->update($sequence, $data);
             $this->filterGroups->persist($sequence, $filterGroups);
 
             // Fresh instance of the sequence
-            $sequence = $this->findOrFail($id, $page);
+            $sequence = $this->findByIdForBotOrFail($id, $page);
             event(new SequenceTargetingWasAltered($sequence));
         });
 
         // return a fresh instance.
-        return $this->findOrFail($id, $page);
-    }
-
-    /**
-     * Create a sequence
-     * @param      $input
-     * @param Page $page
-     * @return Sequence
-     */
-    public function create($input, Page $page)
-    {
-        $data = [
-            'name' => $input['name']
-        ];
-
-        return DB::transaction(function () use ($data, $page) {
-            $sequence = $this->sequenceRepo->create($data, $page);
-            $this->createDefaultSequenceMessages($sequence);
-
-            return $sequence;
-        });
-    }
-
-    /**
-     * Create the default sequence messages.
-     * @param Sequence $sequence
-     */
-    private function createDefaultSequenceMessages(Sequence $sequence)
-    {
-        $messages = $this->getDefaultSequenceMessages();
-        $this->persistMessages($messages, $sequence);
-    }
-
-    /**
-     * Persist the messages for a sequence.
-     * @param array    $messages
-     * @param Sequence $sequence
-     */
-    private function persistMessages(array $messages, Sequence $sequence)
-    {
-        foreach ($messages as $messageData) {
-            $clean = array_only($messageData, ['name', 'days', 'order']);
-            $clean['is_live'] = array_get($messageData, 'is_live', false);
-            $message = $this->sequenceRepo->createMessage($clean, $sequence);
-            $this->messageBlocks->persist($message, $messageData['message_blocks']);
-        }
+        return $this->findByIdForBotOrFail($id, $page);
     }
 
     /**
      * Delete a sequence.
      * @param      $id
-     * @param Page $page
+     * @param Bot  $page
      */
     public function delete($id, $page)
     {
-        $sequence = $this->findOrFail($id, $page);
+        $sequence = $this->findByIdForBotOrFail($id, $page);
         DB::transaction(function () use ($sequence) {
             $this->sequenceRepo->delete($sequence);
         });
@@ -194,11 +178,11 @@ class SequenceService
      * Add a new message to a sequences.
      * @param array $input
      * @param int   $sequenceId
-     * @param Page  $page
+     * @param Bot   $page
      */
-    public function addMessage(array $input, $sequenceId, Page $page)
+    public function addMessage(array $input, $sequenceId, Bot $page)
     {
-        $sequence = $this->findOrFail($sequenceId, $page);
+        $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
 
         // The order of the message to be added, is the order of the last message + 1
         // If no previous messages exist, then the order of this message is 1.
@@ -215,19 +199,19 @@ class SequenceService
      * @param array $input
      * @param int   $id
      * @param int   $sequenceId
-     * @param Page  $page
+     * @param Bot   $page
      */
-    public function updateMessage(array $input, $id, $sequenceId, Page $page)
+    public function updateMessage(array $input, $id, $sequenceId, Bot $page)
     {
         DB::transaction(function () use ($input, $id, $sequenceId, $page) {
             $data = array_only($input, ['name', 'days']);
             $data['is_live'] = array_get($input, 'is_live', false);
 
-            $sequence = $this->findOrFail($sequenceId, $page);
+            $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
             $message = $this->findMessageOrFail($id, $sequence);
 
             $this->sequenceRepo->updateMessage($message, $data);
-            $this->messageBlocks->persist($message, $input['message_blocks']);
+            //            $this->messageBlocks->persist($message, $input['messages']);
         });
     }
 
@@ -240,7 +224,7 @@ class SequenceService
     public function deleteMessage($id, $sequenceId, $page)
     {
         DB::transaction(function () use ($id, $sequenceId, $page) {
-            $sequence = $this->findOrFail($sequenceId, $page);
+            $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
             $message = $this->findMessageOrFail($id, $sequence);
             $this->sequenceRepo->deleteMessage($message);
         });
@@ -266,73 +250,116 @@ class SequenceService
     }
 
     /**
+     * @param Bot $bot
      * @return array
      */
-    private function getDefaultSequenceMessages()
+    private function defaultSequenceMessages(Bot $bot)
     {
-        return [
+
+        $templates = $this->getDefaultTemplates($bot);
+        $this->templateRepo->bulkCreate($templates);
+
+        $arr = [
             [
-                'name'           => 'Introduction content + Unsubscribe instructions',
-                'days'           => 1,
-                'order'          => 1,
-                'message_blocks' => $this->getDefaultMessageBlocks(1),
+                'order'       => 1,
+                'live'        => false,
+                'name'        => 'Introduction content + Unsubscribe instructions',
+                'conditions'  => ['wait_for' => ['days' => 1, 'hours' => 0, 'minutes' => 0]],
+                'template_id' => $templates[0]['_id'],
             ],
             [
-                'name'           => '1st Educational message',
-                'days'           => 1,
-                'order'          => 2,
-                'message_blocks' => $this->getDefaultMessageBlocks(2),
+                'order'       => 2,
+                'live'        => false,
+                'name'        => '1st Educational message',
+                'conditions'  => ['wait_for' => ['days' => 1, 'hours' => 0, 'minutes' => 0]],
+                'template_id' => $templates[1]['_id'],
             ],
             [
-                'name'           => '2nd Educational message',
-                'days'           => 2,
-                'order'          => 3,
-                'message_blocks' => $this->getDefaultMessageBlocks(3),
+                'order'       => 3,
+                'live'        => false,
+                'name'        => '2nd Educational message',
+                'conditions'  => ['wait_for' => ['days' => 2, 'hours' => 0, 'minutes' => 0]],
+                'template_id' => $templates[2]['_id'],
             ],
             [
-                'name'           => '3rd Educational message + Soft sell',
-                'days'           => 3,
-                'order'          => 4,
-                'message_blocks' => $this->getDefaultMessageBlocks(4),
+                'order'       => 4,
+                'live'        => false,
+                'name'        => '3rd Educational message + Soft sell',
+                'conditions'  => ['wait_for' => ['days' => 3, 'hours' => 0, 'minutes' => 0]],
+                'template_id' => $templates[3]['_id'],
             ],
             [
-                'name'           => '4th Educational message',
-                'days'           => 4,
-                'order'          => 5,
-                'message_blocks' => $this->getDefaultMessageBlocks(5),
+                'order'       => 5,
+                'live'        => false,
+                'name'        => '4th Educational message',
+                'conditions'  => ['wait_for' => ['days' => 4, 'hours' => 0, 'minutes' => 0]],
+                'template_id' => $templates[4]['_id'],
             ],
         ];
+
+        return array_map(function ($item) {
+            return new SequenceMessage($item);
+        }, $arr);
     }
 
 
     /**
-     * @param $order
+     * @param Bot $bot
      * @return array
      */
-    private function getDefaultMessageBlocks($order)
+    private function getDefaultTemplates(Bot $bot)
     {
-        switch ($order) {
-            case 1:
-                return [
+
+        return [
+            [
+                '_id'      => new ObjectID(),
+                'bot_id'   => $bot->id,
+                'explicit' => false,
+                'messages' => [
                     $this->textMessage("Remind your subscriber who you are and why are they getting messages from you. Then deliver valuable information (don't forget to replace these help messages!)."),
                     $this->textMessage('Good idea to mention how to unsubscribe (they can do this by sending the "stop" message).'),
-                ];
+                ]
+            ],
 
-            case 2:
-                return [$this->textMessage("First messages are the most important. Focus on being extremely useful.")];
+            [
+                '_id'      => new ObjectID(),
+                'bot_id'   => $bot->id,
+                'explicit' => false,
+                'messages' => [
+                    $this->textMessage("First messages are the most important. Focus on being extremely useful.")
+                ]
+            ],
 
-            case 3:
-                return [$this->textMessage("First messages are the most important. Focus on being extremely useful.")];
 
-            case 4:
-                return [$this->textMessage("Make your message educational, but find a soft way to mention your product. Something like a P.S. at the end can be a good way to do it.")];
+            [
+                '_id'      => new ObjectID(),
+                'bot_id'   => $bot->id,
+                'explicit' => false,
+                'messages' => [
+                    $this->textMessage("First messages are the most important. Focus on being extremely useful.")
+                ]
+            ],
 
-            case 5:
-                return [$this->textMessage("Keep being incredibly useful. Remember that your subscription base is the most important asset. Take time to build the relationship.")];
 
-            default:
-                throw new HttpException(500, "Unknown Sequence Message");
-        }
+            [
+                '_id'      => new ObjectID(),
+                'bot_id'   => $bot->id,
+                'explicit' => false,
+                'messages' => [
+                    $this->textMessage("Make your message educational, but find a soft way to mention your product. Something like a P.S. at the end can be a good way to do it.")
+                ]
+            ],
+
+
+            [
+                '_id'      => new ObjectID(),
+                'bot_id'   => $bot->id,
+                'explicit' => false,
+                'messages' => [
+                    $this->textMessage("Keep being incredibly useful. Remember that your subscription base is the most important asset. Take time to build the relationship.")
+                ]
+            ]
+        ];
     }
 
     /**

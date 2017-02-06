@@ -2,9 +2,9 @@
 
 use Log;
 use Carbon\Carbon;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\Subscriber;
-use App\Services\Facebook\Thread;
+use App\Services\Facebook\MessengerThread;
 
 class FacebookWebhookReceiver
 {
@@ -133,7 +133,7 @@ class FacebookWebhookReceiver
             // If no matching auto reply rule is found, then send the default reply.
             // But before then, if the current message sender is not a subscriber,
             // or if inactive subscriber, subscribe them silently.
-            if (! $subscriber || ! $subscriber->is_active) {
+            if (! $subscriber || ! $subscriber->active) {
                 $subscriber = $this->adapter->subscribeSilently($page, $event['sender']['id']);
             }
             $this->updateLastContactedAt($subscriber);
@@ -164,15 +164,15 @@ class FacebookWebhookReceiver
 
     /**
      * Handle button clicks (postback)
-     * @param Page            $page
+     * @param Bot             $page
      * @param Subscriber|null $subscriber
      * @param                 $event
      * @return bool
      */
-    private function handlePostbackEvent(Page $page, $subscriber, $event)
+    private function handlePostbackEvent(Bot $page, $subscriber, $event)
     {
         // If clicked on the get started button, then subscribe the user.
-        if ($event['postback']['payload'] == Thread::GET_STARTED_PAYLOAD) {
+        if ($event['postback']['payload'] == MessengerThread::GET_STARTED_PAYLOAD) {
             $this->adapter->subscribe($page, $event['sender']['id']);
 
             return;

@@ -3,9 +3,9 @@
 use DB;
 use Illuminate\Console\Command;
 use App\Models\BroadcastSchedule;
-use App\Services\AudienceService;
+use App\Services\SubscriberService;
 use App\Services\FacebookAPIAdapter;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use App\Repositories\Broadcast\BroadcastRepository;
 
 class Broadcast extends Command
@@ -29,7 +29,7 @@ class Broadcast extends Command
      */
     private $FacebookAdapter;
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
     private $audience;
     /**
@@ -41,10 +41,10 @@ class Broadcast extends Command
     /**
      * Broadcast constructor.
      * @param BroadcastRepository $broadcastRepo
-     * @param AudienceService     $audience
+     * @param SubscriberService   $audience
      * @param FacebookAPIAdapter  $FacebookAdapter
      */
-    public function __construct(BroadcastRepository $broadcastRepo, AudienceService $audience, FacebookAPIAdapter $FacebookAdapter)
+    public function __construct(BroadcastRepository $broadcastRepo, SubscriberService $audience, FacebookAPIAdapter $FacebookAdapter)
     {
         parent::__construct();
         $this->FacebookAdapter = $FacebookAdapter;
@@ -111,8 +111,8 @@ class Broadcast extends Command
 
         foreach ($audience as $subscriber) {
 
-            $ret = $this->FacebookAdapter->sendBlocks(
-                $schedule->broadcast,
+            $ret = $this->FacebookAdapter->sendTemplate(
+                $schedule->broadcast->template,
                 $subscriber,
                 strtoupper($schedule->broadcast->notification)
             );

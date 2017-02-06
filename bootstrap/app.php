@@ -27,10 +27,14 @@ $app->withFacades(true, [
     'Illuminate\Support\Facades\Redirect' => 'Redirect'
 ]);
 $app->bind('redirect', 'Laravel\Lumen\Http\Redirector');
+
+$app->register(Jenssegers\Mongodb\MongodbServiceProvider::class);
+$app->register(Jenssegers\Mongodb\MongodbQueueServiceProvider::class);
 $app->withEloquent();
 
 $app->configure('app');
 $app->configure('jwt');
+$app->configure('queue');
 $app->configure('services');
 
 /*
@@ -98,11 +102,19 @@ $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\EventServiceProvider::class);
 $app->register(App\Providers\RegisterAPITransformersProvider::class);
 $app->register(App\Providers\CatchAllOptionsRequestsProvider::class);
-$app->register(App\Providers\EloquentRepositoryServiceProvider::class);
+$app->register(App\Providers\RepositoryServiceProvider::class);
+$app->register(App\Providers\PusherServiceProvider::class);
 $app->register(Rap2hpoutre\LaravelLogViewer\LaravelLogViewerServiceProvider::class);
+$app->register(Illuminate\Redis\RedisServiceProvider::class);
 
 $app->make(Dingo\Api\Auth\Auth::class)->extend('jwt', function (Application $app) {
     return new Dingo\Api\Auth\Provider\JWT($app->make(Tymon\JWTAuth\JWTAuth::class));
+});
+
+app('Dingo\Api\Transformer\Factory')->setAdapter(function ($app) {
+    return new Dingo\Api\Transformer\Adapter\Fractal(
+        app(League\Fractal\Manager::class), 'include', ',', false
+    );
 });
 
 

@@ -11,7 +11,7 @@ class InvoiceController extends APIController
      */
     public function index()
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         /**
          * If the page doesn't have any subscriptions associated,
@@ -31,7 +31,7 @@ class InvoiceController extends APIController
      */
     public function show($id)
     {
-        return $this->itemResponse($this->page()->findInvoiceOrFail($id));
+        return $this->itemResponse($this->bot()->findInvoiceOrFail($id));
     }
 
     protected function transformer()

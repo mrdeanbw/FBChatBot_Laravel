@@ -1,11 +1,13 @@
 <?php namespace App\Http\Controllers;
 
+use App\Jobs\HandleIncomingFacebookCallback;
 use DB;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Services\PageService;
+use App\Services\BotService;
 use App\Services\Facebook\AppVerifier;
 use App\Services\FacebookWebhookReceiver;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class FacebookWebhookController extends Controller
@@ -32,25 +34,23 @@ class FacebookWebhookController extends Controller
 
     /**
      * Handle a webhook callback.
-     * @param Request                 $request
-     * @param FacebookWebhookReceiver $FacebookReceiver
+     * @param Request $request
      * @return \Illuminate\Http\Response|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function handle(Request $request, FacebookWebhookReceiver $FacebookReceiver)
+    public function handle(Request $request)
     {
-        $FacebookReceiver->setData($request->all());
-        $FacebookReceiver->handle();
+        dispatch(new HandleIncomingFacebookCallback($request->all()));
 
         return response('');
     }
 
     /**
      * Handle when a Facebook user de-authorizes our app.
-     * @param Request     $request
-     * @param PageService $pages
+     * @param Request    $request
+     * @param BotService $pages
      * @return \Illuminate\Http\Response|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function deauthorize(Request $request, PageService $pages)
+    public function deauthorize(Request $request, BotService $pages)
     {
         $signedRequest = $request->get('signed_request', '');
         $FacebookAppSecret = config('services.facebook.client_secret');

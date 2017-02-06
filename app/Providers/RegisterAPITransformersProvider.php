@@ -20,6 +20,6 @@ class RegisterAPITransformersProvider extends ServiceProvider
         /** @type Factory $factory */
         $factory = app(Factory::class);
         $factory->register(Models\PaymentPlan::class, Transformers\PaymentPlanTransformer::class);
-        $factory->register(Models\Page::class, Transformers\PageTransformer::class);
+        $factory->register(Models\Bot::class, Transformers\BotTransformer::class);
     }
 }

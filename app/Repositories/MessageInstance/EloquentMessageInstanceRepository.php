@@ -1,9 +1,9 @@
 <?php namespace App\Repositories\MessageInstance;
 
 use App\Models\MessageInstanceClick;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\Subscriber;
-use App\Models\MessageBlock;
+use App\Models\Message;
 use App\Models\MessageInstance;
 
 class EloquentMessageInstanceRepository implements MessageInstanceRepository
@@ -11,12 +11,12 @@ class EloquentMessageInstanceRepository implements MessageInstanceRepository
 
     /**
      * Create a new message block, and associate it with a given model.
-     * @param array        $data
-     * @param MessageBlock $messageBlock
-     * @param Subscriber   $subscriber
+     * @param array      $data
+     * @param Message    $messageBlock
+     * @param Subscriber $subscriber
      * @return MessageInstance
      */
-    public function create(array $data, MessageBlock $messageBlock, Subscriber $subscriber)
+    public function create(array $data, Message $messageBlock, Subscriber $subscriber)
     {
         $data['subscriber_id'] = $subscriber->id;
         $data['page_id'] = $messageBlock->page->id;
@@ -38,22 +38,12 @@ class EloquentMessageInstanceRepository implements MessageInstanceRepository
     /**
      * Find a message instance that belongs to a certain page.
      * @param      $id
-     * @param Page $page
+     * @param Bot  $page
      * @return MessageInstance|null
      */
-    public function findByIdForPage($id, Page $page)
+    public function findByIdForPage($id, Bot $page)
     {
         return $page->messageInstances()->find($id);
-    }
-
-    /**
-     * Find a message instance that belongs to a certain page.
-     * @param      $id
-     * @return MessageInstance|null
-     */
-    public function findById($id)
-    {
-        return MessageInstance::find($id);
     }
 
     /**

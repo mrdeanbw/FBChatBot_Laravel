@@ -11,7 +11,8 @@
 |
 */
 
-use App\Models\Page;
+use App\Models\Bot;
+use App\Models\Template;
 use Carbon\Carbon;
 
 $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker) {
@@ -27,7 +28,7 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
         $active = $lastUnsubscribed->getTimestamp() <= $lastSubscribed->getTimestamp();
     }
 
-    $pageId = Page::firstOrFail()->id;
+    $pageId = Bot::firstOrFail()->id;
 
     return [
         'first_name'           => $firstName,
@@ -43,5 +44,17 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
         'timezone'             => Carbon::now($faker->timezone)->offsetHours,
         'last_subscribed_at'   => $lastSubscribed,
         'last_unsubscribed_at' => $lastUnsubscribed,
+    ];
+});
+
+
+$factory->define(\App\Models\AutoReplyRule::class, function (Faker\Generator $faker) {
+    return [
+        'mode' => $faker->randomElement(['is', 'contains', 'begins_with']),
+        'keyword' => $faker->word,
+        'action' => 'send',
+        'readonly' => false,
+        'bot_id' => null,
+        'template_id' => null
     ];
 });

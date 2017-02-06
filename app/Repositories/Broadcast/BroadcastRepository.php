@@ -1,43 +1,43 @@
 <?php namespace App\Repositories\Broadcast;
 
-use App\Models\BroadcastSchedule;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\Broadcast;
 use App\Models\Subscriber;
 use Illuminate\Support\Collection;
+use App\Repositories\CommonRepositoryInterface;
 
-interface BroadcastRepository
+interface BroadcastRepository extends CommonRepositoryInterface
 {
 
     /**
      * Get all broadcasts that
-     * @param Page $page
+     * @param Bot $page
      * @return Collection
      */
-    public function getAllForPage(Page $page);
+    public function getAllForPage(Bot $page);
 
     /**
      * Find a broadcast by id
-     * @param int  $id
-     * @param Page $page
+     * @param int $id
+     * @param Bot $page
      * @return Broadcast|null
      */
-    public function findByIdForPage($id, Page $page);
+    public function findByIdForPage($id, Bot $page);
 
     /**
      * Create a broadcast and associate it with a page.
      * @param array $data
-     * @param Page  $page
+     * @param Bot   $page
      * @return Broadcast
      */
-    public function createForPage(array $data, Page $page);
+    public function createForPage(array $data, Bot $page);
 
     /**
      * Update a broadcast
      * @param Broadcast $broadcast
      * @param array     $data
      */
-    public function update(Broadcast $broadcast, array $data);
+    public function update($broadcast, array $data);
 
     /**
      * Delete the broadcast schedules.
@@ -56,7 +56,7 @@ interface BroadcastRepository
      * Delete a broadcast
      * @param Broadcast $broadcast
      */
-    public function delete(Broadcast $broadcast);
+    public function delete($broadcast);
 
     /**
      * @param Broadcast  $broadcast
@@ -85,10 +85,10 @@ interface BroadcastRepository
 
     /**
      * Update a broadcast schedule
-     * @param BroadcastSchedule $schedule
-     * @param array             $data
+     * @param       $schedule
+     * @param array $data
      */
-    public function updateSchedule(BroadcastSchedule $schedule, array $data);
+    public function updateSchedule($schedule, array $data);
 
     /**
      * Does the broadcast still has unprocessed schedule?

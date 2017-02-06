@@ -6,7 +6,7 @@ use App\Models\Widget;
 class WidgetTransformer extends BaseTransformer
 {
 
-    protected $defaultIncludes = ['message_blocks'];
+    protected $defaultIncludes = ['messages'];
 
     public function transform(Widget $widget)
     {

@@ -3,12 +3,12 @@
 use Illuminate\Http\Request;
 use App\Transformers\BaseTransformer;
 use App\Services\MessagePreviewService;
-use App\Services\Validation\MessageBlockRuleValidator;
+use App\Services\Validation\MessageValidationHelper;
 
 class MessagePreviewController extends APIController
 {
 
-    use MessageBlockRuleValidator;
+    use MessageValidationHelper;
 
     /**
      * @type MessagePreviewService
@@ -24,7 +24,6 @@ class MessagePreviewController extends APIController
         $this->messagePreviews = $messagePreviews;
     }
     
-
     /**
      * Create a message preview.
      * @param Request $request
@@ -32,15 +31,10 @@ class MessagePreviewController extends APIController
      */
     public function store(Request $request)
     {
-        $page = $this->page();
+        $rules = $this->validationRules();
+        $this->validate($request, $rules);
 
-        $validator = $this->makeValidator($request->all(), [], $page);
-
-        if ($validator->fails()) {
-            return $this->errorsResponse($validator->errors());
-        }
-
-        $this->messagePreviews->createAndSend($request->all(), $this->user(), $page);
+        $this->messagePreviews->createAndSend($request->all(), $this->user(), $this->bot());
 
         return $this->response->created();
     }
@@ -48,5 +42,14 @@ class MessagePreviewController extends APIController
     /** @return BaseTransformer */
     protected function transformer()
     {
+    }
+
+    private function validationRules()
+    {
+        return [
+            'template'            => 'bail|required|array',
+            'template.messages'   => 'bail|required|array|max:10',
+            'template.messages.*' => 'bail|required|message',
+        ];
     }
 }

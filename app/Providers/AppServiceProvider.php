@@ -1,8 +1,8 @@
 <?php namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use App\Services\Validation\MessageBlockValidator;
 use Validator;
+use Illuminate\Support\ServiceProvider;
+use App\Services\Validation\MessageValidator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,8 +28,8 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerMessageBlockValidation()
     {
-        Validator::extendImplicit('message_block', function ($attribute, $value, $parameters, $validator) {
-            return MessageBlockValidator::FromInstance($validator)->validateMessageBlock($attribute, $value, $parameters);
+        Validator::extendImplicit('message', function ($attribute, $value, $parameters, $validator) {
+            return MessageValidator::FromInstance($validator)->validateMessage($attribute, $value, $parameters);
         });
     }
 

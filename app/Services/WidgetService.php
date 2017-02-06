@@ -23,7 +23,7 @@
 //
 //    /**
 //     * @param Page $page
-//     * @return \Illuminate\Database\Eloquent\Collection
+//     * @return \Illuminate\Support\Collection
 //     */
 //    public function all(Page $page)
 //    {
@@ -56,7 +56,7 @@
 //        $widget->options = $this->cleanOptions($widget->type, $input['widget_options']);
 //        $widget->save();
 //
-//        $this->messageBlocks->persist($widget, $input['message_blocks'], $page);
+//        $this->messageBlocks->persist($widget, $input['messages'], $page);
 //
 //        \DB::commit();
 //    }
@@ -77,7 +77,7 @@
 //        $widget->options = $this->cleanOptions($widget->type, $input['widget_options']);
 //        $page->widgets()->save($widget);
 //
-//        $this->messageBlocks->persist($widget, $input['message_blocks'], $page);
+//        $this->messageBlocks->persist($widget, $input['messages'], $page);
 //
 //        \DB::commit();
 //

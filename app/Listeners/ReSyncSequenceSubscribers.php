@@ -2,28 +2,28 @@
 
 use App\Events\SequenceTargetingWasAltered;
 use App\Events\SubscriberTagsWereAltered;
-use App\Repositories\Sequence\SequenceRepository;
-use App\Services\AudienceService;
+use App\Repositories\Sequence\SequenceRepositoryInterface;
+use App\Services\SubscriberService;
 
 class ReSyncSequences
 {
 
     /**
-     * @type SequenceRepository
+     * @type SequenceRepositoryInterface
      */
     private $sequenceRepo;
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
     private $audience;
 
     /**
      * Create the event listener.
      *
-     * @param SequenceRepository $sequenceRepo
-     * @param AudienceService    $audience
+     * @param SequenceRepositoryInterface $sequenceRepo
+     * @param SubscriberService           $audience
      */
-    public function __construct(SequenceRepository $sequenceRepo, AudienceService $audience)
+    public function __construct(SequenceRepositoryInterface $sequenceRepo, SubscriberService $audience)
     {
         $this->sequenceRepo = $sequenceRepo;
         $this->audience = $audience;

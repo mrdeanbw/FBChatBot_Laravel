@@ -1,8 +1,8 @@
-<?php
-namespace App\Http\Controllers\API;
+<?php namespace App\Http\Controllers\API;
 
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\User;
+use App\Services\BotService;
 use Illuminate\Http\Request;
 use Dingo\Api\Routing\Helpers;
 use Illuminate\Support\Collection;
@@ -17,34 +17,41 @@ abstract class APIController extends Controller
     use Helpers {
         user as APIUser;
     }
-
+    
     /**
-     * @type Page
+     * @type Bot
      */
-    protected $page;
-
+    protected $bot;
+    
     /**
-     * Parses the request for the page id, and fetches the page from the database.
-     * @return Page
+     * Parses the request for the bot id, and fetches the bot from the database.
+     * @return Bot
      */
-    protected function page()
+    protected function bot()
     {
         /**
-         * If the page has been already fetched, return it.
+         * If the bot has been already fetched, return it.
          */
-        if ($this->page) {
-            return $this->page;
+        if ($this->bot) {
+            return $this->bot;
         }
 
         $request = app('request');
 
-        $pageId = $this->getPageIdFromUrlParameters($request);
+        $botId = $this->getBotIdFromUrlParameters($request);
 
-        if (! $pageId) {
-            $this->response->errorBadRequest("Page Not Specified.");
+        if (! $botId) {
+            $this->response->errorBadRequest("Bot Not Specified.");
         }
 
-        return $this->page = $this->user()->pages()->findOrFail($pageId);
+        /** @type BotService $botService */
+        $botService = app(BotService::class);
+
+        if ($bot = $botService->findByIdForUser($botId, $this->user())){
+            return $this->bot = $bot;
+        }
+        
+        $this->response->errorNotFound();
     }
 
     /**
@@ -55,8 +62,7 @@ abstract class APIController extends Controller
     {
         return $this->APIUser();
     }
-
-
+    
     /**
      * @return BaseTransformer
      */
@@ -103,24 +109,24 @@ abstract class APIController extends Controller
     }
 
     /**
-     * The page id is always provided either through a GET parameter called "pageId".
+     * The bot id is always provided either through a GET parameter called "botId".
      * Or through a route parameter called "id"
      * @param Request $request
      * @return mixed
      */
-    protected function getPageIdFromUrlParameters(Request $request)
+    protected function getBotIdFromUrlParameters(Request $request)
     {
         $routeParameters = $request->route()[2];
 
-        $pageId = array_get($routeParameters, 'pageId');
+        $botId = array_get($routeParameters, 'botId');
 
-        if (! $pageId) {
-            $pageId = array_get($routeParameters, 'id');
+        if (! $botId) {
+            $botId = array_get($routeParameters, 'id');
 
-            return $pageId;
+            return $botId;
         }
 
-        return $pageId;
+        return $botId;
     }
 
 

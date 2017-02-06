@@ -1,20 +1,22 @@
-<?php
-namespace App\Transformers;
+<?php namespace App\Transformers;
 
-use App\Models\HasFilterGroupsInterface;
-use App\Models\HasMessageBlocksInterface;
+use App\Services\LoadsAssociatedModels;
 use League\Fractal\TransformerAbstract;
 
 abstract class BaseTransformer extends TransformerAbstract
 {
 
-    public function includeMessageBlocks(HasMessageBlocksInterface $model)
+    use LoadsAssociatedModels;
+
+    public function includeTemplate($model)
     {
-        return $this->collection($model->message_blocks, new MessageBlockTransformer(), false);
+        if (! $model->template_id) {
+            return $this->null();
+        }
+
+        $this->loadModelsIfNotLoaded($model, ['template']);
+
+        return $this->item($model->template, new TemplateTransformer(), false);
     }
-    
-    public function includeFilterGroups(HasFilterGroupsInterface $model)
-    {
-        return $this->collection($model->filter_groups, new FilterGroupTransformer(), false);
-    }
+
 }

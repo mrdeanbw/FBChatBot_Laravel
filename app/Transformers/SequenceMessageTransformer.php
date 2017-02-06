@@ -1,23 +1,22 @@
-<?php
-namespace App\Transformers;
+<?php namespace App\Transformers;
 
 use App\Models\SequenceMessage;
 
 class SequenceMessageTransformer extends BaseTransformer
 {
 
-    protected $defaultIncludes = ['message_blocks'];
+    protected $availableIncludes = ['template'];
 
     public function transform(SequenceMessage $message)
     {
         return [
-            'id'         => (int)$message->id,
+            'id'         => $message->id,
             'name'       => $message->name,
-            'days'       => (int)$message->days,
-            'order'      => (int)$message->order,
-            'is_live'    => (bool)$message->is_live,
-            'is_deleted' => ! ! $message->deleted_at,
-            'queued'     => $message->schedules()->whereStatus('pending')->count(),
+            'conditions' => $message->conditions,
+            'order'      => $message->order,
+            'live'       => $message->live,
+            'is_deleted' => false,
+            'queued'     => 0,
         ];
     }
 }

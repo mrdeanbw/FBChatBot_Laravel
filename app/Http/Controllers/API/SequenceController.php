@@ -1,9 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Services\AudienceService;
-use DB;
 use Illuminate\Http\Request;
 use App\Services\SequenceService;
+use App\Services\SubscriberService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\SequenceTransformer;
 use App\Services\Validation\FilterAudienceRuleValidator;
@@ -18,16 +17,16 @@ class SequenceController extends APIController
      */
     private $sequences;
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
     private $audience;
 
     /**
      * SequenceController constructor.
-     * @param SequenceService $sequences
-     * @param AudienceService $audience
+     * @param SequenceService   $sequences
+     * @param SubscriberService $audience
      */
-    public function __construct(SequenceService $sequences, AudienceService $audience)
+    public function __construct(SequenceService $sequences, SubscriberService $audience)
     {
         $this->sequences = $sequences;
         $this->audience = $audience;
@@ -39,9 +38,9 @@ class SequenceController extends APIController
      */
     public function index()
     {
-        $page = $this->page();
+        $sequences = $this->sequences->all($this->bot());
 
-        return $this->collectionResponse($this->sequences->all($page));
+        return $this->collectionResponse($sequences);
     }
 
     /**
@@ -51,8 +50,8 @@ class SequenceController extends APIController
      */
     public function show($id)
     {
-        $page = $this->page();
-        $sequence = $this->sequences->findOrFail($id, $page);
+        $page = $this->bot();
+        $sequence = $this->sequences->findByIdForBotOrFail($id, $page);
 
         return $this->itemResponse($sequence);
     }
@@ -64,13 +63,11 @@ class SequenceController extends APIController
      */
     public function store(Request $request)
     {
-        $page = $this->page();
-
         $this->validate($request, [
             'name' => 'required|max:255'
         ]);
 
-        $sequence = $this->sequences->create($request->all(), $page);
+        $sequence = $this->sequences->create($request->all(), $this->bot());
 
         return $this->itemResponse($sequence);
     }
@@ -83,7 +80,7 @@ class SequenceController extends APIController
      */
     public function update($id, Request $request)
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         $this->validate(
             $request,
@@ -103,7 +100,7 @@ class SequenceController extends APIController
      */
     public function destroy($id)
     {
-        $page = $this->page();
+        $page = $this->bot();
 
         $this->sequences->delete($id, $page);
 

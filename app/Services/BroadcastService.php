@@ -2,31 +2,23 @@
 
 use DB;
 use Carbon\Carbon;
-use App\Models\Page;
+use App\Models\Bot;
 use App\Models\Broadcast;
 use App\Models\Subscriber;
-use App\Models\BroadcastSchedule;
-use App\Models\HasFilterGroupsInterface;
-use Illuminate\Database\Eloquent\Builder;
 use App\Repositories\Broadcast\BroadcastRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Collection;
 
 class BroadcastService
 {
 
     /**
-     * @type MessageBlockService
+     * @type MessageService
      */
     private $messageBlocks;
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
     private $audience;
-    /**
-     * @type TagService
-     */
-    private $tags;
     /**
      * @type TimezoneService
      */
@@ -43,43 +35,40 @@ class BroadcastService
     /**
      * BroadcastService constructor.
      * @param BroadcastRepository $broadcastRepo
-     * @param MessageBlockService $messageBlocks
-     * @param AudienceService     $audience
-     * @param TagService          $tags
+     * @param MessageService      $messageBlocks
+     * @param SubscriberService   $audience
      * @param TimezoneService     $timezones
      * @param FilterGroupService  $filterGroups
      */
     public function __construct(
         BroadcastRepository $broadcastRepo,
-        MessageBlockService $messageBlocks,
-        AudienceService $audience,
-        TagService $tags,
+        MessageService $messageBlocks,
+        SubscriberService $audience,
         TimezoneService $timezones,
         FilterGroupService $filterGroups
     ) {
         $this->messageBlocks = $messageBlocks;
         $this->audience = $audience;
-        $this->tags = $tags;
         $this->timezones = $timezones;
         $this->filterGroups = $filterGroups;
         $this->broadcastRepo = $broadcastRepo;
     }
 
     /**
-     * @param Page $page
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param Bot $page
+     * @return \Illuminate\Support\Collection
      */
-    public function all(Page $page)
+    public function all(Bot $page)
     {
         return $this->broadcastRepo->getAllForPage($page);
     }
 
     /**
      * @param      $id
-     * @param Page $page
+     * @param Bot  $page
      * @return Broadcast|null
      */
-    public function findById($id, Page $page)
+    public function findById($id, Bot $page)
     {
         return $this->broadcastRepo->findByIdForPage($id, $page);
     }
@@ -87,10 +76,10 @@ class BroadcastService
     /**
      * Find a broadcast by ID, throw exception if it doesn't exist.
      * @param      $id
-     * @param Page $page
+     * @param Bot  $page
      * @return Broadcast|null
      */
-    public function findByIdOrFail($id, Page $page)
+    public function findByIdOrFail($id, Bot $page)
     {
         if ($broadcast = $this->findById($id, $page)) {
             return $broadcast;
@@ -101,11 +90,11 @@ class BroadcastService
     /**
      * Find a broadcast by ID and status, throw exception if it doesn't exist.
      * @param      $id
-     * @param Page $page
+     * @param Bot  $page
      * @param      $status
      * @return Broadcast|null
      */
-    public function findByIdAndStatusOrFail($id, Page $page, $status)
+    public function findByIdAndStatusOrFail($id, Bot $page, $status)
     {
         if (! ($broadcast = $this->findById($id, $page))) {
             throw new ModelNotFoundException;
@@ -121,10 +110,10 @@ class BroadcastService
     /**
      * Create a broadcast
      * @param array $input
-     * @param Page  $page
+     * @param Bot   $page
      * @return Broadcast
      */
-    public function create(array $input, Page $page)
+    public function create(array $input, Bot $page)
     {
         $broadcast = DB::transaction(function () use ($input, $page) {
 
@@ -132,7 +121,7 @@ class BroadcastService
             $broadcast = $this->broadcastRepo->createForPage($data, $page);
 
             $this->filterGroups->persist($broadcast, $input['filter_groups']);
-            $this->messageBlocks->persist($broadcast, $input['message_blocks']);
+//            $this->messageBlocks->persist($broadcast, $input['messages']);
 
             $this->createBroadcastSchedules($broadcast);
 
@@ -146,9 +135,9 @@ class BroadcastService
      * Update a broadcast.
      * @param      $id
      * @param      $input
-     * @param Page $page
+     * @param Bot  $page
      */
-    public function update($id, $input, Page $page)
+    public function update($id, $input, Bot $page)
     {
         DB::transaction(function () use ($id, $input, $page) {
 
@@ -158,7 +147,7 @@ class BroadcastService
             $this->broadcastRepo->update($broadcast, $data);
 
             $this->filterGroups->persist($broadcast, $input['filter_groups']);
-            $this->messageBlocks->persist($broadcast, $input['message_blocks']);
+//            $this->messageBlocks->persist($broadcast, $input['messages']);
 
             $this->createBroadcastSchedules($broadcast);
         });
@@ -283,7 +272,7 @@ class BroadcastService
 
     /**
      * @param      $id
-     * @param Page $page
+     * @param Bot  $page
      */
     public function delete($id, $page)
     {

@@ -1,46 +1,55 @@
 <?php namespace App\Services;
 
-use DB;
-use App\Models\Page;
+use App\Models\Bot;
+use App\Models\Text;
+use App\Models\Template;
 use App\Models\WelcomeMessage;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Repositories\WelcomeMessage\WelcomeMessageRepository;
+use App\Repositories\Bot\BotRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 class WelcomeMessageService
 {
 
     /**
-     * @type MessageBlockService
+     * @type TemplateService
      */
-    private $messageBlocks;
+    private $templates;
     /**
-     * @type WelcomeMessageRepository
+     * @var BotRepositoryInterface
      */
-    private $welcomeMessageRepo;
+    private $botRepo;
 
     /**
      * WelcomeMessageService constructor.
-     * @param WelcomeMessageRepository $welcomeMessageRepo
-     * @param MessageBlockService      $messageBlockService
+     * @param BotRepositoryInterface $botRepo
+     * @param TemplateService        $templates
      */
-    public function __construct(WelcomeMessageRepository $welcomeMessageRepo, MessageBlockService $messageBlockService)
+    public function __construct(BotRepositoryInterface $botRepo, TemplateService $templates)
     {
-        $this->messageBlocks = $messageBlockService;
-        $this->welcomeMessageRepo = $welcomeMessageRepo;
+        $this->botRepo = $botRepo;
+        $this->templates = $templates;
     }
 
+    /**
+     *
+     * @param array $input
+     * @param Bot   $bot
+     */
+    public function update(array $input, Bot $bot)
+    {
+        $this->templates->updateImplicit($bot->welcome_message->template_id, $input['template']);
+    }
 
     /**
      * Create the default welcome message for a page.
-     * @param Page $page
+     * @param $botId
      * @return WelcomeMessage
      */
-    public function createDefaultWelcomeMessage(Page $page)
+    public function defaultWelcomeMessage($botId)
     {
-        $welcomeMessage = $this->welcomeMessageRepo->create($page);
-        $this->attachDefaultMessageBlocks($welcomeMessage);
-
-        return $welcomeMessage;
+        return new WelcomeMessage([
+            'template_id' => $this->newDefaultTemplateInstance($botId)->id
+        ]);
     }
 
     /**
@@ -48,19 +57,20 @@ class WelcomeMessageService
      * The "copyright message" / second message blocks which contains
      * "Powered By Mr. Reply" sentence is then disabled, to prevent editing
      * or removing it.
-     * @param WelcomeMessage $welcomeMessage
+     * @param $botId
+     * @return Template
      */
-    private function attachDefaultMessageBlocks(WelcomeMessage $welcomeMessage)
+    private function newDefaultTemplateInstance($botId)
     {
-        $messageBlocks = $this->messageBlocks->persist($welcomeMessage, $this->getDefaultBlocks());
-        $copyrightBlock = $messageBlocks->get(1);
-        $this->messageBlocks->update($copyrightBlock, ['is_disabled' => true]);
+        $messages = $this->defaultMessages();
+
+        return $this->templates->createImplicit($messages, $botId);
     }
 
     /**
      * @return array
      */
-    private function getDefaultBlocks()
+    private function defaultMessages()
     {
         return [
             $this->initialTextMessage(),
@@ -74,10 +84,11 @@ class WelcomeMessageService
      */
     private function initialTextMessage()
     {
-        return [
-            'type' => 'text',
-            'text' => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
-        ];
+        return new Text([
+            'id'    => with(new ObjectID())->__toString(),
+            'order' => 1,
+            'text'  => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
+        ]);
     }
 
     /**
@@ -85,38 +96,11 @@ class WelcomeMessageService
      */
     private function copyrightMessage()
     {
-        return [
-            'type' => 'text',
-            'text' => 'Want to create your own bot? Go to: https://www.mrreply.com',
-        ];
-    }
-
-    /**
-     * Get the welcome message associated with the page,
-     * if it doesn't exist, throw an exception.
-     * @param Page $page
-     * @return WelcomeMessage
-     */
-    public function getOrFail(Page $page)
-    {
-        if ($mainMenu = $this->welcomeMessageRepo->getForPage($page)) {
-            return $mainMenu;
-        }
-        throw new ModelNotFoundException;
-    }
-
-    /**
-     *
-     * @param array $input
-     * @param Page  $page
-     */
-    public function update(array $input, Page $page)
-    {
-        DB::transaction(function () use ($input, $page) {
-            $welcomeMessage = $this->getOrFail($page);
-            $blocks = $input['message_blocks'];
-            $this->messageBlocks->persist($welcomeMessage, $blocks);
-        });
-
+        return new Text([
+            'id'       => with(new ObjectID())->__toString(),
+            'order'    => 2,
+            'text'     => 'Want to create your own bot? Go to: https://www.mrreply.com',
+            'readonly' => true
+        ]);
     }
 }

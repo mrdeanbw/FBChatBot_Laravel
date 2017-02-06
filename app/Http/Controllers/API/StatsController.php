@@ -1,15 +1,15 @@
 <?php
 namespace App\Http\Controllers\API;
 
-use App\Models\Page;
-use App\Services\AudienceService;
+use App\Models\Bot;
+use App\Services\SubscriberService;
 use Symfony\Component\HttpFoundation\Request;
 
 class StatsController extends APIController
 {
 
     /**
-     * @type AudienceService
+     * @type SubscriberService
      */
     private $audience;
 
@@ -24,9 +24,9 @@ class StatsController extends APIController
     /**
      * StatsController constructor.
      *
-     * @param AudienceService $audience
+     * @param SubscriberService $audience
      */
-    public function __construct(AudienceService $audience)
+    public function __construct(SubscriberService $audience)
     {
         $this->audience = $audience;
     }
@@ -38,7 +38,7 @@ class StatsController extends APIController
      */
     public function index(Request $request)
     {
-        $page = $this->page();
+        $page = $this->bot();
         $dateString = $request->get('graph_date', 'last_seven_days');
 
         $ret = [];
@@ -56,10 +56,10 @@ class StatsController extends APIController
      * 1. Total number of active subscribers.
      * 2. New subscription actions today.
      * 3. New unsubscription actions today.
-     * @param Page $page
+     * @param Bot $page
      * @return array
      */
-    private function summary(Page $page)
+    private function summary(Bot $page)
     {
         return [
             'total' => $this->subscriberCount($page),
@@ -72,11 +72,11 @@ class StatsController extends APIController
 
     /**
      * Return the day-by-day number of new and total subscription actions in a given period of time
-     * @param Page   $page
+     * @param Bot    $page
      * @param string $dateString
      * @return array
      */
-    private function subscriptionTimeline(Page $page, $dateString)
+    private function subscriptionTimeline(Bot $page, $dateString)
     {
         $boundaries = date_boundaries($dateString);
 
@@ -103,21 +103,21 @@ class StatsController extends APIController
 
     /**
      * Total number of active subscribers.
-     * @param Page $page
+     * @param Bot $page
      * @return array
      */
-    private function subscriberCount(Page $page)
+    private function subscriberCount(Bot $page)
     {
         return $this->audience->activeSubscribers($page);
     }
 
     /**
      * Total number of clicks on relevant message blocks in a specific time period.
-     * @param Page $page
+     * @param Bot  $page
      * @param      $dateString
      * @return array
      */
-    private function clickCount(Page $page, $dateString)
+    private function clickCount(Bot $page, $dateString)
     {
         return [
             'total'  => $page->messageClicks()->date('message_instance_clicks.created_at', $dateString)->count(),
@@ -127,11 +127,11 @@ class StatsController extends APIController
 
     /**
      * Total number of messages sent in a specific time period
-     * @param Page $page
+     * @param Bot  $page
      * @param      $dateString
      * @return mixed
      */
-    private function messageCount(Page $page, $dateString)
+    private function messageCount(Bot $page, $dateString)
     {
         return $page->messageInstances()->date('created_at', $dateString)->count();
     }
