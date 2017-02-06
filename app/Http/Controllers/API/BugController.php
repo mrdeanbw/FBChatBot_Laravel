@@ -89,7 +89,7 @@ class BugController extends APIController
         $this->validate($request, [
             'id' => 'numeric'
         ]);
-        
+
         return $this->commentRepository->destroy($request->id);
     }
 

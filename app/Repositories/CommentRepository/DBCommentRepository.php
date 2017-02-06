@@ -49,9 +49,7 @@ class DBCommentRepository implements CommentRepositoryInterface
                 'content' => isset($inputs['content']) ? $inputs['content'] : $comment->content,
             ];
 
-            Comment::find($inputs['id'])->update($inputs['id'], $updateData);
-
-            return true;
+            return Comment::find($inputs['id'])->update($inputs['id'], $updateData);
         }
 
         return false;

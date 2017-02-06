@@ -65,7 +65,7 @@ class ReferralService
 
     public function createConnection(User $child, $referralCode)
     {
-        $parentId = getIdFromCode($referralCode);
+        $parentId = $this->getIdFromCode($referralCode);
         $parent = User::find($parentId);
 
         $this->userRepository->connectReferrals($parent, $child);
