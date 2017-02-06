@@ -35,7 +35,6 @@ class DBCommentRepository implements CommentRepositoryInterface
         $comment->author_id = isset($inputs['author']) ? $inputs['author'] : 1;
         $comment->bug_id = isset($inputs['bug_id']) ? $inputs['bug_id'] : 0;
         $comment->parent_id = isset($inputs['parent_id']) ? $inputs['parent_id'] : 0;
-        $comment->status = 'pending';
 
         return $comment->save();
     }

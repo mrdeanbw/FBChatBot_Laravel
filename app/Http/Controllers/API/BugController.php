@@ -34,31 +34,62 @@ class BugController extends APIController
 
     public function createBug(Request $request)
     {
+        $this->validate($request, [
+            'title' => 'required|max:50',
+            'content' => 'required|max:500',
+            'author' => 'required|numeric'
+        ]);
+
         return $this->bugRepository->create($request->all());
     }
 
     public function updateBug(Request $request)
     {
+        $this->validate($request, [
+            'title' => 'sometimes|max:50',
+            'content' => 'sometimes|max:500',
+            'author' => 'sometimes|numeric',
+            'id' => 'required|numeric',
+            'status' => 'sometimes|alpha'
+        ]);
+
         return $this->bugRepository->update($request->all());
     }
 
     public function destroyBug(Request $request)
     {
+        $this->validate($request, [
+            'id' => 'required|numeric'
+        ]);
         return $this->bugRepository->destroy($request->id);
     }
 
     public function createComment(Request $request)
     {
+        $this->validate($request, [
+            'bug_id' => 'required|numeric',
+            'content' => 'required|max:150',
+            'author' => 'required|numeric'
+        ]);
+
         return $this->commentRepository->create($request->all());
     }
 
     public function updateComment(Request $request)
     {
+        $this->validate($request, [
+            'content' => 'required|max:150'
+        ]);
+
         return $this->commentRepository->update($request->all());
     }
 
     public function destroyComment(Request $request)
     {
+        $this->validate($request, [
+            'id' => 'numeric'
+        ]);
+        
         return $this->commentRepository->destroy($request->id);
     }
 
