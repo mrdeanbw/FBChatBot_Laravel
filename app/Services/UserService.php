@@ -63,9 +63,7 @@ class UserService
             return $user;
         }
 
-        $user = $this->userRepo->create($data);
-
-        return $user;
+        return $this->userRepo->create($data);
     }
 
     /**

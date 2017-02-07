@@ -60,6 +60,7 @@ class MessagePreviewService
 
         $messagePreview = $this->create($input, $user, $bot);
 
+        // @todo dispatch a new job for this.
         $this->FacebookAdapter->sendTemplate($messagePreview->template, $subscriber, $bot);
 
         return $messagePreview;

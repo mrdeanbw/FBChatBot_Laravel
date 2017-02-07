@@ -2,6 +2,7 @@
 
 use App\Services\ImageFileService;
 use Illuminate\Validation\Validator as LaravelValidator;
+use Intervention\Image\ImageManagerStatic;
 
 class MessageValidator extends LaravelValidator
 {
@@ -11,9 +12,6 @@ class MessageValidator extends LaravelValidator
     /** @var  LaravelValidator */
     private $originalValidator;
 
-    /** @type  ImageFileService::class */
-    private $imageFiles;
-
     /**
      * @param LaravelValidator $validator
      *
@@ -22,12 +20,16 @@ class MessageValidator extends LaravelValidator
     public static function FromInstance(LaravelValidator $validator)
     {
         if (! self::$instance) {
-            self::$instance = new self($validator->getTranslator(), $validator->getData(), $validator->getRules(), $validator->getCustomMessages(),
-                $validator->getCustomAttributes());
+            self::$instance = new self(
+                $validator->getTranslator(),
+                $validator->getData(),
+                $validator->getRules(),
+                $validator->getCustomMessages(),
+                $validator->getCustomAttributes()
+            );
         }
 
         self::$instance->originalValidator = $validator;
-        self::$instance->imageFiles = app(ImageFileService::class);
 
         return self::$instance;
     }
@@ -52,6 +54,10 @@ class MessageValidator extends LaravelValidator
         $allowedTypes = $parameters?: ['text', 'card_container', 'image'];
 
         $type = array_get($value, 'type');
+
+        if (! $type && count($allowedTypes) === 1) {
+            $type = $allowedTypes[0];
+        }
 
         if (! in_array($type, $allowedTypes)) {
             $this->setErrorMessage("Your message type has to be: '" . implode("', or '", $allowedTypes) . "'");
@@ -90,15 +96,24 @@ class MessageValidator extends LaravelValidator
 
     private function _validateImage($attribute, $input)
     {
-        $image = array_get($input, 'image_url');
-        if (! $image) {
+        $imageUrl = array_get($input, 'image_url');
+        $file = array_get($input, 'file');
+        if (! $imageUrl && ! $file) {
             $this->setErrorMessage("You must upload an image to your image message.");
 
             return false;
         }
 
-        if (! $this->imageFiles->validateSubmittedImage($image)) {
-            $this->setErrorMessage("Your image message is invalid. Only image files of size less than 5MB are allowed.");
+        if ($file) {
+            if (! $this->validateImageable($attribute, array_get($file, 'encoded'), ['5MB'])) {
+                $this->setErrorMessage("Your image message is invalid. Only image files of size less than 5 MB are allowed.");
+
+                return false;
+            }
+        }
+
+        if ($imageUrl && ! $this->validateImageUrl($attribute, $imageUrl)) {
+            $this->setErrorMessage("Your image message is invalid. Only image files of size less than 5 MB are allowed.");
 
             return false;
         }
@@ -168,13 +183,17 @@ class MessageValidator extends LaravelValidator
             return false;
         }
 
-        $image = array_get($card, 'image_url');
-        if ($image && ! $this->imageFiles->validateSubmittedImage($image)) {
-            $this->setErrorMessage("Your card image is invalid. Only image files of size less than 5MB are allowed.");
+        if (($file = array_get($card, 'file')) && ! $this->validateImageable($attribute, array_get($file, 'encoded'), ['5MB'])) {
+            $this->setErrorMessage("Your card has an invalid image. Only image files of size less than 5 MB are allowed.");
 
             return false;
         }
 
+        if (($image = array_get($card, 'image_url')) && ! $this->validateImageUrl($attribute, $image)) {
+            $this->setErrorMessage("Your card has an invalid image. Only image files of size less than 5 MB are allowed.");
+
+            return false;
+        }
 
         return $this->_validateButtons($attribute, array_get($card, 'buttons', []));
     }
@@ -302,8 +321,34 @@ class MessageValidator extends LaravelValidator
     }
 
 
-    private function _validateSequences($attribute, $sequence){
-        throw new \Exception("Not implemented");
+    private function _validateSequences($attribute, $sequences)
+    {
+        if (! $this->validateArray($attribute, $sequences)) {
+            $this->setErrorMessage("Your sequences format is invalid.");
+
+            return false;
+        }
+
+        foreach ($sequences as $sequence) {
+            $id = array_get($sequence, 'id');
+
+            if (! $id) {
+                $this->setErrorMessage("Your sequences format is invalid.");
+
+                return false;
+            }
+
+            //@todo where exists and bot_id = $botId
+
+            //            if (! $this->validateExists($attribute, $id, ['sequences', 'id',])) {
+            //                $this->setErrorMessage("Your sequences format is invalid.");
+            //
+            //                return false;
+            //            }
+        }
+
+        return true;
+
     }
 
     protected function _validateTemplate($attribute, $template)
@@ -356,4 +401,47 @@ class MessageValidator extends LaravelValidator
         $message = $this->doReplacements($message, $attribute, $rule, $parameters);
         $this->setErrorMessage($message);
     }
+
+
+    /**
+     * Checks if the URL actually belongs to this web app, and the file pointed to exists.
+     * @param $attribute
+     * @param $imageUrl
+     * @return bool
+     */
+    protected function validateImageUrl($attribute, $imageUrl)
+    {
+        if (! $this->validateUrl($attribute, $imageUrl)) {
+            return false;
+        }
+        $url = parse_url($imageUrl);
+        $arr = explode('/', $imageUrl);
+        $original = parse_url(config('app.url'));
+
+        return ($url['host'] == $original['host'] && array_get($url, 'port') == array_get($original, 'port') && count($arr) >= 2 && is_file(public_path('img/uploads/' . $arr[count($arr) - 1])));
+    }
+
+    protected function validateImageable($attribute, $value, $params)
+    {
+        try {
+            $image = ImageManagerStatic::make($value);
+
+            if (isset($params[0])) {
+                $path = storage_path() . '/' . uniqid();
+                $image->save($path);
+                $isValid = $image->filesize() <= to_bytes($params[0]);
+                unlink($path);
+
+                return $isValid;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+
+            return false;
+        }
+
+    }
+
 }

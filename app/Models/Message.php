@@ -5,7 +5,6 @@ abstract class Message extends ArrayModel
 
     public $type;
     public $id;
-    public $order;
     public $readonly;
 
     /**

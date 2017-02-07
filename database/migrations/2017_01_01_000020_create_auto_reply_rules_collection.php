@@ -25,6 +25,6 @@ class CreateAutoReplyRulesCollection extends Migration
      */
     public function down()
     {
-        Schema::drop('auto_reply_rules');
+        Schema::dropIfExists('auto_reply_rules');
     }
 }

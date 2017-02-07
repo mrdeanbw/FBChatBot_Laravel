@@ -98,11 +98,11 @@ class DBBotRepository extends BaseDBRepository implements BotRepositoryInterface
     }
 
     /**
-     * @param Bot   $bot
+     * @param       $botId
      * @param array $tags
      */
-    public function createTagsForBot(Bot $bot, array $tags)
+    public function createTagsForBot($botId, array $tags)
     {
-        $bot->push('tags', $tags, true);
+        Bot::where('_id', $botId)->push('tags', $tags, true);
     }
 }

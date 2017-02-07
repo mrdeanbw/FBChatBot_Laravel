@@ -36,11 +36,14 @@ class GreetingTextService
      * @param array $input
      * @param Bot   $bot
      * @param User  $user
+     * @return Bot
      */
     public function update(array $input, Bot $bot, User $user)
     {
         $this->botRepo->update($bot, ['greeting_text.text' => trim($input['text'])]);
         dispatch(new UpdateGreetingTextOnFacebook($bot, $user->id));
+
+        return $bot;
     }
 
     /**

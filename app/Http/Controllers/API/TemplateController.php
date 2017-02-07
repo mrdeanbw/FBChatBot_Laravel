@@ -4,12 +4,9 @@ use Illuminate\Http\Request;
 use App\Services\TemplateService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\TemplateTransformer;
-use App\Services\Validation\MessageValidationHelper;
 
 class TemplateController extends APIController
 {
-
-    use MessageValidationHelper;
 
     /**
      * @type TemplateService
@@ -32,10 +29,9 @@ class TemplateController extends APIController
      */
     public function index()
     {
-        $bot = $this->bot();
-        $trees = $this->templates->explicitTemplates($bot);
+        $templates = $this->templates->explicitTemplates($this->bot());
 
-        return $this->collectionResponse($trees);
+        return $this->collectionResponse($templates);
     }
 
     /**
@@ -45,10 +41,9 @@ class TemplateController extends APIController
      */
     public function show($id)
     {
-        $bot = $this->bot();
-        $tree = $this->templates->findExplicitOrFail($id, $bot);
+        $template = $this->templates->findExplicitOrFail($id, $this->bot());
 
-        return $this->itemResponse($tree);
+        return $this->itemResponse($template);
     }
 
     /**
@@ -58,7 +53,11 @@ class TemplateController extends APIController
      */
     public function store(Request $request)
     {
-        return $this->persist($request->get('id'), $request);
+        $bot = $this->bot();
+        $this->validate($request, $this->validationRules(null, $bot));
+        $template = $this->templates->createExplicit($request->all(), $bot);
+
+        return $this->itemResponse($template);
     }
 
     /**
@@ -69,52 +68,27 @@ class TemplateController extends APIController
      */
     public function update($id, Request $request)
     {
-        return $this->persist($id, $request);
-    }
-
-    /**
-     * Validate and persist (create/update) a message tree.
-     * @param         $id
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function persist($id, Request $request)
-    {
         $bot = $this->bot();
+        $this->validate($request, $this->validationRules(null, $bot));
+        $template = $this->templates->updateExplicit($id, $request->all(), $bot);
 
-        $validator = $this->makeMessageTreeValidator($id, $request, $bot);
-
-        if ($validator->fails()) {
-            return $this->errorsResponse($validator->errors());
-        }
-
-        if ($id) {
-            // updating
-            $tree = $this->templates->updateExplicit($id, $request->all(), $bot);
-        } else {
-            // creating
-            $tree = $this->templates->createExplicit($request->all(), $bot);
-        }
-
-        return $this->itemResponse($tree);
+        return $this->itemResponse($template);
     }
-
+    
     /**
      * Make the validator for message trees.
-     * @param         $id
-     * @param Request $request
-     * @param         $bot
-     * @return \Illuminate\Validation\Validator
+     * @param $id
+     * @param $bot
+     * @return array
      */
-    protected function makeMessageTreeValidator($id, Request $request, $bot)
+    protected function validationRules($id, $bot)
     {
         $idString = $id? "{$id}" : "NULL";
-
         $rules = [
-            'name' => "bail|required|max:255|unique:templates,name,{$idString},id,page_id,{$bot->id}"
+            'name' => "bail|required|max:255|unique:templates,name,{$idString},id,bot_id,{$bot->id}"
         ];
 
-        return $this->makeValidator($request->all(), $rules, $bot);
+        return $rules;
     }
 
 

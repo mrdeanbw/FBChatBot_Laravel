@@ -17,11 +17,7 @@ class CardTransformer extends BaseTransformer
             'subtitle'  => $card->subtitle,
             'image_url' => $card->image_url,
             'readonly'  => $card->readonly,
+            'buttons'  => $this->transformInclude($card->buttons, new ButtonTransformer())
         ];
-    }
-
-    public function includeButtons(Card $card)
-    {
-        return $this->collection($card->buttons, new ButtonTransformer(), false);
     }
 }

@@ -9,7 +9,7 @@ class BotTransformer extends BaseTransformer
 
     protected $availableIncludes = [
         'main_menu',
-        'greeting_tex',
+        'greeting_text',
         'default_reply',
         'welcome_message'
     ];

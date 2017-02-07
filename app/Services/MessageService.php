@@ -4,9 +4,11 @@ use App\Models\Card;
 use App\Models\Image;
 use App\Models\Button;
 use App\Models\Message;
-use Illuminate\Support\Collection;
-use App\Repositories\Template\TemplateRepositoryInterface;
 use MongoDB\BSON\ObjectID;
+use Illuminate\Support\Collection;
+use Intervention\Image\ImageManagerStatic;
+use App\Repositories\Bot\BotRepositoryInterface;
+use App\Repositories\Template\TemplateRepositoryInterface;
 
 class MessageService
 {
@@ -20,17 +22,23 @@ class MessageService
      * @type TemplateRepositoryInterface
      */
     private $templateRepo;
+    /**
+     * @type BotRepositoryInterface
+     */
+    private $botRepo;
 
     /**
      * MessageBlockService constructor.
      *
      * @param TemplateRepositoryInterface $templateRepo
      * @param ImageFileService            $imageFiles
+     * @param BotRepositoryInterface      $botRepo
      */
-    public function __construct(TemplateRepositoryInterface $templateRepo, ImageFileService $imageFiles)
+    public function __construct(TemplateRepositoryInterface $templateRepo, ImageFileService $imageFiles, BotRepositoryInterface $botRepo)
     {
         $this->imageFiles = $imageFiles;
         $this->templateRepo = $templateRepo;
+        $this->botRepo = $botRepo;
     }
 
     /**
@@ -45,11 +53,12 @@ class MessageService
     }
 
     /**
-     * @param Message[] $current
      * @param Message[] $input
-     * @return Message[]
+     * @param Message[] $current
+     * @param           $botId
+     * @return \App\Models\Message[]
      */
-    public function makeMessages(array $input, array $current = [])
+    public function makeMessages(array $input, array $current = [], $botId)
     {
         $current = (new Collection($current))->keyBy(function (Message $message) {
             return $message->id;
@@ -60,7 +69,7 @@ class MessageService
         foreach ($input as $message) {
 
             if ($isNew = empty($message->id)) {
-                $message->id = (string) (new ObjectID());
+                $message->id = (string)(new ObjectID());
             }
 
             // If the message id is not in the original messages,
@@ -75,9 +84,12 @@ class MessageService
             $message->readonly = $isNew? false : $original->readonly;
 
             if ($message->type === 'button') {
-                // @todo create tags.
-                // @todo unique.
                 $this->cleanButtonActions($message);
+                $tags = array_merge(
+                    array_get($message->actions, 'add_tags', []),
+                    array_get($message->actions, 'remove_tags', [])
+                );
+                $this->botRepo->createTagsForBot($botId, $tags);
             }
 
             if (in_array($message->type, ['image', 'card'])) {
@@ -85,11 +97,11 @@ class MessageService
             }
 
             if ($message->type === 'card_container') {
-                $original->cards = $this->makeMessages($original->cards, $isNew? [] : $message->cards);
+                $original->cards = $this->makeMessages($original->cards, $isNew? [] : $message->cards, $botId);
             }
 
             if (in_array($message->type, ['text', 'card'])) {
-                $message->buttons = $this->makeMessages($message->buttons, $isNew? [] : $original->buttons);
+                $message->buttons = $this->makeMessages($message->buttons, $isNew? [] : $original->buttons, $botId);
             }
 
             $normalized[] = $message;
@@ -100,7 +112,6 @@ class MessageService
 
 
         $this->moveReadonlyBlockToTheBottom($normalized);
-        $this->fixOrder($normalized);
 
         return $normalized;
     }
@@ -125,29 +136,28 @@ class MessageService
     private function persistImageFile(Message $message)
     {
         // No Image Changes.
-        if (! $message->file->encoded) {
+        if (! $message->file) {
             return;
         }
 
-        $directory = public_path("img/uploads/");
-        $fileName = $this->imageFiles->store($directory, $message->file->encoded);
+        $image = ImageManagerStatic::make($message->file->encoded);
+        $image->encode('png');
+        $fileName = $this->randomFileName('png');
+        $image->save(public_path("img/uploads/{$fileName}"));
+        $message->image_url = config('app.url') . 'img/uploads/' . $fileName;
 
-        $message->image_url = url("img/uploads/{$fileName}");
-        $message->file->path = "{$directory}/{$fileName}";
-
-        unset($message->file->encoded);
     }
 
     /**
-     * @param Message[] $messages
+     * Generate a random file name.
+     * @param $extension
+     * @return string
      */
-    private function fixOrder(array $messages)
+    protected function randomFileName($extension)
     {
-        $currentOrder = 1;
+        $fileName = time() . md5(uniqid()) . '.' . $extension;
 
-        array_map(function ($message) use (&$currentOrder) {
-            $message->order = $currentOrder++;
-        }, $messages);
+        return $fileName;
     }
 
     /**
@@ -158,8 +168,8 @@ class MessageService
         $button->actions = array_only($button->actions, [
             'add_tags',
             'remove_tags',
-            'subscribe_sequences',
-            'unsubscribe_sequences'
+            'add_sequences',
+            'remove_sequences'
         ]);
 
 

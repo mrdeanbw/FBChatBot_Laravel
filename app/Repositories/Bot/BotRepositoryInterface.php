@@ -60,8 +60,8 @@ interface BotRepositoryInterface extends CommonRepositoryInterface
     public function setSubscriberForUser(User $user, Subscriber $subscriber, Bot $bot);
 
     /**
-     * @param Bot   $bot
+     * @param       $botId
      * @param array $tags
      */
-    public function createTagsForBot(Bot $bot, array $tags);
+    public function createTagsForBot($botId, array $tags);
 }

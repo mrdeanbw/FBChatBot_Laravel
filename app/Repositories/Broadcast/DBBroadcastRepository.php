@@ -21,7 +21,7 @@ class DBBroadcastRepository extends BaseDBRepository implements BroadcastReposit
      * @param Bot $page
      * @return Collection
      */
-    public function getAllForPage(Bot $page)
+    public function getAllForBot(Bot $page)
     {
         return $page->broadcasts;
     }
@@ -32,7 +32,7 @@ class DBBroadcastRepository extends BaseDBRepository implements BroadcastReposit
      * @param Bot $page
      * @return Broadcast|null
      */
-    public function findByIdForPage($id, Bot $page)
+    public function findByIdForBot($id, Bot $page)
     {
         return $page->broadcasts()->find($id);
     }

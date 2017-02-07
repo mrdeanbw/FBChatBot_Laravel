@@ -5,7 +5,6 @@
  */
 trait HasEmbeddedArrayModels
 {
-
     /**
      * @param array $attributes
      * @param bool  $sync
@@ -31,7 +30,7 @@ trait HasEmbeddedArrayModels
                     return $this->callConstructingFunction($class, $elem);
                 }, $value);
             }
-            
+
         }
 
         return parent::setRawAttributes($attributes, $sync);
@@ -49,5 +48,16 @@ trait HasEmbeddedArrayModels
         }
 
         return new $class($value);
+    }
+
+    public function setAttribute($key, $value)
+    {
+        if (! empty($value) && ($nested = explode('.', $key)) && count($nested) == 2 && isset($this->arrayModels[$nested[0]])) {
+            $this->{$nested[0]}->{$nested[1]} = $value;
+
+            return $this;
+        }
+
+        return parent::setAttribute($key, $value);
     }
 }

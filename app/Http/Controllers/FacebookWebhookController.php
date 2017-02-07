@@ -1,13 +1,11 @@
 <?php namespace App\Http\Controllers;
 
-use App\Jobs\HandleIncomingFacebookCallback;
 use DB;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\BotService;
 use App\Services\Facebook\AppVerifier;
-use App\Services\FacebookWebhookReceiver;
-use Illuminate\Support\Facades\Log;
+use App\Jobs\HandleIncomingFacebookCallback;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class FacebookWebhookController extends Controller

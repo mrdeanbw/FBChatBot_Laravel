@@ -1,19 +1,17 @@
-<?php
-namespace App\Transformers;
+<?php namespace App\Transformers;
 
 use App\Models\Template;
 
 class TemplateTransformer extends BaseTransformer
 {
 
-    //    protected $defaultIncludes = ['messages'];
+    protected $defaultIncludes = ['messages'];
 
     public function transform(Template $template)
     {
         return [
             'name'     => $template->name,
             'explicit' => $template->explicit,
-            'messages' => $template->messages,
         ];
     }
 

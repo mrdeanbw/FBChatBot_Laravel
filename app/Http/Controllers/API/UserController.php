@@ -1,12 +1,12 @@
 <?php namespace App\Http\Controllers\API;
 
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Http\Request;
 use App\Services\AuthService;
 use App\Transformers\UserTransformer;
 use App\Transformers\BaseTransformer;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 

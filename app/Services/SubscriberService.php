@@ -316,8 +316,9 @@ class SubscriberService
     {
         $subscriber = $this->findForBotOrFail($subscriberId, $bot);
         $tags = $input['tags'];
-        $this->botRepo->createTagsForBot($bot, $tags);
-        $this->subscriberRepo->update($subscriber, compact('tags'));
+        $this->botRepo->createTagsForBot($bot->id, $tags);
+
+        return $this->subscriberRepo->update($subscriber, compact('tags'));
     }
 
     /**
@@ -329,7 +330,7 @@ class SubscriberService
     public function batchUpdate(array $input, array $subscriberIds, Bot $bot)
     {
         if ($subscriberIds) {
-            $this->botRepo->createTagsForBot($bot, array_merge($input['add_tags'], $input['remove_tags']));
+            $this->botRepo->createTagsForBot($bot->id, array_merge($input['add_tags'], $input['remove_tags']));
             $this->subscriberRepo->bulkUpdateForBot($bot, $subscriberIds, $input);
         }
     }

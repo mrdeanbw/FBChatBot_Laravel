@@ -14,7 +14,7 @@ interface BroadcastRepository extends CommonRepositoryInterface
      * @param Bot $page
      * @return Collection
      */
-    public function getAllForPage(Bot $page);
+    public function getAllForBot(Bot $page);
 
     /**
      * Find a broadcast by id
@@ -22,7 +22,7 @@ interface BroadcastRepository extends CommonRepositoryInterface
      * @param Bot $page
      * @return Broadcast|null
      */
-    public function findByIdForPage($id, Bot $page);
+    public function findByIdForBot($id, Bot $page);
 
     /**
      * Create a broadcast and associate it with a page.

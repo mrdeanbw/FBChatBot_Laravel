@@ -59,19 +59,15 @@ class MainMenuService
      */
     public function update(array $input, Bot $bot, User $user)
     {
-        $mainMenu = $bot->main_menu;
-
-        $buttons = $this->messages->normalizeMessages($input['buttons']);
-        $buttons = $this->messages->makeMessages($buttons, $mainMenu->buttons);
+        $buttons = $this->normalizeButtons($input, $bot);
 
         $this->validateCopyrightButton($buttons);
-
+        
         $this->botRepo->update($bot, ['main_menu.buttons' => $buttons]);
-        $mainMenu->buttons = $buttons;
 
         dispatch(new UpdateMainMenuOnFacebook($bot, $user->id));
 
-        return $mainMenu;
+        return $bot->main_menu;
     }
 
     /**
@@ -93,7 +89,6 @@ class MainMenuService
     {
         return new Button([
             'id'       => with(new ObjectID())->__toString(),
-            'order'    => 1,
             'title'    => 'Powered By Mr. Reply',
             'readonly' => true,
             'url'      => 'https://www.mrreply.com',
@@ -105,7 +100,7 @@ class MainMenuService
      */
     private function validateCopyrightButton(array $buttons)
     {
-        $lastButton = end($buttons);
+        $lastButton = array_last($buttons);
 
         // @todo: and on a free plan.
         if (! $lastButton || ! $lastButton->id || ! $lastButton->readonly || ! $this->sameAsCopyrightButton($lastButton)) {
@@ -132,9 +127,25 @@ class MainMenuService
     {
         $attributes = get_object_vars($button);
         unset($attributes['id']);
-        unset($attributes['order']);
 
         return $attributes;
+    }
+
+    /**
+     * @param array $input
+     * @param Bot   $bot
+     * @return Button[]
+     */
+    private function normalizeButtons(array $input, Bot $bot)
+    {
+        $buttons = array_map(function (array $button) {
+            return new Button($button);
+        }, $input['buttons']);
+
+
+        $buttons = $this->messages->makeMessages($buttons, $bot->main_menu->buttons, $bot->id);
+
+        return $buttons;
     }
 
 }

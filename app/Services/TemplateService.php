@@ -3,8 +3,8 @@
 use App\Models\Bot;
 use App\Models\Message;
 use App\Models\Template;
-use App\Repositories\Template\TemplateRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Repositories\Template\TemplateRepositoryInterface;
 
 class TemplateService
 {
@@ -61,9 +61,8 @@ class TemplateService
     public function createExplicit(array $input, Bot $bot)
     {
         $input['explicit'] = true;
-        $input['bot_id'] = $bot->id;
 
-        return $this->create($input);
+        return $this->create($input, $bot->id);
     }
 
     /**
@@ -73,77 +72,79 @@ class TemplateService
      */
     public function createImplicit(array $messages, $botId)
     {
-        $input['bot_id'] = $botId;
+        $input['name'] = null;
         $input['explicit'] = false;
         $input['messages'] = $messages;
 
-        return $this->create($input);
+        return $this->create($input, $botId);
     }
 
     /**
      * @param array $input
+     * @param       $botId
      * @return \App\Models\BaseModel
      */
-    private function create(array $input)
+    private function create(array $input, $botId)
     {
         return $this->templateRepo->create([
-            'bot_id'   => $input['bot_id'],
+            'bot_id'   => $botId,
             'name'     => $input['name'],
             'explicit' => $input['explicit'],
-            'messages' => $this->normalizeMessages($input['messages'])
+            'messages' => $this->normalizeMessages($input['messages'], [], $botId)
         ]);
     }
 
     /**
      * Update a message template.
      * @param       $id
-     * @param Bot   $page
+     * @param Bot   $bot
      * @param array $input
      * @return Template
      */
-    public function updateExplicit($id, array $input, Bot $page)
+    public function updateExplicit($id, array $input, Bot $bot)
     {
-        $template = $this->findExplicitOrFail($id, $page);
+        $template = $this->findExplicitOrFail($id, $bot);
 
-        return $this->templateRepo->update(array_only($input, ['input', 'messages']), $template);
+        return $this->update($template, array_only($input, ['name', 'messages']), $bot);
     }
 
     /**
      * @param string $templateId
      * @param array  $data
+     * @param Bot    $bot
      * @return Template
      */
-    public function updateImplicit($templateId, array $data)
+    public function updateImplicit($templateId, array $data, Bot $bot)
     {
         /** @type Template $template */
         $template = $this->templateRepo->findByIdOrFail($templateId);
 
-        return $this->update(array_only($data, 'messages'), $template);
+        return $this->update($template, array_only($data, 'messages'), $bot);
     }
 
     /**
-     * @param array    $input
      * @param Template $template
+     * @param array    $input
+     * @param Bot      $bot
      * @return Template
      */
-    private function update(array $input, Template $template)
+    private function update(Template $template, array $input, Bot $bot)
     {
-        $template->messages = $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages);
+        $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages, $bot->id);
 
-        $this->templateRepo->update($template, $input);
-
-        return $template;
+        return $this->templateRepo->update($template, $input);
     }
 
     /**
      * @param array     $messages
      * @param Message[] $original
-     * @return Message[]
+     * @param           $botId
+     * @return \App\Models\Message[]
      */
-    private function normalizeMessages(array $messages, array $original = [])
+    private function normalizeMessages(array $messages, array $original = [], $botId)
     {
         $messages = $this->messages->normalizeMessages($messages);
-        $messages = $this->messages->makeMessages($messages, $original);
+        $messages = $this->messages->makeMessages($messages, $original, $botId);
 
         return $messages;
     }

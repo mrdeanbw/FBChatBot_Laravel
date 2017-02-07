@@ -5,8 +5,6 @@ use App\Models\Text;
 class TextTransformer extends BaseTransformer
 {
 
-    public $defaultIncludes = ['buttons'];
-
     public function transform(Text $text)
     {
         return [
@@ -14,11 +12,8 @@ class TextTransformer extends BaseTransformer
             'type'     => $text->type,
             'text'     => $text->text,
             'readonly' => $text->readonly,
+            'buttons'  => $this->transformInclude($text->buttons, new ButtonTransformer())
         ];
     }
 
-    public function includeButtons(Text $text)
-    {
-        return $this->collection($text->buttons, new ButtonTransformer(), false);
-    }
 }

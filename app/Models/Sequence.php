@@ -7,4 +7,9 @@
 class Sequence extends BaseModel
 {
 
+    use HasEmbeddedArrayModels;
+
+    public $multiArrayModels = [
+        'messages' => SequenceMessage::class,
+    ];
 }

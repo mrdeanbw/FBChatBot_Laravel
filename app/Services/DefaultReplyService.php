@@ -41,7 +41,7 @@ class DefaultReplyService
      */
     public function update(array $input, Bot $bot)
     {
-        $bot->default_reply->template = $this->templates->updateImplicit($bot->default_reply->template_id, $input['template']);
+        $bot->default_reply->template = $this->templates->updateImplicit($bot->default_reply->template_id, $input['template'], $bot);
 
         return $bot->default_reply;
     }

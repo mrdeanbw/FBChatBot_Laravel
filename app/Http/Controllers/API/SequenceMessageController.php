@@ -1,15 +1,12 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Models\Bot;
 use Illuminate\Http\Request;
 use App\Services\SequenceService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\SequenceMessageTransformer;
-use App\Services\Validation\MessageValidationHelper;
 
 class SequenceMessageController extends APIController
 {
-    use MessageValidationHelper;
 
     /**
      * @type SequenceService
@@ -22,6 +19,18 @@ class SequenceMessageController extends APIController
     }
 
     /**
+     * @param $sequenceId
+     * @param $id
+     * @return \Dingo\Api\Http\Response
+     */
+    public function show($sequenceId, $id)
+    {
+        $message = $this->sequences->findMessageOrFail($id, $sequenceId);
+
+        return $this->itemResponse($message);
+    }
+
+    /**
      * Create a sequence message.
      * @param         $sequenceId
      * @param Request $request
@@ -29,17 +38,11 @@ class SequenceMessageController extends APIController
      */
     public function store($sequenceId, Request $request)
     {
-        $page = $this->bot();
+        $this->validate($request, $this->validationRules());
 
-        $validator = $this->validator($request, $page);
+        $message = $this->sequences->createMessage($request->all(), $sequenceId, $this->bot());
 
-        if ($validator->fails()) {
-            return $this->errorsResponse($validator->errors());
-        }
-
-        $this->sequences->addMessage($request->all(), $sequenceId, $page);
-
-        return $this->response->created();
+        return $this->itemResponse($message);
     }
 
     /**
@@ -51,17 +54,11 @@ class SequenceMessageController extends APIController
      */
     public function update($id, $sequenceId, Request $request)
     {
-        $page = $this->bot();
+        $this->validate($request, $this->validationRules());
 
-        $validator = $this->validator($request, $page);
+        $message = $this->sequences->updateMessage($request->all(), $id, $sequenceId, $this->bot());
 
-        if ($validator->fails()) {
-            return $this->errorsResponse($validator->errors());
-        }
-
-        $this->sequences->updateMessage($request->all(), $id, $sequenceId, $page);
-
-        return $this->response->created();
+        return $this->itemResponse($message);
     }
 
     /**
@@ -72,9 +69,7 @@ class SequenceMessageController extends APIController
      */
     public function destroy($id, $sequenceId)
     {
-        $page = $this->bot();
-        
-        $this->sequences->deleteMessage($id, $sequenceId, $page);
+        $this->sequences->deleteMessage($id, $sequenceId, $this->bot());
 
         return $this->response->accepted();
     }
@@ -85,18 +80,18 @@ class SequenceMessageController extends APIController
         return new SequenceMessageTransformer();
     }
 
-    /**
-     * @param Request $request
-     * @param         $page
-     * @return \Illuminate\Validation\Validator
-     */
-    protected function validator(Request $request, Bot $page)
+    private function validationRules()
     {
-        $rules = [
-            'name' => 'required|max:255',
-            'days' => 'required|numeric|min:0',
+        return [
+            'name'                        => 'bail|required|max:255',
+            'conditions'                  => 'bail|required|array',
+            'conditions.wait_for'         => 'bail|required|array',
+            'conditions.wait_for.days'    => 'bail|required|integer|min:0',
+            'conditions.wait_for.hours'   => 'bail|required|integer|between:0,23',
+            'conditions.wait_for.minutes' => 'bail|required|array|between:0,59',
+            'template'                    => 'bail|required|array',
+            'template.messages'           => 'bail|required|array|max:10',
+            'template.messages.*'         => 'bail|required|message',
         ];
-
-        return $this->makeValidator($request->all(), $rules, $page);
     }
 }

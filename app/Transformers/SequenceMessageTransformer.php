@@ -13,7 +13,6 @@ class SequenceMessageTransformer extends BaseTransformer
             'id'         => $message->id,
             'name'       => $message->name,
             'conditions' => $message->conditions,
-            'order'      => $message->order,
             'live'       => $message->live,
             'is_deleted' => false,
             'queued'     => 0,

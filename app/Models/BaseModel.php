@@ -5,13 +5,13 @@ use Jenssegers\Mongodb\Eloquent\Model;
 /**
  * App\Models\Models
  *
- * @property int $id
+ * @property int      $id
  */
 abstract class BaseModel extends Model
 {
 
     protected $guarded = ['id'];
-    
+
     /**
      * @param $query
      * @param $columnName

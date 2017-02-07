@@ -3,7 +3,6 @@
 class Image extends Message
 {
 
-    public static $type = 'image';
     public $image_url;
     /** @type ImageFile */
     public $file;
@@ -14,7 +13,9 @@ class Image extends Message
      */
     public function __construct(array $data)
     {
-        $this->file = new ImageFile(array_pull($data, 'file'));
+        if ($file = array_pull($data, 'file')) {
+            $this->file = new ImageFile($file);
+        }
         parent::__construct($data);
     }
 }

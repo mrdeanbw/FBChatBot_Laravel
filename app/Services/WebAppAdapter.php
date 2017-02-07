@@ -516,7 +516,7 @@ class WebAppAdapter
     {
         $timestamp = $this->normalizeTimestamp($timestamp);
 
-        $this->messageInstanceRepo->markAsDelivered($subscriber, $timestamp);
+//        $this->messageInstanceRepo->markAsDelivered($subscriber, $timestamp);
         $this->updateBroadcastDeliveredStats($subscriber, $timestamp);
     }
 

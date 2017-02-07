@@ -24,6 +24,6 @@ class CreateBotsCollection extends Migration
      */
     public function down()
     {
-        Schema::drop('bots');
+        Schema::dropIfExists('bots');
     }
 }

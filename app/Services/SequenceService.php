@@ -1,18 +1,15 @@
 <?php namespace App\Services;
 
+use App\Models\AudienceFilter;
 use App\Repositories\Template\TemplateRepositoryInterface;
-use DB;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Sequence;
 use App\Models\Subscriber;
 use App\Models\SequenceMessage;
-use App\Models\SequenceMessageSchedule;
-use App\Events\SequenceTargetingWasAltered;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use MongoDB\BSON\ObjectID;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SequenceService
 {
@@ -37,6 +34,10 @@ class SequenceService
      * @type TemplateRepositoryInterface
      */
     private $templateRepo;
+    /**
+     * @type TemplateService
+     */
+    private $templates;
 
     /**
      * SequenceService constructor.
@@ -45,19 +46,22 @@ class SequenceService
      * @param TimezoneService             $timezones
      * @param FilterGroupService          $filterGroups
      * @param TemplateRepositoryInterface $templateRepo
+     * @param TemplateService             $templates
      */
     public function __construct(
         SequenceRepositoryInterface $sequenceRepo,
         MessageService $messageBlocks,
         TimezoneService $timezones,
         FilterGroupService $filterGroups,
-        TemplateRepositoryInterface $templateRepo
+        TemplateRepositoryInterface $templateRepo,
+        TemplateService $templates
     ) {
         $this->messageBlocks = $messageBlocks;
         $this->timezones = $timezones;
         $this->filterGroups = $filterGroups;
         $this->sequenceRepo = $sequenceRepo;
         $this->templateRepo = $templateRepo;
+        $this->templates = $templates;
     }
 
     /**
@@ -101,7 +105,7 @@ class SequenceService
      * @param Sequence $sequence
      * @return SequenceMessage
      */
-    private function findMessageOrFail($id, Sequence $sequence)
+    public function findMessageOrFail($id, Sequence $sequence)
     {
         if ($message = $this->sequenceRepo->findSequenceMessageById($id, $sequence)) {
             return $message;
@@ -121,7 +125,7 @@ class SequenceService
         $data = [
             'name'     => $input['name'],
             'bot_id'   => $bot->id,
-            'filters'  => null,
+            'filter'   => null,
             'messages' => $this->defaultSequenceMessages($bot),
         ];
 
@@ -139,26 +143,23 @@ class SequenceService
      */
     public function update($id, $input, Bot $page)
     {
+        $sequence = $this->findByIdForBotOrFail($id, $page);
+
+        if ($filter = array_get($input, 'filter')) {
+            $filter = new AudienceFilter($filter, true);
+        }
+
         $data = [
-            'name'           => $input['name'],
-            'filter_type'    => $input['filter_type'],
-            'filter_enabled' => array_get($input, 'filter_enabled', false)
+            'name'   => $input['name'],
+            'filter' => $filter,
         ];
 
-        $filterGroups = $input['filter_groups'];
+        $sequence = $this->sequenceRepo->update($sequence, $data);
 
-        DB::transaction(function () use ($id, $data, $filterGroups, $page) {
-            $sequence = $this->findByIdForBotOrFail($id, $page);
-            $this->sequenceRepo->update($sequence, $data);
-            $this->filterGroups->persist($sequence, $filterGroups);
+        // @todo issue the job to add new subscribers (only if filters changed?!)
+        //        event(new SequenceTargetingWasAltered($sequence));
 
-            // Fresh instance of the sequence
-            $sequence = $this->findByIdForBotOrFail($id, $page);
-            event(new SequenceTargetingWasAltered($sequence));
-        });
-
-        // return a fresh instance.
-        return $this->findByIdForBotOrFail($id, $page);
+        return $sequence;
     }
 
     /**
@@ -169,29 +170,33 @@ class SequenceService
     public function delete($id, $page)
     {
         $sequence = $this->findByIdForBotOrFail($id, $page);
-        DB::transaction(function () use ($sequence) {
-            $this->sequenceRepo->delete($sequence);
-        });
+        $this->sequenceRepo->delete($sequence);
     }
 
     /**
      * Add a new message to a sequences.
      * @param array $input
      * @param int   $sequenceId
-     * @param Bot   $page
+     * @param Bot   $bot
+     * @return SequenceMessage
      */
-    public function addMessage(array $input, $sequenceId, Bot $page)
+    public function createMessage(array $input, $sequenceId, Bot $bot)
     {
-        $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
+        $sequence = $this->findByIdForBotOrFail($sequenceId, $bot);
 
-        // The order of the message to be added, is the order of the last message + 1
-        // If no previous messages exist, then the order of this message is 1.
-        $lastMessage = $this->sequenceRepo->getLastSequenceMessage($sequence);
-        $input['order'] = $lastMessage? $lastMessage->order + 1 : 1;
+        $template = $this->templates->createImplicit($input['template']['messages'], $bot->id);
 
-        DB::transaction(function () use ($input, $sequence) {
-            $this->persistMessages([$input], $sequence);
-        });
+        $message = new SequenceMessage([
+            'template_id' => $template->id,
+            'live'        => array_get($input, 'live', false),
+            'conditions'  => $this->normalizeMessageConditions($input)
+        ]);
+
+        $this->sequenceRepo->addMessageToSequence($sequence, $message);
+
+        $message->template = $template;
+
+        return $message;
     }
 
     /**
@@ -199,20 +204,25 @@ class SequenceService
      * @param array $input
      * @param int   $id
      * @param int   $sequenceId
-     * @param Bot   $page
+     * @param Bot   $bot
+     * @return SequenceMessage
      */
-    public function updateMessage(array $input, $id, $sequenceId, Bot $page)
+    public function updateMessage(array $input, $id, $sequenceId, Bot $bot)
     {
-        DB::transaction(function () use ($input, $id, $sequenceId, $page) {
-            $data = array_only($input, ['name', 'days']);
-            $data['is_live'] = array_get($input, 'is_live', false);
+        $sequence = $this->findByIdForBotOrFail($sequenceId, $bot);
+        $message = $this->findMessageOrFail($id, $sequence);
 
-            $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
-            $message = $this->findMessageOrFail($id, $sequence);
+        $template = $this->templates->updateImplicit($message->template_id, $input['template'], $bot);
+        
+        $message->name = $input['name'];
+        $message->live = array_get($input, 'live', false);
+        $message->conditions = $this->normalizeMessageConditions($input);
 
-            $this->sequenceRepo->updateMessage($message, $data);
-            //            $this->messageBlocks->persist($message, $input['messages']);
-        });
+        $this->sequenceRepo->updateSequenceMessage($sequence, $message);
+
+        $message->template = $template;
+
+        return $message;
     }
 
     /**
@@ -223,11 +233,9 @@ class SequenceService
      */
     public function deleteMessage($id, $sequenceId, $page)
     {
-        DB::transaction(function () use ($id, $sequenceId, $page) {
-            $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
-            $message = $this->findMessageOrFail($id, $sequence);
-            $this->sequenceRepo->deleteMessage($message);
-        });
+        $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
+        $message = $this->findMessageOrFail($id, $sequence);
+        $this->sequenceRepo->deleteMessage($sequence, $message);
     }
 
 
@@ -255,41 +263,40 @@ class SequenceService
      */
     private function defaultSequenceMessages(Bot $bot)
     {
-
         $templates = $this->getDefaultTemplates($bot);
         $this->templateRepo->bulkCreate($templates);
 
         $arr = [
             [
-                'order'       => 1,
+                'id'          => new ObjectID(),
                 'live'        => false,
                 'name'        => 'Introduction content + Unsubscribe instructions',
                 'conditions'  => ['wait_for' => ['days' => 1, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[0]['_id'],
             ],
             [
-                'order'       => 2,
+                'id'          => new ObjectID(),
                 'live'        => false,
                 'name'        => '1st Educational message',
                 'conditions'  => ['wait_for' => ['days' => 1, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[1]['_id'],
             ],
             [
-                'order'       => 3,
+                'id'          => new ObjectID(),
                 'live'        => false,
                 'name'        => '2nd Educational message',
                 'conditions'  => ['wait_for' => ['days' => 2, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[2]['_id'],
             ],
             [
-                'order'       => 4,
+                'id'          => new ObjectID(),
                 'live'        => false,
                 'name'        => '3rd Educational message + Soft sell',
                 'conditions'  => ['wait_for' => ['days' => 3, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[3]['_id'],
             ],
             [
-                'order'       => 5,
+                'id'          => new ObjectID(),
                 'live'        => false,
                 'name'        => '4th Educational message',
                 'conditions'  => ['wait_for' => ['days' => 4, 'hours' => 0, 'minutes' => 0]],
@@ -372,6 +379,23 @@ class SequenceService
             'type' => 'text',
             'text' => $text
         ];
+    }
+
+    /**
+     * @param array $input
+     * @return array
+     */
+    private function normalizeMessageConditions(array $input)
+    {
+        $conditions = [
+            'wait_for' => [
+                'days'    => $input['conditions']['wait_for']['days'],
+                'hours'   => $input['conditions']['wait_for']['hours'],
+                'minutes' => $input['conditions']['wait_for']['minutes'],
+            ]
+        ];
+
+        return $conditions;
     }
 
 }

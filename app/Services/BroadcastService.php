@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use App\Models\AudienceFilter;
 use DB;
 use Carbon\Carbon;
 use App\Models\Bot;
@@ -31,6 +32,10 @@ class BroadcastService
      * @type BroadcastRepository
      */
     private $broadcastRepo;
+    /**
+     * @type TemplateService
+     */
+    private $templates;
 
     /**
      * BroadcastService constructor.
@@ -39,49 +44,52 @@ class BroadcastService
      * @param SubscriberService   $audience
      * @param TimezoneService     $timezones
      * @param FilterGroupService  $filterGroups
+     * @param TemplateService     $templates
      */
     public function __construct(
         BroadcastRepository $broadcastRepo,
         MessageService $messageBlocks,
         SubscriberService $audience,
         TimezoneService $timezones,
-        FilterGroupService $filterGroups
+        FilterGroupService $filterGroups,
+        TemplateService $templates
     ) {
         $this->messageBlocks = $messageBlocks;
         $this->audience = $audience;
         $this->timezones = $timezones;
         $this->filterGroups = $filterGroups;
         $this->broadcastRepo = $broadcastRepo;
+        $this->templates = $templates;
     }
 
     /**
-     * @param Bot $page
+     * @param Bot $bot
      * @return \Illuminate\Support\Collection
      */
-    public function all(Bot $page)
+    public function all(Bot $bot)
     {
-        return $this->broadcastRepo->getAllForPage($page);
+        return $this->broadcastRepo->getAllForBot($bot);
     }
 
     /**
      * @param      $id
-     * @param Bot  $page
+     * @param Bot  $bot
      * @return Broadcast|null
      */
-    public function findById($id, Bot $page)
+    public function findById($id, Bot $bot)
     {
-        return $this->broadcastRepo->findByIdForPage($id, $page);
+        return $this->broadcastRepo->findByIdForBot($id, $bot);
     }
 
     /**
      * Find a broadcast by ID, throw exception if it doesn't exist.
      * @param      $id
-     * @param Bot  $page
+     * @param Bot  $bot
      * @return Broadcast|null
      */
-    public function findByIdOrFail($id, Bot $page)
+    public function findByIdOrFail($id, Bot $bot)
     {
-        if ($broadcast = $this->findById($id, $page)) {
+        if ($broadcast = $this->findById($id, $bot)) {
             return $broadcast;
         }
         throw new ModelNotFoundException;
@@ -90,149 +98,113 @@ class BroadcastService
     /**
      * Find a broadcast by ID and status, throw exception if it doesn't exist.
      * @param      $id
-     * @param Bot  $page
+     * @param Bot  $bot
      * @param      $status
-     * @return Broadcast|null
+     * @return Broadcast
      */
-    public function findByIdAndStatusOrFail($id, Bot $page, $status)
+    public function findByIdAndStatusOrFail($id, $status, Bot $bot)
     {
-        if (! ($broadcast = $this->findById($id, $page))) {
-            throw new ModelNotFoundException;
+        $broadcast = $this->findById($id, $bot);
+
+        if ($broadcast && $broadcast->status == $status) {
+            return $broadcast;
         }
 
-        if ($broadcast->status != $status) {
-            throw new ModelNotFoundException;
-        }
-
-        return $broadcast;
+        throw new ModelNotFoundException;
     }
 
     /**
      * Create a broadcast
      * @param array $input
-     * @param Bot   $page
+     * @param Bot   $bot
      * @return Broadcast
      */
-    public function create(array $input, Bot $page)
+    public function create(array $input, Bot $bot)
     {
-        $broadcast = DB::transaction(function () use ($input, $page) {
+        $template = $this->templates->createImplicit($input['template']['messages'], $bot);
 
-            $data = $this->cleanInput($input, $page->bot_timezone);
-            $broadcast = $this->broadcastRepo->createForPage($data, $page);
+        $data = array_merge($this->cleanInput($input, $bot), [
+            'bot_id'      => $bot->id,
+            'template_id' => $template->id
+        ]);
 
-            $this->filterGroups->persist($broadcast, $input['filter_groups']);
-//            $this->messageBlocks->persist($broadcast, $input['messages']);
-
-            $this->createBroadcastSchedules($broadcast);
-
-            return $broadcast;
-        });
+        /** @type Broadcast $broadcast */
+        $broadcast = $this->broadcastRepo->create($data);
+        $broadcast->template = $template;
 
         return $broadcast;
     }
 
     /**
      * Update a broadcast.
-     * @param      $id
-     * @param      $input
-     * @param Bot  $page
+     * @param        $id
+     * @param array  $input
+     * @param Bot    $bot
+     * @return Broadcast
      */
-    public function update($id, $input, Bot $page)
+    public function update($id, array $input, Bot $bot)
     {
-        DB::transaction(function () use ($id, $input, $page) {
+        $broadcast = $this->findByIdAndStatusOrFail($id, 'pending', $bot);
 
-            $broadcast = $this->findByIdAndStatusOrFail($id, $page, 'pending');
+        $data = $this->cleanInput($input, $bot);
+        $this->broadcastRepo->update($broadcast, $data);
 
-            $data = $this->cleanInput($input, $page->bot_timezone);
-            $this->broadcastRepo->update($broadcast, $data);
+        $broadcast->template = $this->templates->updateImplicit($broadcast->template_id, $input['template'], $bot);
 
-            $this->filterGroups->persist($broadcast, $input['filter_groups']);
-//            $this->messageBlocks->persist($broadcast, $input['messages']);
-
-            $this->createBroadcastSchedules($broadcast);
-        });
+        return $broadcast;
     }
 
     /**
      * @param array $input
-     * @param int   $inputTimezoneUTCOffset
+     * @param Bot   $bot
      * @return array
      */
-    private function cleanInput(array $input, $inputTimezoneUTCOffset)
+    private function cleanInput(array $input, Bot $bot)
     {
-        $data = array_only($input, ['name', 'notification', 'timezone', 'date', 'time', 'send_from', 'send_to', 'filter_type']);
+        $data = array_only($input, [
+            'name',
+            'notification',
+            'timezone',
+            'date',
+            'time',
+            'send_from',
+            'send_to',
+        ]);
 
-        // Broadcast targeting is always enabled.
-        $data['filter_enabled'] = 1;
-
-        // Convert the input date & time into UTC (server time).
-        $data['send_at'] = $this->getTimeInUTC($input['date'], $input['time'], $inputTimezoneUTCOffset);
+        $data = array_merge($data, [
+            'status'   => 'new',
+            'filter'   => new AudienceFilter($input['filter'], true),
+            'schedule' => $this->calculateScheduleDateTime($data, $bot)
+        ]);
 
         return $data;
     }
 
     /**
-     * @param string $date
-     * @param string $time
-     * @param string $timezoneOffset
-     * @return Carbon
-     */
-    private function getTimeInUTC($date, $time, $timezoneOffset)
-    {
-        $dateTime = "{$date} {$time}";
-        $timezoneOffset = $this->getPrettyTimezoneOffset($timezoneOffset);
-
-        return Carbon::createFromFormat('Y-m-d H:i', $dateTime, $timezoneOffset)->setTimezone('UTC');
-    }
-
-    /**
-     * Create the broadcast schedule.
-     * For every UTC offset timezone, create a broadcast schedule record with the send date/time in UTC.
-     * In case of updates, we simply delete old schedules and regenerate them.
-     * @todo Don't call this method every time the broadcast is saved, but rather when the date/time changes.
-     * @param Broadcast $broadcast
-     */
-    private function createBroadcastSchedules(Broadcast $broadcast)
-    {
-        // Delete old schedule.
-        $this->broadcastRepo->deleteBroadcastSchedule($broadcast);
-
-        // Generate the list of broadcast schedules.
-        $schedule = [];
-        foreach ($this->timezones->utcOffsets() as $offset) {
-            $schedule[] = [
-                'timezone' => $offset,
-                'send_at'  => $this->calculateTimezoneSendAtDateTime($broadcast, $offset),
-            ];
-        }
-
-        // Persist them.
-        $this->broadcastRepo->createBroadcastSchedule($schedule, $broadcast);
-    }
-
-    /**
      * Calculate the date/time when a specific timezone subscribers should receive the broadcast messages.
-     * @param Broadcast $broadcast
-     * @param double    $offset
-     * @return Carbon
+     * @param array $data
+     * @param Bot   $bot
+     * @return array [Carbon, double|null]
      */
-    private function calculateTimezoneSendAtDateTime(Broadcast $broadcast, $offset)
+    private function calculateScheduleDateTime(array $data, Bot $bot)
     {
         // start by creating a copy from the original broadcast send at date/time.
-        $sendAt = $broadcast->send_at->copy();
+        $sendAt = $this->getTimeInUTC($data['date'], $data['time'], $bot->timezone_offset)->copy();
 
         // If the timezone mode is "same time", then we will send it exactly the same time.
-        if ($broadcast->timezone == 'same_time') {
-            return $sendAt;
+        if ($data['timezone'] == 'same_time') {
+            return ['send_at' => $sendAt];
         }
 
-        // Otherwise, we will send it in every user's timezone.
+        // Otherwise, we will send it in the first timezone (-12)
+        $offset = TimezoneService::UTC_OFFSETS[0];
+
         $sendAt->setTimezone($this->getPrettyTimezoneOffset($offset));
 
         // If the timezone mode is limit time, then we will make sure that the send date / time falls in this limit.
-        if ($broadcast->timezone == 'limit_time') {
-            $lowerBound = $sendAt->copy()->hour($broadcast->send_from);
-            $upperBound = $sendAt->copy()->hour($broadcast->send_to);
+        if ($data['timezone'] == 'limit_time') {
+            $lowerBound = $sendAt->copy()->hour($data['send_from']);
+            $upperBound = $sendAt->copy()->hour($data['send_to']);
 
             // If the upper bound date is less than the lower bound, then add 1 day to the upper bound to fix it.
             if ($upperBound->lt($lowerBound)) {
@@ -252,7 +224,24 @@ class BroadcastService
             // Otherwise, it falls between lower and upper bound. Don't change it.
         }
 
-        return $sendAt;
+        return [
+            'send_at'    => $sendAt,
+            'utc_offset' => $offset
+        ];
+    }
+
+    /**
+     * @param string $date
+     * @param string $time
+     * @param string $timezoneOffset
+     * @return Carbon
+     */
+    private function getTimeInUTC($date, $time, $timezoneOffset)
+    {
+        $dateTime = "{$date} {$time}";
+        $timezoneOffset = $this->getPrettyTimezoneOffset($timezoneOffset);
+
+        return Carbon::createFromFormat('Y-m-d H:i', $dateTime, $timezoneOffset)->setTimezone('UTC');
     }
 
     /**
@@ -272,14 +261,12 @@ class BroadcastService
 
     /**
      * @param      $id
-     * @param Bot  $page
+     * @param Bot  $bot
      */
-    public function delete($id, $page)
+    public function delete($id, $bot)
     {
-        $broadcast = $this->findByIdAndStatusOrFail($id, $page, 'pending');
-        DB::transaction(function () use ($broadcast) {
-            $this->broadcastRepo->delete($broadcast);
-        });
+        $broadcast = $this->findByIdAndStatusOrFail($id, 'pending', $bot);
+        $this->broadcastRepo->delete($broadcast);
     }
 
     /**

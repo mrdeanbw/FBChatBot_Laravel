@@ -80,15 +80,23 @@ class SequenceController extends APIController
      */
     public function update($id, Request $request)
     {
-        $page = $this->bot();
+        $bot = $this->bot();
 
-        $this->validate(
-            $request,
-            $this->updateSequenceRules(),
-            $this->filterGroupRuleValidationCallback($page)
-        );
+        $rules = [
+            'name'                          => 'required|max:255',
+            'filter'                        => 'bail|array',
+            'filter.join_type'              => 'bail|required|in:and,or',
+            'filter.groups'                 => 'bail|array',
+            'filter.groups.*'               => 'bail|array',
+            'filter.groups.*.join_type'     => 'bail|required|in:and,or,none',
+            'filter.groups.*.rules'         => 'bail|required|array',
+            'filter.groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
+            'filter.groups.*.rules.*.value' => 'bail|required',
+        ];
 
-        $this->sequences->update($id, $request->all(), $page);
+        $this->validate($request, $rules, $this->filterGroupRuleValidationCallback($bot));
+
+        $this->sequences->update($id, $request->all(), $bot);
 
         return $this->response->accepted();
     }
@@ -100,9 +108,7 @@ class SequenceController extends APIController
      */
     public function destroy($id)
     {
-        $page = $this->bot();
-
-        $this->sequences->delete($id, $page);
+        $this->sequences->delete($id, $this->bot());
 
         return $this->response->accepted();
     }
@@ -111,24 +117,5 @@ class SequenceController extends APIController
     protected function transformer()
     {
         return new SequenceTransformer();
-    }
-
-    /**
-     * @return array
-     */
-    private function updateSequenceRules()
-    {
-        $rules = [
-            'name'                          => 'required|max:255',
-            'filter_type'                   => 'bail|required|in:and,or',
-            'filter_groups'                 => 'bail|array',
-            'filter_groups.*'               => 'bail|array',
-            'filter_groups.*.type'          => 'bail|required|in:and,or,none',
-            'filter_groups.*.rules'         => 'bail|required|array',
-            'filter_groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
-            'filter_groups.*.rules.*.value' => 'bail|required',
-        ];
-
-        return $rules;
     }
 }

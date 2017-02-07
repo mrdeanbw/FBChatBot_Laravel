@@ -4,12 +4,9 @@ use Illuminate\Http\Request;
 use App\Transformers\BaseTransformer;
 use App\Services\WelcomeMessageService;
 use App\Transformers\WelcomeMessageTransformer;
-use App\Services\Validation\MessageValidationHelper;
 
 class WelcomeMessageController extends APIController
 {
-
-    use MessageValidationHelper;
 
     /**
      * @type WelcomeMessageService
@@ -35,9 +32,9 @@ class WelcomeMessageController extends APIController
         $rules = $this->validationRules();
         $this->validate($request, $rules);
 
-        $this->welcomeMessages->update($request->all(), $this->bot());
+        $welcomeMessage = $this->welcomeMessages->update($request->all(), $this->bot());
 
-        return $this->response->accepted();
+        return $this->itemResponse($welcomeMessage);
     }
 
     /** @return BaseTransformer */

@@ -3,13 +3,10 @@
 use Illuminate\Http\Request;
 use App\Services\DefaultReplyService;
 use App\Transformers\DefaultReplyTransformer;
-use App\Services\Validation\MessageValidationHelper;
 
 class DefaultReplyController extends APIController
 {
-
-    use MessageValidationHelper;
-
+    
     /**
      * @type DefaultReplyService
      */

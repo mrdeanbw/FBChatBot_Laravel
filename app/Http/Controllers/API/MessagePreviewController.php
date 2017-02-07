@@ -3,12 +3,9 @@
 use Illuminate\Http\Request;
 use App\Transformers\BaseTransformer;
 use App\Services\MessagePreviewService;
-use App\Services\Validation\MessageValidationHelper;
 
 class MessagePreviewController extends APIController
 {
-
-    use MessageValidationHelper;
 
     /**
      * @type MessagePreviewService

@@ -12,21 +12,15 @@ class BotController extends APIController
      * @type BotService
      */
     private $bots;
-    /**
-     * @type TimezoneService
-     */
-    private $timezones;
 
     /**
      * PageController constructor.
      *
      * @param BotService              $bots
-     * @param TimezoneService         $timezones
      */
-    public function __construct(BotService $bots, TimezoneService $timezones)
+    public function __construct(BotService $bots)
     {
         $this->bots = $bots;
-        $this->timezones = $timezones;
     }
 
     /**
@@ -124,7 +118,7 @@ class BotController extends APIController
 
         $this->validate($request, [
             'timezone'        => 'bail|required|max:255',
-            'timezone_offset' => 'bail|required|numeric|in:' . implode(',', $this->timezones->utcOffsets())
+            'timezone_offset' => 'bail|required|numeric|in:' . implode(',', TimezoneService::UTC_OFFSETS)
         ]);
         
         $this->bots->updateTimezone($request->all(), $bot);

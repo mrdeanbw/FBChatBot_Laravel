@@ -5,6 +5,9 @@ use Illuminate\Auth\Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
+/**
+ * @property string $jwt_token
+ */
 class User extends BaseModel implements AuthenticatableContract, JWTSubject
 {
 

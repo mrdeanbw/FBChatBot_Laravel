@@ -4,13 +4,10 @@ use Illuminate\Http\Request;
 use App\Services\MainMenuService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\MainMenuTransformer;
-use App\Services\Validation\MessageValidationHelper;
 
 class MainMenuController extends APIController
 {
-
-    use MessageValidationHelper;
-
+    
     /**
      * @type MainMenuService
      */

@@ -103,9 +103,7 @@ class AutoReplyRuleService
             'template_id' => $input['template']['id'],
         ];
 
-        $this->autoReplyRuleRepo->update($rule, $data);
-
-        return $rule;
+        return $this->autoReplyRuleRepo->update($rule, $data);
     }
 
     /**

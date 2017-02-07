@@ -13,7 +13,7 @@ trait FilterAudienceRuleValidator
     {
         return function ($validator, $input) use ($bot) {
 
-            foreach (array_get($input, 'filter_groups', []) as $group) {
+            foreach (array_get($input, 'filter.groups', []) as $group) {
 
                 foreach (array_get($group, 'rules', []) as $rule) {
 

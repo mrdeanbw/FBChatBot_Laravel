@@ -19,4 +19,14 @@ abstract class BaseTransformer extends TransformerAbstract
         return $this->item($model->template, new TemplateTransformer(), false);
     }
 
+    public function transformInclude(array $data, $transformer)
+    {
+        $collection = $this->collection($data, $transformer, false);
+        $transformer = $collection->getTransformer();
+
+        return array_map(function ($item) use ($transformer) {
+            return $transformer->transform($item);
+        }, $collection->getData());
+    }
+
 }

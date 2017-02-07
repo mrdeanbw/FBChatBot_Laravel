@@ -240,14 +240,12 @@ class BotService
     }
 
     /**
-     * @param Bot $page
+     * @param Bot $bot
      * @return Bot
      */
-    public function enableBot(Bot $page)
+    public function enableBot(Bot $bot)
     {
-        $this->botRepo->update($page, ['enabled' => true]);
-
-        return $page;
+        return $this->botRepo->update($bot, ['enabled' => true]);
     }
 
     /**
@@ -256,9 +254,7 @@ class BotService
      */
     public function disableBot(Bot $bot)
     {
-        $this->botRepo->update($bot, ['enabled' => false]);
-
-        return $bot;
+        return $this->botRepo->update($bot, ['enabled' => false]);
     }
 
     /**

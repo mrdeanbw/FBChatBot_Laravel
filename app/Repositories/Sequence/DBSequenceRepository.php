@@ -15,7 +15,7 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
     {
         return Sequence::class;
     }
-    
+
     /**
      * Return list of all sequences that belong to a page.
      * @param Bot $bot
@@ -38,33 +38,36 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
     }
 
     /**
-     * Return list of all sequences that are subscribed to by a subscriber.
-     * @param Subscriber $subscriber
-     * @return Collection
+     * Create a message and attach it to sequence.
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     * @return SequenceMessage
      */
-    public function getAllForSubscriber(Subscriber $subscriber)
+    public function addMessageToSequence(Sequence $sequence, SequenceMessage $message)
     {
-        return $subscriber->sequences;
+        $sequence->push('messages', $message);
     }
 
     /**
-     * Get the first sequence message in a sequence.
-     * @param $sequence
-     * @return SequenceMessage|null
+     * Update a sequence message.
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
      */
-    public function getFirstSequenceMessage(Sequence $sequence)
+    public function updateSequenceMessage(Sequence $sequence, SequenceMessage $message)
     {
-        return $sequence->messages()->first();
+        Sequence::whereId($sequence->id)->where('messages.id', $message->id)->update([
+            'messages.$' => $message
+        ]);
     }
 
     /**
-     * Get the last message in a sequence.
-     * @param Sequence $sequence
-     * @return SequenceMessage|null
+     * Delete a sequence message.
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
      */
-    public function getLastSequenceMessage(Sequence $sequence)
+    public function deleteMessage(Sequence $sequence, SequenceMessage $message)
     {
-        return $sequence->unorderedMessages()->orderBy('order', 'desc')->first();
+        Sequence::whereId($sequence->id)->where('messages.id', $message->id)->pull('messages', 'message.$');
     }
 
     /**
@@ -86,17 +89,6 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
     {
         $subscriber->sequenceSchedules()->whereSequenceId($sequence->id)->whereStatus('pending')->delete();
     }
-    
-    /**
-     * Create a message and attach it to sequence.
-     * @param array    $data
-     * @param Sequence $sequence
-     * @return SequenceMessage
-     */
-    public function createMessage(array $data, Sequence $sequence)
-    {
-        return $sequence->messages()->create($data);
-    }
 
     /**
      * Find a sequence message by ID
@@ -106,31 +98,9 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
      */
     public function findSequenceMessageById($id, Sequence $sequence)
     {
-        return $sequence->messages()->find($id);
-    }
-
-    /**
-     * Update a sequence message.
-     * @param SequenceMessage $message
-     * @param array           $data
-     */
-    public function updateMessage(SequenceMessage $message, array $data)
-    {
-        $message->update($data);
-    }
-
-    /**
-     * Delete a sequence message.
-     * @param SequenceMessage $message
-     * @param bool            $completely
-     */
-    public function deleteMessage(SequenceMessage $message, $completely = false)
-    {
-        if ($completely) {
-            $message->forceDelete();
-        } else {
-            $message->delete();
-        }
+        return array_first($sequence->messages, function (SequenceMessage $message) use ($id) {
+            return $message->id === $id;
+        });
     }
 
     /**

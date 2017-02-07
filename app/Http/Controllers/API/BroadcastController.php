@@ -3,13 +3,12 @@
 use Illuminate\Http\Request;
 use App\Services\BroadcastService;
 use App\Transformers\BroadcastTransformer;
-use App\Services\Validation\MessageValidationHelper;
 use App\Services\Validation\FilterAudienceRuleValidator;
 
 class BroadcastController extends APIController
 {
 
-    use MessageValidationHelper, FilterAudienceRuleValidator;
+    use FilterAudienceRuleValidator;
 
     /**
      * @type BroadcastService
@@ -31,23 +30,42 @@ class BroadcastController extends APIController
      */
     public function index()
     {
-        $page = $this->bot();
+        $broadcasts = $this->broadcasts->all($this->bot());
 
-        return $this->collectionResponse($this->broadcasts->all($page));
+        return $this->collectionResponse($broadcasts);
     }
 
     /**
-     * Delete a broadcast.
+     * Return the details of a broadcast.
      * @param         $id
+     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function destroy($id)
+    public function show($id, Request $request)
     {
-        $page = $this->bot();
+        if ($request->get('status')) {
+            $broadcast = $this->broadcasts->findByIdAndStatusOrFail($id, 'completed', $this->bot());
+        } else {
+            $broadcast = $this->broadcasts->findById($id, $this->bot());
+        }
 
-        $this->broadcasts->delete($id, $page);
+        return $this->itemResponse($broadcast);
+    }
 
-        return $this->response->accepted();
+    /**
+     * Create a broadcast.
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function store(Request $request)
+    {
+        $bot = $this->bot();
+
+        $this->validate($request, $this->validationRules(), $this->filterGroupRuleValidationCallback($bot));
+
+        $broadcast = $this->broadcasts->create($request->all(), $bot);
+
+        return $this->itemResponse($broadcast);
     }
 
     /**
@@ -58,78 +76,31 @@ class BroadcastController extends APIController
      */
     public function update($id, Request $request)
     {
-        $page = $this->bot();
+        $bot = $this->bot();
 
-        $validator = $this->makeBroadcastValidator($request, $page);
+        $this->validate($request, $this->validationRules(), $this->filterGroupRuleValidationCallback($bot));
 
-        if ($validator->fails()) {
-            return $this->errorsResponse($validator->errors());
-        }
+        $broadcast = $this->broadcasts->update($id, $request->all(), $bot);
 
-        $this->broadcasts->update($id, $request->all(), $page);
+        return $this->itemResponse($broadcast);
+    }
+
+    /**
+     * Delete a broadcast.
+     * @param         $id
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function destroy($id)
+    {
+        $this->broadcasts->delete($id, $this->bot());
 
         return $this->response->accepted();
     }
 
     /**
-     * Create a broadcast.
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function store(Request $request)
-    {
-        $page = $this->bot();
-
-        $validator = $this->makeBroadcastValidator($request, $page);
-
-        if ($validator->fails()) {
-            return $this->errorsResponse($validator->errors());
-        }
-
-        $this->broadcasts->create($request->all(), $page);
-
-        return $this->response->created();
-    }
-
-    /**
-     * Return the details of a broadcast.
-     * @param         $id
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function show($id)
-    {
-        $page = $this->bot();
-        $broadcast = $this->broadcasts->findByIdOrFail($id, $page);
-
-        return $this->itemResponse($broadcast);
-    }
-
-    protected function transformer()
-    {
-        return new BroadcastTransformer();
-    }
-
-    /**
-     * @param Request $request
-     * @param         $page
-     * @return \Illuminate\Validation\Validator
-     */
-    private function makeBroadcastValidator(Request $request, $page)
-    {
-        $validator = $this->makeValidator(
-            $request->all(),
-            $this->broadcastValidationRules(),
-            $page,
-            $this->filterGroupRuleValidationCallback($page)
-        );
-
-        return $validator;
-    }
-
-    /**
      * @return array
      */
-    private function broadcastValidationRules()
+    private function validationRules()
     {
         return [
             'name'                          => 'bail|required|max:255',
@@ -139,14 +110,23 @@ class BroadcastController extends APIController
             'time'                          => 'bail|required|date_format:H:i',
             'send_from'                     => 'bail|required_if:timezone,limit_time|integer|between:1,24',
             'send_to'                       => 'bail|required_if:timezone,limit_time|integer|between:1,24',
-            'filter_type'                   => 'bail|required|in:and,or',
-            'filter_groups'                 => 'bail|array',
-            'filter_groups.*'               => 'bail|array',
-            'filter_groups.*.type'          => 'bail|required|in:and,or,none',
-            'filter_groups.*.rules'         => 'bail|required|array',
-            'filter_groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
-            'filter_groups.*.rules.*.value' => 'bail|required',
+            'filter'                        => 'bail|array',
+            'filter.join_type'              => 'bail|required|in:and,or',
+            'filter.groups'                 => 'bail|array',
+            'filter.groups.*'               => 'bail|array',
+            'filter.groups.*.join_type'     => 'bail|required|in:and,or,none',
+            'filter.groups.*.rules'         => 'bail|required|array',
+            'filter.groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
+            'filter.groups.*.rules.*.value' => 'bail|required',
+            'template'                      => 'bail|required|array',
+            'template.messages'             => 'bail|required|array|max:10',
+            'template.messages.*'           => 'bail|required|message',
         ];
+    }
+
+    protected function transformer()
+    {
+        return new BroadcastTransformer();
     }
 
 }

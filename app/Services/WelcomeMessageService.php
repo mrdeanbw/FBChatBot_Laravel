@@ -34,10 +34,13 @@ class WelcomeMessageService
      *
      * @param array $input
      * @param Bot   $bot
+     * @return WelcomeMessage
      */
     public function update(array $input, Bot $bot)
     {
-        $this->templates->updateImplicit($bot->welcome_message->template_id, $input['template']);
+        $bot->welcome_message->template = $this->templates->updateImplicit($bot->welcome_message->template_id, $input['template'], $bot);
+
+        return $bot->welcome_message;
     }
 
     /**
@@ -85,9 +88,8 @@ class WelcomeMessageService
     private function initialTextMessage()
     {
         return new Text([
-            'id'    => with(new ObjectID())->__toString(),
-            'order' => 1,
-            'text'  => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
+            'id'   => with(new ObjectID())->__toString(),
+            'text' => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
         ]);
     }
 
@@ -98,7 +100,6 @@ class WelcomeMessageService
     {
         return new Text([
             'id'       => with(new ObjectID())->__toString(),
-            'order'    => 2,
             'text'     => 'Want to create your own bot? Go to: https://www.mrreply.com',
             'readonly' => true
         ]);

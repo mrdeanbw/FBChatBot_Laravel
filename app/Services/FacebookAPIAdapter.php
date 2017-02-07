@@ -325,6 +325,7 @@ class FacebookAPIAdapter
 
 
     /**
+     * @todo make sure this is always fired from job queue??
      * Send message blocks to a subscriber, using Facebook API.
      * @param Template   $template
      * @param Subscriber $subscriber

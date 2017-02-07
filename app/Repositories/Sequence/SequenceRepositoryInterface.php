@@ -18,27 +18,29 @@ interface SequenceRepositoryInterface extends CommonRepositoryInterface
     public function getAllForBot(Bot $bot);
 
     /**
-     * Return list of all sequences that are subscribed to by a subscriber.
-     * @param Subscriber $subscriber
-     * @return Collection
+     * Find a sequence for a given bot.
+     * @param      $id
+     * @param Bot  $bot
+     * @return Sequence|null
      */
-    public function getAllForSubscriber(Subscriber $subscriber);
+    public function findByIdForBot($id, Bot $bot);
 
     /**
-     * Get the first sequence message in a sequence.
-     * @param $sequence
-     * @return SequenceMessage|null
+     * Create a message and attach it to sequence.
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     * @return SequenceMessage
      */
-    public function getFirstSequenceMessage(Sequence $sequence);
+    public function addMessageToSequence(Sequence $sequence, SequenceMessage $message);
 
     /**
-     * Get the last message in a sequence.
-     * @param Sequence $sequence
-     * @return SequenceMessage|null
+     * Update a sequence message.
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     * @return
      */
-    public function getLastSequenceMessage(Sequence $sequence);
-
-
+    public function updateSequenceMessage(Sequence $sequence, SequenceMessage $message);
+    
     /**
      * Get the next message in a sequence.
      * @param SequenceMessage $sequenceMessage
@@ -54,23 +56,6 @@ interface SequenceRepositoryInterface extends CommonRepositoryInterface
     public function deleteSequenceScheduledMessageForSubscriber(Subscriber $subscriber, Sequence $sequence);
 
     /**
-     * Find a sequence for a given bot.
-     * @param      $id
-     * @param Bot  $bot
-     * @return Sequence|null
-     */
-    public function findByIdForBot($id, Bot $bot);
-
-    /**
-     * Create a message and attach it to sequence.
-     * @param array    $data
-     * @param Sequence $sequence
-     * @return SequenceMessage
-     */
-    public function createMessage(array $data, Sequence $sequence);
-
-
-    /**
      * Find a sequence message by ID
      * @param int      $id
      * @param Sequence $sequence
@@ -79,21 +64,12 @@ interface SequenceRepositoryInterface extends CommonRepositoryInterface
     public function findSequenceMessageById($id, Sequence $sequence);
 
     /**
-     * Update a sequence message.
-     * @param SequenceMessage $message
-     * @param array           $data
-     */
-    public function updateMessage(SequenceMessage $message, array $data);
-
-    /**
      * Delete a sequence message.
+     * @param Sequence        $sequence
      * @param SequenceMessage $message
-     * @param bool            $completely If set to false, the message will be trashed (using deleted_at)
-     * @return
      */
-    public function deleteMessage(SequenceMessage $message, $completely = false);
-
-
+    public function deleteMessage(Sequence $sequence, SequenceMessage $message);
+    
     /**
      * Return a collection of subscribers, who are subscribed to a sequence.
      * @param Sequence $sequence

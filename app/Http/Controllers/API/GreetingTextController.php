@@ -40,7 +40,7 @@ class GreetingTextController extends APIController
 
         $this->greetingTexts->update($request->all(), $bot, $this->user());
 
-        return $this->response->accepted();
+        return $this->itemResponse($bot->greeting_text);
     }
 
     /** @return BaseTransformer */
