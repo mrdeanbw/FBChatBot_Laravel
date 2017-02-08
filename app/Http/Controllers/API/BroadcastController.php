@@ -111,6 +111,7 @@ class BroadcastController extends APIController
             'send_from'                     => 'bail|required_if:timezone,limit_time|integer|between:1,24',
             'send_to'                       => 'bail|required_if:timezone,limit_time|integer|between:1,24',
             'filter'                        => 'bail|array',
+            'filter.enabled'                => 'bail|required',
             'filter.join_type'              => 'bail|required|in:and,or',
             'filter.groups'                 => 'bail|array',
             'filter.groups.*'               => 'bail|array',

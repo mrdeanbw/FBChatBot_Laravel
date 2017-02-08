@@ -20,7 +20,7 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
     $gender = $faker->randomElement(['male', 'female']);
     $firstName = $gender == 'male'? $faker->firstNameMale : $faker->firstNameFemale;
 
-    $active = 1;
+    $active = true;
     $lastSubscribed = $faker->dateTimeThisMonth;
     $lastUnsubscribed = $faker->boolean(75)? null : $faker->dateTimeThisMonth;
 
@@ -28,7 +28,7 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
         $active = $lastUnsubscribed->getTimestamp() <= $lastSubscribed->getTimestamp();
     }
 
-    $pageId = Bot::firstOrFail()->id;
+    $botId = Bot::firstOrFail()->id;
 
     return [
         'first_name'           => $firstName,
@@ -39,22 +39,24 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
         'last_contacted_at'    => $faker->boolean(75)? $faker->dateTimeThisMonth : null,
         'created_at'           => $faker->dateTimeThisMonth,
         'updated_at'           => $faker->dateTimeThisMonth,
-        'is_active'            => $active,
-        'page_id'              => $pageId,
+        'active'               => $active,
+        'bot_id'               => $botId,
         'timezone'             => Carbon::now($faker->timezone)->offsetHours,
         'last_subscribed_at'   => $lastSubscribed,
         'last_unsubscribed_at' => $lastUnsubscribed,
+        'tags'                 => [],
+        'sequences'            => []
     ];
 });
 
 
 $factory->define(\App\Models\AutoReplyRule::class, function (Faker\Generator $faker) {
     return [
-        'mode' => $faker->randomElement(['is', 'contains', 'begins_with']),
-        'keyword' => $faker->word,
-        'action' => 'send',
-        'readonly' => false,
-        'bot_id' => null,
+        'mode'        => $faker->randomElement(['is', 'contains', 'begins_with']),
+        'keyword'     => $faker->word,
+        'action'      => 'send',
+        'readonly'    => false,
+        'bot_id'      => null,
         'template_id' => null
     ];
 });

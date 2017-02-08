@@ -6,6 +6,7 @@ class AudienceFilter extends ArrayModel
     public $join_type;
     /** @type  AudienceFilterGroup[] */
     public $groups = [];
+    public $enabled;
 
     /**
      * AudienceFilter constructor.
@@ -17,6 +18,7 @@ class AudienceFilter extends ArrayModel
         foreach (array_pull($data, 'groups') as $group) {
             $this->groups[] = new AudienceFilterGroup($group, $strict);
         }
+        $data['enabled'] = (bool)$data['enabled'];
 
         parent::__construct($data, $strict);
     }

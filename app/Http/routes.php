@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Carbon;
 use Dingo\Api\Routing\Router;
 
 /** @type Router $api */
@@ -15,6 +16,7 @@ $options = [
 $api->version('v1', $options, function (Router $api) {
 
     $api->get('/test', function () {
+        dd(Carbon::now()->toDayDateTimeString());
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');
@@ -54,9 +56,6 @@ $api->version('v1', $options, function (Router $api) {
         $api->post('/bots/{botId}/auto-reply/rules', 'AutoReplyRuleController@create');
         $api->put('/bots/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@update');
         $api->delete('/bots/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@destroy');
-
-        // Tags
-        $api->get('/bots/{botId}/tags', 'TagController@index');
 
         // Message Trees
         $api->get('/bots/{botId}/templates/explicit', 'TemplateController@index');

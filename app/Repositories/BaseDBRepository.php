@@ -105,7 +105,7 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
 
         $this->applyOrderBy($query, $orderBy);
 
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $query->paginate((int)$perPage, ['*'], 'page', (int)$page);
     }
 
     /**

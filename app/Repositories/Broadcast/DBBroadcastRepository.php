@@ -10,7 +10,7 @@ use App\Repositories\BaseDBRepository;
 
 class DBBroadcastRepository extends BaseDBRepository implements BroadcastRepository
 {
-    
+
     public function model()
     {
         return Broadcast::class;
@@ -18,53 +18,23 @@ class DBBroadcastRepository extends BaseDBRepository implements BroadcastReposit
 
     /**
      * Get all broadcasts that
-     * @param Bot $page
+     * @param Bot $bot
      * @return Collection
      */
-    public function getAllForBot(Bot $page)
+    public function getAllForBot(Bot $bot)
     {
-        return $page->broadcasts;
+        return Broadcast::where('bot_id', $bot->id)->get();
     }
 
     /**
      * Find a broadcast by id
      * @param int $id
-     * @param Bot $page
+     * @param Bot $bot
      * @return Broadcast|null
      */
-    public function findByIdForBot($id, Bot $page)
+    public function findByIdForBot($id, Bot $bot)
     {
-        return $page->broadcasts()->find($id);
-    }
-
-    /**
-     * Create a broadcast and associate it with a page.
-     * @param array $data
-     * @param Bot   $page
-     * @return Broadcast
-     */
-    public function createForPage(array $data, Bot $page)
-    {
-        return $page->broadcasts()->create($data);
-    }
-
-    /**
-     * Delete the broadcast schedules.
-     * @param Broadcast $broadcast
-     */
-    public function deleteBroadcastSchedule(Broadcast $broadcast)
-    {
-        $broadcast->schedule()->delete();
-    }
-
-    /**
-     * Create schedules for broadcast.
-     * @param array     $schedule
-     * @param Broadcast $broadcast
-     */
-    public function createBroadcastSchedule(array $schedule, Broadcast $broadcast)
-    {
-        $broadcast->schedule()->createMany($schedule);
+        return Broadcast::where('bot_id', $bot->id)->find($id);
     }
 
     /**

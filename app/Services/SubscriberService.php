@@ -207,6 +207,12 @@ class SubscriberService
      */
     private function normalizeFilter(array $filter)
     {
+        if (! $filter) {
+            return $filter;
+        }
+        
+        $filter['enabled'] = (bool) array_get($filter, 'enabled', false);
+        
         foreach ($filter['groups'] as $i => $group) {
             $filter['groups'][$i]['rules'] = $this->removeRulesWithoutValues($group['rules']);
         }

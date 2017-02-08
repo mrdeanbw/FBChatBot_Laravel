@@ -85,6 +85,7 @@ class SequenceController extends APIController
         $rules = [
             'name'                          => 'required|max:255',
             'filter'                        => 'bail|array',
+            'filter.enabled'                => 'bail|required',
             'filter.join_type'              => 'bail|required|in:and,or',
             'filter.groups'                 => 'bail|array',
             'filter.groups.*'               => 'bail|array',

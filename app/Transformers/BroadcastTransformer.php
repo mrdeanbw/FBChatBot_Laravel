@@ -21,10 +21,10 @@ class BroadcastTransformer extends BaseTransformer
             'send_from'      => (int)$broadcast->send_from,
             'send_to'        => (int)$broadcast->send_to,
             'status'         => $broadcast->status,
-            'send_at'        => $broadcast->send_at? $broadcast->send_at->toDateTimeString() : null,
+            'send_at'        => $broadcast->send_at? $broadcast->send_at->toAtomString() : null,
             'filter_enabled' => (boolean)$broadcast->filter_enabled,
             'filter_type'    => $broadcast->filter_type,
-            'created_at'     => $broadcast->created_at->toDateTimeString(),
+            'created_at'     => $broadcast->created_at->toAtomString(),
             'stats'          => $this->broadcastStats($broadcast),
             'target_count'   => $broadcast->activeTargetAudienceCount(),
         ];

@@ -11,52 +11,18 @@ interface BroadcastRepository extends CommonRepositoryInterface
 
     /**
      * Get all broadcasts that
-     * @param Bot $page
+     * @param Bot $bot
      * @return Collection
      */
-    public function getAllForBot(Bot $page);
+    public function getAllForBot(Bot $bot);
 
     /**
      * Find a broadcast by id
      * @param int $id
-     * @param Bot $page
+     * @param Bot $bot
      * @return Broadcast|null
      */
-    public function findByIdForBot($id, Bot $page);
-
-    /**
-     * Create a broadcast and associate it with a page.
-     * @param array $data
-     * @param Bot   $page
-     * @return Broadcast
-     */
-    public function createForPage(array $data, Bot $page);
-
-    /**
-     * Update a broadcast
-     * @param Broadcast $broadcast
-     * @param array     $data
-     */
-    public function update($broadcast, array $data);
-
-    /**
-     * Delete the broadcast schedules.
-     * @param Broadcast $broadcast
-     */
-    public function deleteBroadcastSchedule(Broadcast $broadcast);
-
-    /**
-     * Create schedules for broadcast.
-     * @param array     $schedule
-     * @param Broadcast $broadcast
-     */
-    public function createBroadcastSchedule(array $schedule, Broadcast $broadcast);
-
-    /**
-     * Delete a broadcast
-     * @param Broadcast $broadcast
-     */
-    public function delete($broadcast);
+    public function findByIdForBot($id, Bot $bot);
 
     /**
      * @param Broadcast  $broadcast

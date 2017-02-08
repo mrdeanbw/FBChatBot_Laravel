@@ -143,6 +143,12 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
     public function applyQueryFilter($query, array $filter)
     {
         if ($filter['type'] === 'subscriber') {
+
+            // If the filtering is not enabled. Then no subscribers should be matched.
+            if (! $filter['filter']['enabled']) {
+                return $query->where('_id', -1);
+            }
+
             $this->applyFilterGroups($query, $filter['filter']);
         }
 
