@@ -10,7 +10,7 @@ class SequenceMessageTransformer extends BaseTransformer
     public function transform(SequenceMessage $message)
     {
         return [
-            'id'         => $message->id,
+            'id'         => $message->id->__toString(),
             'name'       => $message->name,
             'conditions' => $message->conditions,
             'live'       => $message->live,

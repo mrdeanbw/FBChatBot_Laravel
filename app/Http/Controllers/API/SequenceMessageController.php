@@ -25,7 +25,8 @@ class SequenceMessageController extends APIController
      */
     public function show($sequenceId, $id)
     {
-        $message = $this->sequences->findMessageOrFail($id, $sequenceId);
+        $sequence = $this->sequences->findByIdForBot($sequenceId, $this->bot());
+        $message = $this->sequences->findMessageOrFail($id, $sequence);
 
         return $this->itemResponse($message);
     }
@@ -38,7 +39,7 @@ class SequenceMessageController extends APIController
      */
     public function store($sequenceId, Request $request)
     {
-        $this->validate($request, $this->validationRules());
+        $this->validate($request, $this->allValidationRules());
 
         $message = $this->sequences->createMessage($request->all(), $sequenceId, $this->bot());
 
@@ -54,9 +55,25 @@ class SequenceMessageController extends APIController
      */
     public function update($id, $sequenceId, Request $request)
     {
-        $this->validate($request, $this->validationRules());
+        $this->validate($request, $this->allValidationRules());
 
         $message = $this->sequences->updateMessage($request->all(), $id, $sequenceId, $this->bot());
+
+        return $this->itemResponse($message);
+    }
+
+    /**
+     * Update a sequence message.
+     * @param         $id
+     * @param         $sequenceId
+     * @param Request $request
+     * @return \Dingo\Api\Http\Response
+     */
+    public function updateConditions($id, $sequenceId, Request $request)
+    {
+        $this->validate($request, $this->conditionsValidationRules());
+
+        $message = $this->sequences->updateMessageConditions($request->all(), $id, $sequenceId, $this->bot());
 
         return $this->itemResponse($message);
     }
@@ -80,18 +97,30 @@ class SequenceMessageController extends APIController
         return new SequenceMessageTransformer();
     }
 
-    private function validationRules()
+    /**
+     * @return array
+     */
+    private function conditionsValidationRules()
     {
         return [
-            'name'                        => 'bail|required|max:255',
             'conditions'                  => 'bail|required|array',
             'conditions.wait_for'         => 'bail|required|array',
             'conditions.wait_for.days'    => 'bail|required|integer|min:0',
             'conditions.wait_for.hours'   => 'bail|required|integer|between:0,23',
-            'conditions.wait_for.minutes' => 'bail|required|array|between:0,59',
-            'template'                    => 'bail|required|array',
-            'template.messages'           => 'bail|required|array|max:10',
-            'template.messages.*'         => 'bail|required|message',
+            'conditions.wait_for.minutes' => 'bail|required|integer|between:0,59',
         ];
+    }
+
+    /**
+     * @return array
+     */
+    private function allValidationRules()
+    {
+        return array_merge([
+            'name'                => 'bail|required|max:255',
+            'template'            => 'bail|required|array',
+            'template.messages'   => 'bail|required|array|max:10',
+            'template.messages.*' => 'bail|required|message',
+        ], $this->conditionsValidationRules());
     }
 }

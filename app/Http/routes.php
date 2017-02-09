@@ -83,6 +83,7 @@ $api->version('v1', $options, function (Router $api) {
         $api->get('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@show');
         $api->post('/bots/{botId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
         $api->put('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@update');
+        $api->put('/bots/{botId}/sequences/{sequenceId}/messages/{id}/conditions', 'SequenceMessageController@updateConditions');
         $api->delete('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
 
         // Broadcasts

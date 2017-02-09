@@ -319,7 +319,7 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
             $targetingIsEnabled,
             $filterBy,
             $subscriber->page
-        )->whereId($subscriber->id)->exists();
+        )->where('_id', $subscriber->id)->exists();
     }
 
     /**

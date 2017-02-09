@@ -210,23 +210,27 @@ class SubscriberService
         if (! $filter) {
             return $filter;
         }
-        
-        $filter['enabled'] = (bool) array_get($filter, 'enabled', false);
-        
-        foreach ($filter['groups'] as $i => $group) {
-            $filter['groups'][$i]['rules'] = $this->removeRulesWithoutValues($group['rules']);
+
+        if ($filter['enabled'] = (bool)array_get($filter, 'enabled', false)) {
+            return array_only($filter, 'enabled');
         }
 
-        /**
-         * If a group is empty (has no rules), remove it.
-         */
+        $filter['groups'] = array_get($filter, 'groups', []);
+
+        foreach ($filter['groups'] as $i => $group) {
+            $filter['groups'][$i]['rules'] = $this->removeRulesWithoutValues($group['rules']);
+            if ($filter['groups'][$i]['rules']) {
+                $filter['groups'][$i]['join_type'] = array_get($filter['groups'][$i], 'join_type', 'and');
+            }
+        }
+
+        // If a group is empty (has no rules), remove it.
         $filter['groups'] = array_filter($filter['groups'], function ($group) {
             return ! empty($group['rules']);
         });
 
-
-        if (empty($filter['groups'])) {
-            $filter = [];
+        if ($filter['groups']) {
+            $filter['join_type'] = array_get($filter, 'join_type', 'and');
         }
 
         return $filter;
@@ -290,7 +294,21 @@ class SubscriberService
             $ret[] = compact('type', 'attribute', 'value');
         }
 
+        $this->addIsActiveFilter($ret);
+
         return $ret;
+    }
+
+    /**
+     * @param array $filterBy
+     */
+    private function addIsActiveFilter(array &$filterBy)
+    {
+        $filterBy[] = [
+            'type'      => 'exact',
+            'attribute' => 'active',
+            'value'     => true
+        ];
     }
 
     /**
@@ -464,21 +482,6 @@ class SubscriberService
         $allowed = in_array($attribute, array_keys($this->filterFieldsMap));
 
         return $allowed;
-    }
-
-    /**
-     * @param array $filterBy
-     * @return array
-     */
-    private function addIsActiveFilter(array $filterBy)
-    {
-        $filterBy[] = [
-            'type'      => 'exact',
-            'attribute' => 'active',
-            'value'     => true
-        ];
-
-        return $filterBy;
     }
 
     /**

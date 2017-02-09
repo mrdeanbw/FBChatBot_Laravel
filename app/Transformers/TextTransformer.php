@@ -8,7 +8,7 @@ class TextTransformer extends BaseTransformer
     public function transform(Text $text)
     {
         return [
-            'id'       => $text->id,
+            'id'       => $text->id->__toString(),
             'type'     => $text->type,
             'text'     => $text->text,
             'readonly' => $text->readonly,

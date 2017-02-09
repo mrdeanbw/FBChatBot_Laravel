@@ -378,7 +378,7 @@ class WebAppAdapter
 
         $buttonId = $payload[2];
         $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
-            return $button->id === $buttonId;
+            return $button->id->__toString() === $buttonId;
         });
 
         if (! $button) {

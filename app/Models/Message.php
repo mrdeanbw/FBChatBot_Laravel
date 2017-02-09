@@ -4,6 +4,7 @@ abstract class Message extends ArrayModel
 {
 
     public $type;
+    /** @type \MongoDB\BSON\ObjectID */
     public $id;
     public $readonly;
 

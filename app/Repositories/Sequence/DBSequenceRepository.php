@@ -55,7 +55,7 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
      */
     public function updateSequenceMessage(Sequence $sequence, SequenceMessage $message)
     {
-        Sequence::whereId($sequence->id)->where('messages.id', $message->id)->update([
+        Sequence::where('_id', $sequence->id)->where('messages.id', $message->id)->update([
             'messages.$' => $message
         ]);
     }
@@ -67,7 +67,7 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
      */
     public function deleteMessage(Sequence $sequence, SequenceMessage $message)
     {
-        Sequence::whereId($sequence->id)->where('messages.id', $message->id)->pull('messages', 'message.$');
+        Sequence::where('_id', $sequence->id)->where('messages.id', $message->id)->pull('messages', 'message.$');
     }
 
     /**
@@ -99,7 +99,7 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
     public function findSequenceMessageById($id, Sequence $sequence)
     {
         return array_first($sequence->messages, function (SequenceMessage $message) use ($id) {
-            return $message->id === $id;
+            return $message->id->__toString() === $id;
         });
     }
 

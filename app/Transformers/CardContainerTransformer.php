@@ -1,7 +1,6 @@
 <?php namespace App\Transformers;
 
 use App\Models\CardContainer;
-use Carbon\Carbon;
 
 class CardContainerTransformer extends BaseTransformer
 {
@@ -11,10 +10,10 @@ class CardContainerTransformer extends BaseTransformer
     public function transform(CardContainer $cardContainer)
     {
         return [
-            'id'       => $cardContainer->id,
+            'id'       => $cardContainer->id->__toString(),
             'type'     => $cardContainer->type,
             'readonly' => $cardContainer->readonly,
-            'card'     => $this->transformInclude($cardContainer->cards, new CardTransformer())
+            'cards'    => $this->transformInclude($cardContainer->cards, new CardTransformer())
         ];
     }
 }

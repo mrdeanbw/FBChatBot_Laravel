@@ -10,7 +10,7 @@ class CardTransformer extends BaseTransformer
     public function transform(Card $card)
     {
         return [
-            'id'        => $card->id,
+            'id'        => $card->id->__toString(),
             'url'       => $card->url,
             'type'      => $card->type,
             'title'     => $card->title,

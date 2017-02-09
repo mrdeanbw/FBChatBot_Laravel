@@ -3,6 +3,7 @@
 /**
  * @property string            $name
  * @property SequenceMessage[] $messages
+ * @property AudienceFilter    $filter
  */
 class Sequence extends BaseModel
 {
@@ -10,6 +11,10 @@ class Sequence extends BaseModel
     use HasEmbeddedArrayModels;
 
     public $multiArrayModels = [
-        'messages' => SequenceMessage::class,
+        'messages' => SequenceMessage::class
+    ];
+    
+    public $arrayModels = [
+        'filter'   => AudienceFilter::class,
     ];
 }

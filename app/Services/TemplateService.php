@@ -104,8 +104,9 @@ class TemplateService
     public function updateExplicit($id, array $input, Bot $bot)
     {
         $template = $this->findExplicitOrFail($id, $bot);
+        $template = $this->update($template, array_only($input, ['name', 'messages']), $bot);
 
-        return $this->update($template, array_only($input, ['name', 'messages']), $bot);
+        return $template;
     }
 
     /**
@@ -132,7 +133,9 @@ class TemplateService
     {
         $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages, $bot->id);
 
-        return $this->templateRepo->update($template, $input);
+        $this->templateRepo->update($template, $input);
+
+        return $template;
     }
 
     /**

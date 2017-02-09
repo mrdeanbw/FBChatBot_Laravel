@@ -86,9 +86,9 @@ class SequenceController extends APIController
             'name'                          => 'required|max:255',
             'filter'                        => 'bail|array',
             'filter.enabled'                => 'bail|required',
-            'filter.join_type'              => 'bail|required|in:and,or',
-            'filter.groups'                 => 'bail|array',
-            'filter.groups.*'               => 'bail|array',
+            'filter.join_type'              => 'bail|required_if:filter.enabled,true|in:and,or',
+            'filter.groups'                 => 'bail|required_if:filter.enabled,true|array',
+            'filter.groups.*'               => 'bail|required_if:filter.enabled,true|array',
             'filter.groups.*.join_type'     => 'bail|required|in:and,or,none',
             'filter.groups.*.rules'         => 'bail|required|array',
             'filter.groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
@@ -97,9 +97,9 @@ class SequenceController extends APIController
 
         $this->validate($request, $rules, $this->filterGroupRuleValidationCallback($bot));
 
-        $this->sequences->update($id, $request->all(), $bot);
-
-        return $this->response->accepted();
+        $sequence = $this->sequences->update($id, $request->all(), $bot);
+        
+        return $this->itemResponse($sequence);
     }
 
     /**

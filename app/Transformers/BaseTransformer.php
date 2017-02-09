@@ -16,17 +16,25 @@ abstract class BaseTransformer extends TransformerAbstract
 
         $this->loadModelsIfNotLoaded($model, ['template']);
 
-        return $this->item($model->template, new TemplateTransformer(), false);
+        return $this->item($model->template, new ImplicitTemplateTransformer, false);
     }
 
-    public function transformInclude(array $data, $transformer)
+    public function transformInclude($data, $transformer)
     {
-        $collection = $this->collection($data, $transformer, false);
-        $transformer = $collection->getTransformer();
 
-        return array_map(function ($item) use ($transformer) {
-            return $transformer->transform($item);
-        }, $collection->getData());
+        if (is_array($data)) {
+            $collection = $this->collection($data, $transformer, false);
+            $transformer = $collection->getTransformer();
+
+            return array_map(function ($item) use ($transformer) {
+                return $transformer->transform($item);
+            }, $collection->getData());
+        }
+
+        $item = $this->item($data, $transformer, false);
+        $transformer = $item->getTransformer();
+
+        return $transformer->transform($item->getData());
     }
 
 }

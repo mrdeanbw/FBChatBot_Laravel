@@ -96,7 +96,7 @@ class AutoReplyRuleController extends APIController
     private function validationRules(Bot $bot, $ruleId = null)
     {
         $keywordUniqueRule = "unique:auto_reply_rules,keyword,";
-        $keywordUniqueRule .= $ruleId? "{$ruleId},id," : "NULL,NULL,";
+        $keywordUniqueRule .= $ruleId? "{$ruleId},_id," : "NULL,NULL,";
         $keywordUniqueRule .= "bot_id,{$bot->id}";
 
         return [
@@ -104,7 +104,7 @@ class AutoReplyRuleController extends APIController
             'keyword'     => "bail|required|max:255|{$keywordUniqueRule}",
             'action'      => 'bail|required|in:send',
             'template'    => 'bail|required|array',
-            'template.id' => 'bail|required|exists:templates,id,bot_id,' . $bot->id
+            'template.id' => 'bail|required|exists:templates,_id,bot_id,' . $bot->id
         ];
     }
 

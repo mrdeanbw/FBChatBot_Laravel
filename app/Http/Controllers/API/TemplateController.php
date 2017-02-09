@@ -69,12 +69,12 @@ class TemplateController extends APIController
     public function update($id, Request $request)
     {
         $bot = $this->bot();
-        $this->validate($request, $this->validationRules(null, $bot));
+        $this->validate($request, $this->validationRules($id, $bot));
         $template = $this->templates->updateExplicit($id, $request->all(), $bot);
 
         return $this->itemResponse($template);
     }
-    
+
     /**
      * Make the validator for message trees.
      * @param $id
@@ -85,7 +85,9 @@ class TemplateController extends APIController
     {
         $idString = $id? "{$id}" : "NULL";
         $rules = [
-            'name' => "bail|required|max:255|unique:templates,name,{$idString},id,bot_id,{$bot->id}"
+            'name'       => "bail|required|max:255|unique:templates,name,{$idString},_id,bot_id,{$bot->id}",
+            'messages'   => 'bail|required|array|max:10',
+            'messages.*' => 'bail|required|message',
         ];
 
         return $rules;

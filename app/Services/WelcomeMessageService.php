@@ -88,7 +88,7 @@ class WelcomeMessageService
     private function initialTextMessage()
     {
         return new Text([
-            'id'   => with(new ObjectID())->__toString(),
+            'id'   => new ObjectID(),
             'text' => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
         ]);
     }
@@ -99,7 +99,7 @@ class WelcomeMessageService
     private function copyrightMessage()
     {
         return new Text([
-            'id'       => with(new ObjectID())->__toString(),
+            'id'       => new ObjectID(),
             'text'     => 'Want to create your own bot? Go to: https://www.mrreply.com',
             'readonly' => true
         ]);

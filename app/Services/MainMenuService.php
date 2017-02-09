@@ -88,7 +88,7 @@ class MainMenuService
     private function copyrightedButton()
     {
         return new Button([
-            'id'       => with(new ObjectID())->__toString(),
+            'id'       => new ObjectID(),
             'title'    => 'Powered By Mr. Reply',
             'readonly' => true,
             'url'      => 'https://www.mrreply.com',

@@ -61,7 +61,7 @@ class MessageService
     public function makeMessages(array $input, array $current = [], $botId)
     {
         $current = (new Collection($current))->keyBy(function (Message $message) {
-            return $message->id;
+            return $message->id->__toString();
         });
 
         $normalized = [];
@@ -69,13 +69,15 @@ class MessageService
         foreach ($input as $message) {
 
             if ($isNew = empty($message->id)) {
-                $message->id = (string)(new ObjectID());
+                $message->id = new ObjectID();
+            } else {
+                $message->id = new ObjectID($message->id);
             }
 
             // If the message id is not in the original messages,
             // it means the user entered an invalid id (manually)
             // just skip it for now.
-            if (! $isNew && ! ($original = $current->get($message->id))) {
+            if (! $isNew && ! ($original = $current->pull($message->id->__toString()))) {
                 continue;
             }
 
@@ -90,6 +92,11 @@ class MessageService
                     array_get($message->actions, 'remove_tags', [])
                 );
                 $this->botRepo->createTagsForBot($botId, $tags);
+
+                if (! $message->template['explicit']) {
+                    $originalMessages = ($isNew || $original->template['explicit'])? [] : $original->template['messages'];
+                    $message->template['messages'] = $this->makeMessages($message->template['messages'], $originalMessages, $botId);
+                }
             }
 
             if (in_array($message->type, ['image', 'card'])) {
@@ -97,7 +104,7 @@ class MessageService
             }
 
             if ($message->type === 'card_container') {
-                $original->cards = $this->makeMessages($original->cards, $isNew? [] : $message->cards, $botId);
+                $message->cards = $this->makeMessages($message->cards, $isNew? [] : $original->cards, $botId);
             }
 
             if (in_array($message->type, ['text', 'card'])) {

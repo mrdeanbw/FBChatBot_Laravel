@@ -1,6 +1,7 @@
 <?php namespace App\Services;
 
 use App\Models\AudienceFilter;
+use App\Models\Text;
 use App\Repositories\Template\TemplateRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
@@ -125,7 +126,7 @@ class SequenceService
         $data = [
             'name'     => $input['name'],
             'bot_id'   => $bot->id,
-            'filter'   => null,
+            'filter'   => new AudienceFilter(['enabled' => false]),
             'messages' => $this->defaultSequenceMessages($bot),
         ];
 
@@ -154,7 +155,7 @@ class SequenceService
             'filter' => $filter,
         ];
 
-        $sequence = $this->sequenceRepo->update($sequence, $data);
+        $this->sequenceRepo->update($sequence, $data);
 
         // @todo issue the job to add new subscribers (only if filters changed?!)
         //        event(new SequenceTargetingWasAltered($sequence));
@@ -213,7 +214,7 @@ class SequenceService
         $message = $this->findMessageOrFail($id, $sequence);
 
         $template = $this->templates->updateImplicit($message->template_id, $input['template'], $bot);
-        
+
         $message->name = $input['name'];
         $message->live = array_get($input, 'live', false);
         $message->conditions = $this->normalizeMessageConditions($input);
@@ -224,6 +225,25 @@ class SequenceService
 
         return $message;
     }
+
+    /**
+     * Update a sequence message.
+     * @param array $input
+     * @param int   $id
+     * @param int   $sequenceId
+     * @param Bot   $bot
+     * @return SequenceMessage
+     */
+    public function updateMessageConditions(array $input, $id, $sequenceId, Bot $bot)
+    {
+        $sequence = $this->findByIdForBotOrFail($sequenceId, $bot);
+        $message = $this->findMessageOrFail($id, $sequence);
+        $message->conditions = $this->normalizeMessageConditions($input);
+        $this->sequenceRepo->updateSequenceMessage($sequence, $message);
+
+        return $message;
+    }
+
 
     /**
      * Delete a sequence message.
@@ -375,10 +395,10 @@ class SequenceService
      */
     private function textMessage($text)
     {
-        return [
-            'type' => 'text',
+        return new Text([
+            'id'   => new ObjectID(),
             'text' => $text
-        ];
+        ]);
     }
 
     /**

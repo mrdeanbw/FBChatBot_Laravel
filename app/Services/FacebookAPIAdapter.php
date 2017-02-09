@@ -142,7 +142,7 @@ class FacebookAPIAdapter
                 return [
                     "type"  => "web_url",
                     "title" => $button->title,
-                    "url"   => $this->getMainMenuButtonUrl($button->id)
+                    "url"   => $this->getMainMenuButtonUrl($button->id->__toString())
                 ];
             }
 
@@ -150,7 +150,7 @@ class FacebookAPIAdapter
             return [
                 'type'    => 'postback',
                 'title'   => $button->title,
-                'payload' => "{$bot->id}:MM:{$button->id}",
+                'payload' => "{$bot->id}:MM:{$button->id->__toString()}",
             ];
 
         }, $bot->main_menu->buttons);

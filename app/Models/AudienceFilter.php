@@ -15,9 +15,10 @@ class AudienceFilter extends ArrayModel
      */
     public function __construct(array $data, $strict = false)
     {
-        foreach (array_pull($data, 'groups') as $group) {
+        foreach (array_pull($data, 'groups', []) as $group) {
             $this->groups[] = new AudienceFilterGroup($group, $strict);
         }
+        
         $data['enabled'] = (bool)$data['enabled'];
 
         parent::__construct($data, $strict);

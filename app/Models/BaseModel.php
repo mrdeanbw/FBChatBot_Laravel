@@ -10,7 +10,7 @@ use Jenssegers\Mongodb\Eloquent\Model;
 abstract class BaseModel extends Model
 {
 
-    protected $guarded = ['id'];
+    protected $guarded = ['_id'];
 
     /**
      * @param $query

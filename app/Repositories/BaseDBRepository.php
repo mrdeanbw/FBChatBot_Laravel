@@ -74,6 +74,7 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
     {
         $class = $this->model();
         $class::where('_id', $model->id)->update($data);
+        $model->fill($data);
     }
 
     /**

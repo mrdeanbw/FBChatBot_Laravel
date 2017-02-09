@@ -6,6 +6,7 @@
 class SequenceMessage extends ArrayModel
 {
 
+    /** @type \MongoDB\BSON\ObjectID */
     public $id;
 
     public $name;
