@@ -62,7 +62,7 @@ class MainMenuService
         $buttons = $this->normalizeButtons($input, $bot);
 
         $this->validateCopyrightButton($buttons);
-        
+
         $this->botRepo->update($bot, ['main_menu.buttons' => $buttons]);
 
         dispatch(new UpdateMainMenuOnFacebook($bot, $user->id));
@@ -144,6 +144,9 @@ class MainMenuService
 
 
         $buttons = $this->messages->makeMessages($buttons, $bot->main_menu->buttons, $bot->id);
+        if (! $buttons) {
+            throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
+        }
 
         return $buttons;
     }

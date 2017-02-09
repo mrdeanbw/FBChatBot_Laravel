@@ -3,6 +3,7 @@
 use App\Models\Bot;
 use App\Models\Message;
 use App\Models\Template;
+use Dingo\Api\Exception\ValidationHttpException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Template\TemplateRepositoryInterface;
 
@@ -86,11 +87,16 @@ class TemplateService
      */
     private function create(array $input, $botId)
     {
+        $messages = $this->normalizeMessages($input['messages'], [], $botId);
+        if (! $messages) {
+            throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
+        }
+
         return $this->templateRepo->create([
             'bot_id'   => $botId,
             'name'     => $input['name'],
             'explicit' => $input['explicit'],
-            'messages' => $this->normalizeMessages($input['messages'], [], $botId)
+            'messages' => $messages
         ]);
     }
 
@@ -132,6 +138,9 @@ class TemplateService
     private function update(Template $template, array $input, Bot $bot)
     {
         $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages, $bot->id);
+        if (! $input['messages']) {
+            throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
+        }
 
         $this->templateRepo->update($template, $input);
 
@@ -147,9 +156,8 @@ class TemplateService
     private function normalizeMessages(array $messages, array $original = [], $botId)
     {
         $messages = $this->messages->normalizeMessages($messages);
-        $messages = $this->messages->makeMessages($messages, $original, $botId);
 
-        return $messages;
+        return $this->messages->makeMessages($messages, $original, $botId);
     }
 
 }

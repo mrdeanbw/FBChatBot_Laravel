@@ -10,12 +10,13 @@ class Image extends Message
     /**
      * Text constructor.
      * @param array $data
+     * @param bool  $strict
      */
-    public function __construct(array $data)
+    public function __construct(array $data, $strict = false)
     {
         if ($file = array_pull($data, 'file')) {
-            $this->file = new ImageFile($file);
+            $this->file = new ImageFile($file, $strict);
         }
-        parent::__construct($data);
+        parent::__construct($data, $strict);
     }
 }

@@ -1,7 +1,6 @@
 <?php namespace App\Transformers;
 
 use App\Models\Button;
-use App\Models\Template;
 use App\Services\LoadsAssociatedModels;
 
 class ButtonTransformer extends BaseTransformer
@@ -11,6 +10,10 @@ class ButtonTransformer extends BaseTransformer
 
     public function transform(Button $button)
     {
+        $item = $this->includeTemplate($button);
+        $templateTransformer = $item->getTransformer();
+        $template = $templateTransformer->transform($item->getData());
+
         return [
             'id'       => $button->id->__toString(),
             'type'     => $button->type,
@@ -18,26 +21,8 @@ class ButtonTransformer extends BaseTransformer
             'readonly' => $button->readonly,
             'url'      => $button->url,
             'actions'  => $button->actions,
-            'template' => $this->includeCorrespondingTemplate($button),
+            'template' => $template,
+            'messages' => $this->transformInclude($button->messages, new MessageTransformer())
         ];
-    }
-
-    /**
-     * @param Button $button
-     * @return Template|array
-     */
-    private function includeCorrespondingTemplate(Button $button)
-    {
-        if ($button->template['explicit']) {
-            $template = $this->loadModelByID($button->template['id'], 'template');
-        } else {
-            $template = new Template($button->template);
-        }
-
-        if ($template->explicit) {
-            return $this->transformInclude($template, new TemplateTransformer());
-        }
-
-        return $this->transformInclude($template, new ImplicitTemplateTransformer());
     }
 }

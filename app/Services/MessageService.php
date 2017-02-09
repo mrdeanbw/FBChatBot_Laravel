@@ -4,6 +4,7 @@ use App\Models\Card;
 use App\Models\Image;
 use App\Models\Button;
 use App\Models\Message;
+use Dingo\Api\Exception\ValidationHttpException;
 use MongoDB\BSON\ObjectID;
 use Illuminate\Support\Collection;
 use Intervention\Image\ImageManagerStatic;
@@ -86,16 +87,13 @@ class MessageService
             $message->readonly = $isNew? false : $original->readonly;
 
             if ($message->type === 'button') {
-                $this->cleanButtonActions($message);
-                $tags = array_merge(
-                    array_get($message->actions, 'add_tags', []),
-                    array_get($message->actions, 'remove_tags', [])
-                );
+                $tags = array_merge($message->actions['add_tags'], $message->actions['remove_tags']);
                 $this->botRepo->createTagsForBot($botId, $tags);
-
-                if (! $message->template['explicit']) {
-                    $originalMessages = ($isNew || $original->template['explicit'])? [] : $original->template['messages'];
-                    $message->template['messages'] = $this->makeMessages($message->template['messages'], $originalMessages, $botId);
+                if ($message->messages) {
+                    $message->messages = $this->makeMessages($message->messages, $isNew? [] : $original->messages, $botId);
+                    if (! $message->messages && ! $message->url) {
+                        throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
+                    }
                 }
             }
 
@@ -105,6 +103,9 @@ class MessageService
 
             if ($message->type === 'card_container') {
                 $message->cards = $this->makeMessages($message->cards, $isNew? [] : $original->cards, $botId);
+                if (! $message->cards) {
+                    throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
+                }
             }
 
             if (in_array($message->type, ['text', 'card'])) {
@@ -165,53 +166,6 @@ class MessageService
         $fileName = time() . md5(uniqid()) . '.' . $extension;
 
         return $fileName;
-    }
-
-    /**
-     * @param Button $button
-     */
-    private function cleanButtonActions(Button $button)
-    {
-        $button->actions = array_only($button->actions, [
-            'add_tags',
-            'remove_tags',
-            'add_sequences',
-            'remove_sequences'
-        ]);
-
-
-        //        $button->template()->associate($template);
-        //        $button->save();
-        //        /**
-        //         * @param Button   $button
-        //         * @param Template $template
-        //         */
-        //        private function associateTemplateWithButton(Button $button, Template $template)
-        //    {
-        //        $this->messageBlockRepo->associateTemplateWithButton($button, $template);
-        //    }
-        //
-        //
-        //        /**
-        //         * Gets/Creates the template to be used with the button, associates them and persist the template's child message blocks.
-        //         * @param $templateData
-        //         * @param $page
-        //         * @param $messageBlock
-        //         */
-        //        private function processButtonTemplate($templateData, $page, $messageBlock)
-        //    {
-        //        $template = $this->getOrCreateTemplate($templateData, $messageBlock, $page);
-        //
-        //        $this->associateTemplateWithButton($messageBlock, $template);
-        //
-        //        if (! $template->is_explicit) {
-        //            // If the template is create implicitly, to handle this button action exclusively,
-        //            // then we need to persist the template child message blocks.
-        //            $blocks = array_get($templateData, 'messages', []);
-        //            $this->persist($template, $blocks, true);
-        //        }
-        //    }
-        //
     }
 
 }

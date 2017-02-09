@@ -15,19 +15,20 @@ class Card extends Message
     /**
      * Card constructor.
      * @param array $data
+     * @param bool  $strict
      */
-    public function __construct(array $data)
+    public function __construct(array $data, $strict = false)
     {
         $this->buttons = [];
 
         foreach (array_pull($data, 'buttons', []) as $button) {
-            $this->buttons[] = new Button($button);
+            $this->buttons[] = new Button($button, $strict);
         }
 
         if ($file = array_pull($data, 'file')) {
-            $this->file = new ImageFile($file);
+            $this->file = new ImageFile($file, $strict);
         }
 
-        parent::__construct($data);
+        parent::__construct($data, $strict);
     }
 }

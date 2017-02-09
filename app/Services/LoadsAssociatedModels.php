@@ -37,22 +37,6 @@ trait LoadsAssociatedModels
     }
 
     /**
-     * @param      $id
-     * @param      $modelToLoad
-     * @return \App\Models\BaseModel|null
-     */
-    public function loadModelByID($id, $modelToLoad)
-    {
-        switch ($modelToLoad) {
-            case 'template':
-                return $this->getRepo('template')->findById($id);
-
-            default:
-                return null;
-        }
-    }
-
-    /**
      * @param string $model
      * @return BaseDBRepository
      */

@@ -244,19 +244,22 @@ class MessageValidator extends LaravelValidator
             return false;
         }
 
-        $template = array_get($button, 'template', []);
-        if ($explicitTemplate = array_get($template, 'explicit', false)) {
-            if ($this->_validateExplicitTemplate($attribute, $template)) {
+        $messages = array_get($button, 'messages', []);
+
+        if ($template = array_get($button, 'template', [])) {
+            if (! $this->_validateTemplate($attribute, $template)) {
                 return false;
             }
-        } else {
-            if (! $this->_validateImplicitTemplate($attribute, $template)) {
-                return false;
-            }
+            $messages = [];
         }
 
+        if (! $this->_validateButtonMessages($attribute, $messages)) {
+            return false;
+        }
+
+
         $url = array_get($button, 'url');
-        if (! array_get($template, 'id') && ! array_get($template, 'messages') && ! $this->validateRequired($attribute, $url)) {
+        if (! $template && ! $messages && ! $this->validateRequired($attribute, $url)) {
             $this->setErrorMessage("Every button must have an associated URL, child messages or message tree.");
 
             return false;
@@ -354,16 +357,10 @@ class MessageValidator extends LaravelValidator
 
     }
 
-    protected function _validateExplicitTemplate($attribute, $template)
+    protected function _validateTemplate($attribute, $template)
     {
         $id = array_get($template, 'id');
-        if (! $id || ! $this->originalValidator->validateExists($attribute, $id, ['templates', 'id'])) {
-            $this->setErrorMessage("The template is invalid.");
-
-            return false;
-        }
-        
-        if (! $id || ! $this->originalValidator->validateExists($attribute, $id, ['templates', 'id'])) {
+        if (! $this->validateRequired($attribute, $id) || ! $this->originalValidator->validateExists($attribute, $id, ['templates', '_id'])) {
             $this->setErrorMessage("The template is invalid.");
 
             return false;
@@ -372,20 +369,14 @@ class MessageValidator extends LaravelValidator
         return true;
     }
 
-    protected function _validateImplicitTemplate($attribute, $template)
+    protected function _validateButtonMessages($attribute, $messages)
     {
-        if (! $this->validateArray($attribute, $template)) {
-            $this->setErrorMessage("The template format is invalid.");
-
-            return false;
-        }
-
-        $messages = array_get($template, 'messages', []);
         if (! $this->validateArray($attribute, $messages)) {
             $this->setErrorMessage("The template format is invalid.");
 
             return false;
         }
+
         if (! $this->validateMax($attribute, $messages, [10])) {
             $this->setErrorMessage("Every subtree cannot have more than 10 sibling messages.");
 
