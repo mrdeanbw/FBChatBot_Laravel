@@ -22,3 +22,4 @@ php -S localhost:8888
 * [Mr. Reply Scrum Guide](https://gist.github.com/netcode/917291503a8265eb9c7143db823dcb75)
 * [Mr. Reply Git Flow](https://gist.github.com/netcode/b9ecd59b832a344b7f6345cec9678d0c)
 * [Mr. Reply PHP Coding Guidelines](https://gist.github.com/netcode/60bfa0f77ec95115556911dd8f10cdfd)
+* [Testing Instruction](https://gist.github.com/elghobaty/1e1be1baa13d7273c0c313a00ba039aa)
