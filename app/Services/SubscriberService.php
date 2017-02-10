@@ -211,7 +211,7 @@ class SubscriberService
             return $filter;
         }
 
-        if ($filter['enabled'] = (bool)array_get($filter, 'enabled', false)) {
+        if (! ($filter['enabled'] = (bool)array_get($filter, 'enabled', false))) {
             return array_only($filter, 'enabled');
         }
 
@@ -262,9 +262,7 @@ class SubscriberService
     {
         $ret = [];
 
-        $filter = $this->normalizeFilter(
-            array_get($filterBy, 'filter', [])
-        );
+        $filter = $this->normalizeFilter(array_get($filterBy, 'filter', []));
 
         if ($filter) {
             $ret[] = [

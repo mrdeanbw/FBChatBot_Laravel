@@ -73,8 +73,18 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
     public function update($model, array $data)
     {
         $class = $this->model();
-        $class::where('_id', $model->id)->update($data);
         $model->fill($data);
+
+        $update = [];
+        foreach (array_keys($data) as $key) {
+            if (is_a($model->{$key}, \Carbon\Carbon::class)) {
+                $update[$key] = new UTCDateTime($model->{$key}->getTimestamp() * 1000);
+            } else {
+                $update[$key] = $model->{$key};
+            }
+        }
+
+        $class::where('_id', $model->id)->update($update);
     }
 
     /**

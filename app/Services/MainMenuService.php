@@ -127,6 +127,7 @@ class MainMenuService
     {
         $attributes = get_object_vars($button);
         unset($attributes['id']);
+        unset($attributes['template']);
 
         return $attributes;
     }
@@ -141,7 +142,6 @@ class MainMenuService
         $buttons = array_map(function (array $button) {
             return new Button($button);
         }, $input['buttons']);
-
 
         $buttons = $this->messages->makeMessages($buttons, $bot->main_menu->buttons, $bot->id);
         if (! $buttons) {

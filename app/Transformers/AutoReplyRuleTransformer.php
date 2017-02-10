@@ -9,7 +9,7 @@ class AutoReplyRuleTransformer extends BaseTransformer
     public function transform(AutoReplyRule $rule)
     {
         return [
-            'id'       => (int)$rule->id,
+            'id'       => $rule->id,
             'readonly' => $rule->readonly,
             'mode'     => $rule->mode,
             'keyword'  => $rule->keyword,

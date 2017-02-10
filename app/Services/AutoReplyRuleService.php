@@ -62,6 +62,8 @@ class AutoReplyRuleService
             $filterBy = [];
         }
 
+        $orderBy = $orderBy?: ['_id' => 'asc'];
+
         return $this->autoReplyRuleRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
 
@@ -78,6 +80,7 @@ class AutoReplyRuleService
             'keyword'     => $input['keyword'],
             'template_id' => $input['template']['id'],
             'bot_id'      => $bot->id,
+            'readonly'    => false,
         ];
 
         return $this->autoReplyRuleRepo->create($data);

@@ -41,10 +41,9 @@ class Button extends Message
 
         $actions = [];
         foreach (['add_tags', 'remove_tags', 'add_sequences', 'remove_sequences'] as $action) {
-            $actions[$action] = array_get($data['actions'], $action, []);
+            $actions[$action] = array_get($data, "actions.{$action}", []);
         }
         $data['actions'] = $actions;
-
 
         parent::__construct($data, $strict);
     }

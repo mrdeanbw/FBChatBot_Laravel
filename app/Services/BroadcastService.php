@@ -171,11 +171,14 @@ class BroadcastService
             'send_to',
         ]);
 
-        $data = array_merge($data, [
-            'status'   => 'new',
-            'filter'   => new AudienceFilter($input['filter'], true),
-            'schedule' => $this->calculateScheduleDateTime($data, $bot)
-        ]);
+        $data = array_merge(
+            $data,
+            [
+                'status' => 'pending',
+                'filter' => new AudienceFilter($input['filter'], true),
+            ],
+            $this->calculateScheduleDateTime($data, $bot)
+        );
 
         return $data;
     }
@@ -193,7 +196,7 @@ class BroadcastService
 
         // If the timezone mode is "same time", then we will send it exactly the same time.
         if ($data['timezone'] == 'same_time') {
-            return ['send_at' => $sendAt];
+            return ['next_send_at' => $sendAt];
         }
 
         // Otherwise, we will send it in the first timezone (-12)
@@ -225,8 +228,8 @@ class BroadcastService
         }
 
         return [
-            'send_at'    => $sendAt,
-            'utc_offset' => $offset
+            'next_send_at'    => $sendAt,
+            'next_utc_offset' => $offset
         ];
     }
 

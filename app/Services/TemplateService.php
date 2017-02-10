@@ -88,7 +88,7 @@ class TemplateService
     private function create(array $input, $botId)
     {
         $messages = $this->normalizeMessages($input['messages'], [], $botId);
-        if (! $messages) {
+        if ($input['messages'] && ! $messages) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }
 

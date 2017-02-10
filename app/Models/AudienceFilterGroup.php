@@ -14,7 +14,7 @@ class AudienceFilterGroup extends ArrayModel
      */
     public function __construct(array $data, $strict = false)
     {
-        foreach (array_pull($data, 'rule') as $rule) {
+        foreach (array_pull($data, 'rules', []) as $rule) {
             $this->rules[] = new AudienceFilterRule($rule, $strict);
         }
 

@@ -37,6 +37,7 @@ class AutoReplyRuleController extends APIController
             ['keyword' => $request->get('keyword')]
         );
 
+
         return $this->paginatorResponse($paginator);
     }
 

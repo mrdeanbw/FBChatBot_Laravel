@@ -10,7 +10,7 @@ class MainMenu extends ArrayModel
     {
         $this->buttons = [];
         foreach (array_pull($data, 'buttons', []) as $button) {
-            $this->buttons[] = new Button($button, $strict);
+            $this->buttons[] = is_array($button)? new Button($button, $strict) : $button;
         }
 
         parent::__construct($data, $strict);
