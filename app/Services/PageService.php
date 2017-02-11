@@ -2,10 +2,10 @@
 
 use App\Models\Page;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Services\Facebook\PageService as FacebookPage;
-use Illuminate\Support\Collection;
 
 class PageService
 {

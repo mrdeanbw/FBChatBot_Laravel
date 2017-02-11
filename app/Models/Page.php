@@ -1,5 +1,8 @@
 <?php namespace App\Models;
 
+/**
+ * @property Bot $bot
+ */
 class Page extends ArrayModel
 {
 

@@ -1,6 +1,5 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
 use App\Models\User;
 use App\Repositories\User\UserRepositoryInterface;
 

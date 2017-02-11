@@ -2,12 +2,11 @@
 
 use App\Models\Card;
 use App\Models\Image;
-use App\Models\Button;
 use App\Models\Message;
-use Dingo\Api\Exception\ValidationHttpException;
 use MongoDB\BSON\ObjectID;
 use Illuminate\Support\Collection;
 use Intervention\Image\ImageManagerStatic;
+use Dingo\Api\Exception\ValidationHttpException;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
 
@@ -15,31 +14,24 @@ class MessageService
 {
 
     /**
-     * @type ImageFileService
+     * @type BotRepositoryInterface
      */
-    private $imageFiles;
-
+    private $botRepo;
     /**
      * @type TemplateRepositoryInterface
      */
     private $templateRepo;
-    /**
-     * @type BotRepositoryInterface
-     */
-    private $botRepo;
 
     /**
      * MessageBlockService constructor.
      *
      * @param TemplateRepositoryInterface $templateRepo
-     * @param ImageFileService            $imageFiles
      * @param BotRepositoryInterface      $botRepo
      */
-    public function __construct(TemplateRepositoryInterface $templateRepo, ImageFileService $imageFiles, BotRepositoryInterface $botRepo)
+    public function __construct(TemplateRepositoryInterface $templateRepo, BotRepositoryInterface $botRepo)
     {
-        $this->imageFiles = $imageFiles;
-        $this->templateRepo = $templateRepo;
         $this->botRepo = $botRepo;
+        $this->templateRepo = $templateRepo;
     }
 
     /**
@@ -118,7 +110,6 @@ class MessageService
         // handle deleted messages (those in $current and not in $input)
         // @todo Remove history? Soft delete? Remove Message Instances... etc?
 
-
         $this->moveReadonlyBlockToTheBottom($normalized);
 
         return $normalized;
@@ -153,7 +144,6 @@ class MessageService
         $fileName = $this->randomFileName('png');
         $image->save(public_path("img/uploads/{$fileName}"));
         $message->image_url = config('app.url') . 'img/uploads/' . $fileName;
-
     }
 
     /**

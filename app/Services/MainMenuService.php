@@ -6,8 +6,8 @@ use App\Models\Button;
 use App\Models\MainMenu;
 use MongoDB\BSON\ObjectID;
 use App\Jobs\UpdateMainMenuOnFacebook;
-use App\Repositories\Bot\DBBotBaseRepository;
 use App\Services\Facebook\MessengerThread;
+use App\Repositories\Bot\DBBotBaseRepository;
 use Dingo\Api\Exception\ValidationHttpException;
 
 class MainMenuService

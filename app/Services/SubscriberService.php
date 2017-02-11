@@ -3,9 +3,7 @@
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Sequence;
-use App\Models\Broadcast;
 use App\Models\Subscriber;
-use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use App\Services\Facebook\FacebookUser;
 use App\Repositories\Bot\BotRepositoryInterface;

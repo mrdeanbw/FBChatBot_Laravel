@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use App\Jobs\SendTemplate;
 use App\Models\Bot;
 use App\Models\User;
 use App\Models\Subscriber;
@@ -60,8 +61,7 @@ class MessagePreviewService
 
         $messagePreview = $this->create($input, $user, $bot);
 
-        // @todo dispatch a new job for this.
-        $this->FacebookAdapter->sendMessages($messagePreview->template, $subscriber, $bot);
+        dispatch(new SendTemplate($messagePreview->template, $subscriber));
 
         return $messagePreview;
     }

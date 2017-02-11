@@ -33,8 +33,6 @@ class FacebookWebhookReceiver
      */
     public function handle()
     {
-        return;
-        
         if ($this->data['object'] != 'page') {
             return;
         }

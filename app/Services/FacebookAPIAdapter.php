@@ -59,6 +59,21 @@ class FacebookAPIAdapter
     }
 
     /**
+     * @param Template   $template
+     * @param Subscriber $subscriber
+     * @return \object[]
+     */
+    public function sendTemplate(Template $template, Subscriber $subscriber)
+    {
+        /** @type Bot $bot */
+        $this->loadModelsIfNotLoaded($template, ['bot']);
+
+        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forTemplate($template);
+
+        return $this->sendMessages($mapper, $template->messages, $subscriber, $bot);
+    }
+
+    /**
      * Send message blocks to a subscriber, using Facebook API.
      * @param FacebookMessageMapper $mapper
      * @param Message[]             $messages

@@ -1,16 +1,16 @@
 <?php namespace App\Services;
 
-use App\Models\AudienceFilter;
-use App\Models\Text;
-use App\Repositories\Template\TemplateRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
+use App\Models\Text;
 use App\Models\Sequence;
 use App\Models\Subscriber;
-use App\Models\SequenceMessage;
-use App\Repositories\Sequence\SequenceRepositoryInterface;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use MongoDB\BSON\ObjectID;
+use App\Models\AudienceFilter;
+use App\Models\SequenceMessage;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Repositories\Sequence\SequenceRepositoryInterface;
+use App\Repositories\Template\TemplateRepositoryInterface;
 
 class SequenceService
 {
@@ -23,10 +23,6 @@ class SequenceService
      * @type TimezoneService
      */
     private $timezones;
-    /**
-     * @type FilterGroupService
-     */
-    private $filterGroups;
     /**
      * @type SequenceRepositoryInterface
      */
@@ -45,7 +41,6 @@ class SequenceService
      * @param SequenceRepositoryInterface $sequenceRepo
      * @param MessageService              $messageBlocks
      * @param TimezoneService             $timezones
-     * @param FilterGroupService          $filterGroups
      * @param TemplateRepositoryInterface $templateRepo
      * @param TemplateService             $templates
      */
@@ -53,13 +48,11 @@ class SequenceService
         SequenceRepositoryInterface $sequenceRepo,
         MessageService $messageBlocks,
         TimezoneService $timezones,
-        FilterGroupService $filterGroups,
         TemplateRepositoryInterface $templateRepo,
         TemplateService $templates
     ) {
         $this->messageBlocks = $messageBlocks;
         $this->timezones = $timezones;
-        $this->filterGroups = $filterGroups;
         $this->sequenceRepo = $sequenceRepo;
         $this->templateRepo = $templateRepo;
         $this->templates = $templates;

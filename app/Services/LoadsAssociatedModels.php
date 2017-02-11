@@ -42,7 +42,7 @@ trait LoadsAssociatedModels
 
     /**
      * @param string $model
-     * @return BaseDBRepository
+     * @return DBBaseRepository
      */
     public function getRepo($model)
     {

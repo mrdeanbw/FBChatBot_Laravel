@@ -6,6 +6,8 @@ use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
 /**
  * @property string $jwt_token
+ * @property string $access_token
+ * @property array $granted_permissions
  */
 class User extends BaseModel implements AuthenticatableContract, JWTSubject
 {
