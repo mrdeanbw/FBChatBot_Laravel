@@ -2,9 +2,9 @@
 
 use App\Models\Bot;
 use App\Models\BaseModel;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Collection;
 use MongoDB\BSON\ObjectID;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\Paginator;
 
 abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements AssociatedWithBotRepositoryInterface
 {

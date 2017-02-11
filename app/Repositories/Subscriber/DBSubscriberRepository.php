@@ -1,11 +1,15 @@
 <?php namespace App\Repositories\Subscriber;
 
-use App\Models\Broadcast;
-use App\Models\Sequence;
+use App\Models\SubscriptionHistory;
 use Carbon\Carbon;
 use App\Models\Bot;
+use App\Models\Sequence;
+use App\Models\Broadcast;
 use App\Models\Subscriber;
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\AudienceFilter;
+use App\Models\AudienceFilterRule;
+use App\Models\AudienceFilterGroup;
+use Jenssegers\Mongodb\Eloquent\Builder;
 use App\Repositories\DBAssociatedWithBotRepository;
 
 class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implements SubscriberRepositoryInterface
@@ -15,6 +19,48 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
     {
         return Subscriber::class;
     }
+
+    /**
+     * @param array $data
+     * @return Subscriber
+     */
+    public function create(array $data)
+    {
+        if ($data['active']) {
+            $history = ['action' => 'subscribed', 'action_at' => mongo_date()];
+            $data['history'] = [new SubscriptionHistory($history)];
+        }
+
+        return parent::create($data);
+    }
+
+    /**
+     * @param Subscriber $model
+     * @param array      $data
+     * @return bool
+     */
+    public function update($model, array $data)
+    {
+        $history = null;
+
+        if ($model->active && ! $data['active']) {
+            $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => mongo_date()]);
+        }
+
+        if (! $model->active && $data['active']) {
+            $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => mongo_date()]);
+        }
+
+        if ($history) {
+            $data = [
+                '$set'  => $data,
+                '$push' => $history
+            ];
+        }
+
+        return parent::update($model, $data);
+    }
+
 
     /**
      * Find a subscriber by his Facebook ID.
@@ -73,7 +119,7 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
      * @param Bot $bot
      * @return Subscriber
      */
-    public function activeSubscriberCountForPage(Bot $bot)
+    public function activeSubscriberCountForBot(Bot $bot)
     {
         $filter = [
             ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
@@ -105,16 +151,16 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
 
     /**
      * Chaining filter group queries on the initial query.
-     * @param Builder $query
-     * @param array   $filter
+     * @param Builder        $query
+     * @param AudienceFilter $filter
      * @return Builder
      */
-    private function applyFilterGroups(Builder $query, array $filter)
+    private function applyFilterGroups(Builder $query, AudienceFilter $filter)
     {
         $query->where(function ($query) use ($filter) {
 
-            foreach ($filter['groups'] as $group) {
-                $method = $this->getWhereMethodName($filter['join_type']);
+            foreach ($filter->groups as $group) {
+                $method = $this->getWhereMethodName($filter->join_type);
                 $query->{$method}(function ($subQuery) use ($group) {
                     $this->applyFilterRules($subQuery, $group);
                 });
@@ -140,14 +186,14 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
 
     /**
      * Chaining filter rule queries on the parent group query.
-     * @param Builder $query
-     * @param array   $group
+     * @param Builder             $query
+     * @param AudienceFilterGroup $group
      * @return Builder
      */
-    private function applyFilterRules(Builder $query, array $group)
+    private function applyFilterRules(Builder $query, AudienceFilterGroup $group)
     {
-        foreach ($group['rules'] as $rule) {
-            if ($group['join_type'] == 'none') {
+        foreach ($group->rules as $rule) {
+            if ($group->join_type == 'none') {
                 $this->applyNegatedRuleFiltration($query, $rule);
             } else {
                 $this->applyRuleFiltration($query, $rule, $group['join_type']);
@@ -159,25 +205,25 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
 
     /**
      * Handle "And"/"Or" chaining operators.
-     * @param Builder $query
-     * @param array   $rule
-     * @param string  $joinType
+     * @param Builder            $query
+     * @param AudienceFilterRule $rule
+     * @param string             $joinType
      * @return Builder
      */
-    private function applyRuleFiltration(Builder $query, array $rule, $joinType)
+    private function applyRuleFiltration(Builder $query, AudienceFilterRule $rule, $joinType)
     {
-        switch ($rule['key']) {
+        switch ($rule->key) {
 
             case 'gender':
-                $query->where('gender', '=', $rule['value'], $joinType);
+                $query->where('gender', '=', $rule->value, $joinType);
                 break;
 
             case 'tag':
-                $query->where('tags', '=', $rule['value'], $joinType);
+                $query->where('tags', '=', $rule->value, $joinType);
                 break;
 
             case 'sequence':
-                $query->where('sequences', '=', $rule['value'], $joinType);
+                $query->where('sequences', '=', $rule->value, $joinType);
                 break;
         }
 
@@ -186,23 +232,23 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
 
     /**
      * Handle "None" chaining operator
-     * @param Builder $query
-     * @param array   $rule
+     * @param Builder            $query
+     * @param AudienceFilterRule $rule
      * @return Builder
      */
-    private function applyNegatedRuleFiltration(Builder $query, array $rule)
+    private function applyNegatedRuleFiltration(Builder $query, AudienceFilterRule $rule)
     {
-        switch ($rule['key']) {
+        switch ($rule->key) {
             case 'gender':
-                $query->where('gender', '!=', $rule['value']);
+                $query->where('gender', '!=', $rule->value);
                 break;
 
             case 'tag':
-                $query->where('tags', '!=', $rule['value']);
+                $query->where('tags', '!=', $rule->value);
                 break;
 
             case 'sequence':
-                $query->where('sequences', '!=', $rule['value']);
+                $query->where('sequences', '!=', $rule->value);
                 break;
         }
 
@@ -251,34 +297,16 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
     }
 
     /**
-     * Determine if a subscriber matches given filtering criteria.
-     * @param Subscriber $subscriber
-     * @param array      $filterGroups
-     * @param string     $logicalOperator
-     * @param bool       $targetingIsEnabled
-     * @param array      $filterBy
-     * @return bool
-     */
-    public function subscriberMatchesFilteringCriteria(Subscriber $subscriber, array $filterGroups, $logicalOperator, $targetingIsEnabled, array $filterBy)
-    {
-        return $this->filter(
-            $filterGroups,
-            $logicalOperator,
-            $targetingIsEnabled,
-            $filterBy,
-            $subscriber->page
-        )->where('_id', $subscriber->_id)->exists();
-    }
-
-    /**
      * Count the number of subscribers who last subscribed on a given date, or in a given time period.
      * @param Carbon|string $date
-     * @param Bot           $page
+     * @param Bot           $bot
      * @return int
      */
-    public function LastSubscribedAtCountForPage($date, Bot $page)
+    public function LastSubscribedAtCountForPage($date, Bot $bot)
     {
-        return $page->subscribers()->date('last_subscribed_at', $date)->count();
+        $filter = [['operator' => 'date', 'key' => 'last_subscribed_at', 'value' => $date]];
+
+        return $this->count($filter);
     }
 
     /**
@@ -289,53 +317,9 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
      */
     public function LastUnsubscribedAtCountForPage($date, Bot $page)
     {
-        return $page->subscribers()->date('last_unsubscribed_at', $date)->count();
-    }
+        $filter = [['operator' => 'date', 'key' => 'last_unsubscribed_at', 'value' => $date]];
 
-    /**
-     * Sync a subscriber's tags
-     * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param bool       $detaching
-     * @return void
-     */
-    public function syncTags(Subscriber $subscriber, array $tags, $detaching = true)
-    {
-        $subscriber->tags()->sync($tags, $detaching);
-    }
-
-    /**
-     * Detach tags from a subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param bool       $touch
-     */
-    public function detachTags(Subscriber $subscriber, array $tags, $touch = true)
-    {
-        $subscriber->tags()->detach($tags, $touch);
-    }
-
-    /**
-     * Attach sequences to subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $sequences
-     * @param array      $attributes
-     * @param bool       $touch
-     */
-    public function attachSequences(Subscriber $subscriber, array $sequences, array $attributes = [], $touch = true)
-    {
-        $subscriber->sequences()->attach($sequences, $attributes, $touch);
-    }
-
-    /**
-     * Detach sequences from a subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $sequences
-     * @param bool       $touch
-     */
-    public function detachSequences(Subscriber $subscriber, array $sequences, $touch = true)
-    {
-        $subscriber->sequences()->detach($sequences, $touch);
+        return $this->count($filter);
     }
 
     /**
@@ -365,7 +349,6 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
         return $update;
     }
 
-
     /**
      * Get an ordered list of all active subscribers matching some filtration criteria.
      * @param Sequence|Broadcast $model
@@ -382,5 +365,80 @@ class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implement
         ], $filterBy);
 
         return $this->getAll($filterBy, $orderBy);
+    }
+
+    /**
+     * The way it works:
+     * We subscribe matching target audience. If a user has unsubscribed from this sequence, through an action:
+     * button click, opt-in or manually from audience table, we shouldn't resubscribe him.
+     * He can only resubscribe through an action.
+     * @param Sequence $sequence
+     * @return mixed
+     */
+    public function subscribeToSequenceIfNotUnsubscribed(Sequence $sequence)
+    {
+        $filterBy = [
+            ['operator' => '=', 'key' => 'active', 'value' => true],
+            ['operator' => 'subscriber', 'filter' => $sequence->filter],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $sequence->bot_id],
+            ['operator' => '!=', 'key' => 'removed_sequences', $sequence->id]
+        ];
+
+        $this->applyFilterByAndOrderBy($filterBy)->push('sequences', $sequence->id, true);
+    }
+
+    /**
+     * @param Bot           $bot
+     * @param string|Carbon $date
+     * @return int
+     */
+    public function subscriptionCountForBot(Bot $bot, $date)
+    {
+        $filter = [
+            ['operator' => 'date', 'key' => 'history.action', 'value' => 'subscribed'],
+            ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
+        ];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param Bot           $bot
+     * @param string|Carbon $date
+     * @return int
+     */
+    public function unsubscriptionCountForBot(Bot $bot, $date)
+    {
+        $filter = [
+            ['operator' => 'date', 'key' => 'history.action', 'value' => 'unsubscribed'],
+            ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
+        ];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * Determine if a subscriber matches given filtering criteria.
+     * @param Subscriber     $subscriber
+     * @param AudienceFilter $filter
+     * @return bool
+     */
+    public function subscriberMatchesRules(Subscriber $subscriber, AudienceFilter $filter)
+    {
+        $filterBy = [
+            ['operator' => 'subscriber', 'filter' => $filter],
+            ['operator' => '=', 'key' => '_id', $subscriber->_id]
+        ];
+
+        return $this->count($filterBy) === 1;
+    }
+
+    /**
+     * @param Subscriber $subscriber
+     * @param array      $sequences
+     */
+    public function addSequences(Subscriber $subscriber, array $sequences)
+    {
+        $subscriber->push('sequences', $sequences, true);
     }
 }

@@ -1,12 +1,13 @@
 <?php namespace App\Repositories;
 
 use App\Models\BaseModel;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Carbon\Carbon;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Builder;
+use Jenssegers\Mongodb\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 abstract class DBBaseRepository implements BaseRepositoryInterface
 {
@@ -112,7 +113,6 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
         return $model::insert($data);
     }
 
-
     /**
      * Update a model.
      * @param BaseModel $model
@@ -125,11 +125,15 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
         $model->fill($data);
 
+        if (starts_with(key($values), '$')) {
+            return $class::where('_id', $model->_id)->update($data);
+        }
+
         $update = [];
 
         foreach (array_keys($data) as $key) {
-            if (is_a($model->{$key}, \Carbon\Carbon::class)) {
-                $update[$key] = new UTCDateTime($model->{$key}->getTimestamp() * 1000);
+            if (is_a($model->{$key}, Carbon::class)) {
+                $update[$key] = mongo_date($model->{$key});
             } else {
                 $update[$key] = $model->{$key};
             }
@@ -167,10 +171,10 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
             case 'date':
                 $query->date($filter['attribute'], $filter['value']);
                 break;
-            
+
             default:
                 $query->where($filter['attribute'], $filter['operator'], $filter['value']);
-                
+
         }
 
         return $query;
@@ -192,7 +196,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
      * @param array $orderBy
      * @return Builder
      */
-    private function applyFilterByAndOrderBy(array $filterBy, array $orderBy)
+    protected function applyFilterByAndOrderBy(array $filterBy = [], array $orderBy = [])
     {
         /** @type string|BaseModel $model */
         $model = $this->model();

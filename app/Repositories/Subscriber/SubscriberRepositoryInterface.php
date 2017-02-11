@@ -5,6 +5,7 @@ use App\Models\Bot;
 use App\Models\Sequence;
 use App\Models\Broadcast;
 use App\Models\Subscriber;
+use App\Models\AudienceFilter;
 use Illuminate\Support\Collection;
 use App\Repositories\AssociatedWithBotRepositoryInterface;
 
@@ -38,26 +39,15 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      * @param Bot $page
      * @return Subscriber
      */
-    public function activeSubscriberCountForPage(Bot $page);
-
-    /**
-     * Determine if a subscriber matches given filtering criteria.
-     * @param Subscriber $subscriber
-     * @param array      $filterGroups
-     * @param string     $logicalOperator
-     * @param bool       $targetingIsEnabled
-     * @param array      $filterBy
-     * @return bool
-     */
-    public function subscriberMatchesFilteringCriteria(Subscriber $subscriber, array $filterGroups, $logicalOperator, $targetingIsEnabled, array $filterBy);
+    public function activeSubscriberCountForBot(Bot $page);
 
     /**
      * Count the number of subscribers who last subscribed on a given date, or in a given time period.
      * @param Carbon|string $date
-     * @param Bot           $page
+     * @param Bot           $bot
      * @return int
      */
-    public function LastSubscribedAtCountForPage($date, Bot $page);
+    public function LastSubscribedAtCountForPage($date, Bot $bot);
 
     /**
      * Count the number of subscribers who last unsubscribed on a given date, or in a given time period.
@@ -68,63 +58,12 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
     public function LastUnsubscribedAtCountForPage($date, Bot $page);
 
     /**
-     * Sync a subscriber's tags
-     * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param bool       $detaching Whether or not to detach the attached tags which are not included in the passed $tags
-     */
-    public function syncTags(Subscriber $subscriber, array $tags, $detaching = true);
-
-    /**
-     * Attach tags to subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param array      $attributes
-     * @param bool       $touch
-     */
-    public function attachTags(Subscriber $subscriber, array $tags, array $attributes = [], $touch = true);
-
-    /**
-     * Detach tags from a subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param bool       $touch
-     */
-    public function detachTags(Subscriber $subscriber, array $tags, $touch = true);
-
-    /**
-     * Sync a subscriber's sequences
-     * @param Subscriber $subscriber
-     * @param array      $sequences
-     * @param bool       $detaching Whether or not to detach the attached tags which are not included in the passed $tags
-     */
-    public function syncSequences(Subscriber $subscriber, array $sequences, $detaching = true);
-
-    /**
-     * Attach sequences to subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $sequences
-     * @param array      $attributes
-     * @param bool       $touch
-     */
-    public function attachSequences(Subscriber $subscriber, array $sequences, array $attributes = [], $touch = true);
-
-    /**
-     * Detach sequences from a subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $sequences
-     * @param bool       $touch
-     */
-    public function detachSequences(Subscriber $subscriber, array $sequences, $touch = true);
-
-    /**
      * @param Bot   $bot
      * @param array $subscriberIds
      * @param array $input
      */
     public function bulkUpdateForBot(Bot $bot, array $subscriberIds, array $input);
-
-
+    
     /**
      * @param Bot           $bot
      * @param string|Carbon $date
@@ -147,4 +86,22 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      */
     public function getActiveTargetAudience($model, array $filterBy = [], array $orderBy = []);
 
+    /**
+     * @param Sequence $sequence
+     */
+    public function subscribeToSequenceIfNotUnsubscribed(Sequence $sequence);
+
+    /**
+     * Determine if a subscriber matches given filtering criteria.
+     * @param Subscriber     $subscriber
+     * @param AudienceFilter $filter
+     * @return bool
+     */
+    public function subscriberMatchesRules(Subscriber $subscriber, AudienceFilter $filter);
+
+    /**
+     * @param Subscriber $subscriber
+     * @param array      $sequences
+     */
+    public function addSequences(Subscriber $subscriber, array  $sequences);
 }

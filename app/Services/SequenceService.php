@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Text;
@@ -35,27 +36,34 @@ class SequenceService
      * @type TemplateService
      */
     private $templates;
+    /**
+     * @type SubscriberRepositoryInterface
+     */
+    private $subscriberRepo;
 
     /**
      * SequenceService constructor.
-     * @param SequenceRepositoryInterface $sequenceRepo
-     * @param MessageService              $messageBlocks
-     * @param TimezoneService             $timezones
-     * @param TemplateRepositoryInterface $templateRepo
-     * @param TemplateService             $templates
+     * @param SequenceRepositoryInterface   $sequenceRepo
+     * @param MessageService                $messageBlocks
+     * @param TimezoneService               $timezones
+     * @param TemplateRepositoryInterface   $templateRepo
+     * @param TemplateService               $templates
+     * @param SubscriberRepositoryInterface $subscriberRepo
      */
     public function __construct(
         SequenceRepositoryInterface $sequenceRepo,
         MessageService $messageBlocks,
         TimezoneService $timezones,
         TemplateRepositoryInterface $templateRepo,
-        TemplateService $templates
+        TemplateService $templates,
+        SubscriberRepositoryInterface $subscriberRepo
     ) {
         $this->messageBlocks = $messageBlocks;
         $this->timezones = $timezones;
         $this->sequenceRepo = $sequenceRepo;
         $this->templateRepo = $templateRepo;
         $this->templates = $templates;
+        $this->subscriberRepo = $subscriberRepo;
     }
 
     /**
@@ -137,6 +145,7 @@ class SequenceService
      */
     public function update($id, $input, Bot $page)
     {
+        /** @type Sequence $sequence */
         $sequence = $this->findByIdForBotOrFail($id, $page);
 
         if ($filter = array_get($input, 'filter')) {
@@ -150,8 +159,7 @@ class SequenceService
 
         $this->sequenceRepo->update($sequence, $data);
 
-        // @todo issue the job to add new subscribers (only if filters changed?!)
-        //        event(new SequenceTargetingWasAltered($sequence));
+        $this->subscriberRepo->subscribeToSequenceIfNotUnsubscribed($sequence);
 
         return $sequence;
     }
@@ -239,6 +247,7 @@ class SequenceService
 
 
     /**
+     * @todo soft delete if it has queued subscribers.
      * Delete a sequence message.
      * @param $id
      * @param $sequenceId

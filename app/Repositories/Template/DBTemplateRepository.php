@@ -1,6 +1,7 @@
 <?php namespace App\Repositories\Template;
 
 use App\Models\Bot;
+use App\Models\Subscriber;
 use App\Models\Template;
 use Illuminate\Support\Collection;
 use App\Repositories\DBAssociatedWithBotRepository;
@@ -46,5 +47,21 @@ class DBTemplateBaseRepository extends DBAssociatedWithBotRepository implements 
         ];
 
         return $this->getOne($filter);
+    }
+
+    /**
+     * @param Template   $templateId
+     * @param Subscriber $subscriber
+     * @param array      $buttonPath
+     * @param int        $incrementBy
+     */
+    public function recordButtonClick(Template $templateId, Subscriber $subscriber, array $buttonPath, $incrementBy = 1)
+    {
+        $key = 'messages.' . implode('.', $buttonPath) . '.clicks';
+
+        Template::where('_id', $templateId)->update([
+            '$inc'      => ["{$key}.total" => $incrementBy],
+            '$addToSet' => ["{$key}.unique" => $subscriber->id]
+        ]);
     }
 }

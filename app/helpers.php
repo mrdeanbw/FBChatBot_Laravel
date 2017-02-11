@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use MongoDB\BSON\UTCDatetime;
 
 if (! function_exists('config_path')) {
     /**
@@ -185,3 +186,73 @@ if (! function_exists('to_bytes')) {
         }
     }
 }
+
+if (! function_exists('mongo_date')) {
+
+    /**
+     * @param Carbon|UTCDatetime|string|int|null $date
+     * @return UTCDatetime
+     */
+    function mongo_date($date = null)
+    {
+        if ($date === null) {
+            return new UTCDatetime();
+        }
+        
+        if (is_a($date, UTCDatetime::class)) {
+            return $date;
+        }
+
+        if (is_a($date, DateTime::class)) {
+            return new UTCDateTime(carbon_date($date)->getTimestamp() * 1000);
+        }
+
+        return $date;
+    }
+}
+
+
+if (! function_exists('carbon_date')) {
+
+    /**
+     * Laravel's Illuminate\Database\Eloquent\Model::asDateTime function
+     * @param $date
+     * @return Carbon
+     * @throws Exception
+     */
+    function carbon_date($date)
+    {
+        // If this value is already a Carbon instance, we shall just return it as is.
+        // This prevents us having to re-instantiate a Carbon instance when we know
+        // it already is one, which wouldn't be fulfilled by the DateTime check.
+        if ($date instanceof Carbon) {
+            return $date;
+        }
+
+        // If the value is already a DateTime instance, we will just skip the rest of
+        // these checks since they will be a waste of time, and hinder performance
+        // when checking the field. We will just return the DateTime right away.
+        if ($date instanceof DateTimeInterface) {
+            return new Carbon(
+                $date->format('Y-m-d H:i:s.u'), $date->getTimeZone()
+            );
+        }
+
+        // If this value is an integer, we will assume it is a UNIX timestamp's value
+        // and format a Carbon object from this timestamp. This allows flexibility
+        // when defining your date fields as they might be UNIX timestamps here.
+        if (is_numeric($date)) {
+            return Carbon::createFromTimestamp($date);
+        }
+
+        // If the value is in simply year, month, day format, we will instantiate the
+        // Carbon instances from that format. Again, this provides for simple date
+        // fields on the database, while still supporting Carbonized conversion.
+        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $date)) {
+            return Carbon::createFromFormat('Y-m-d', $date)->startOfDay();
+        }
+
+        throw new Exception("Unknown date: {$date}");
+    }
+}
+

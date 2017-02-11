@@ -14,6 +14,7 @@
  * @property \Carbon\Carbon $last_contacted_at
  * @property array          $sequence
  * @property array          $tags
+ * @property array          $removed_sequences
  */
 class Subscriber extends BaseModel
 {

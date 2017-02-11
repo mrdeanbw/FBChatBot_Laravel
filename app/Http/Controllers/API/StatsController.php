@@ -1,9 +1,9 @@
-<?php
-namespace App\Http\Controllers\API;
+<?php namespace App\Http\Controllers\API;
 
 use App\Models\Bot;
 use App\Services\SubscriberService;
 use Symfony\Component\HttpFoundation\Request;
+use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 
 class StatsController extends APIController
 {
@@ -11,7 +11,7 @@ class StatsController extends APIController
     /**
      * @type SubscriberService
      */
-    private $audience;
+    private $subscribers;
 
     protected $supportedMetrics = [
         'summary',
@@ -28,7 +28,7 @@ class StatsController extends APIController
      */
     public function __construct(SubscriberService $audience)
     {
-        $this->audience = $audience;
+        $this->subscribers = $audience;
     }
 
     /**
@@ -64,8 +64,8 @@ class StatsController extends APIController
         return [
             'total' => $this->subscriberCount($page),
             'today' => [
-                'plus'     => $this->audience->newSubscriptions($page, 'today'),
-                'negative' => $this->audience->newUnsubscriptions($page, 'today'),
+                'plus'     => $this->subscribers->newSubscriptions($page, 'today'),
+                'negative' => $this->subscribers->newUnsubscriptions($page, 'today'),
             ],
         ];
     }
@@ -88,27 +88,27 @@ class StatsController extends APIController
          */
         for ($date = $boundaries[0]; $date->lt($boundaries[1]); $date->addDay()) {
             $dates[$date->format('Y-m-d')] = [
-                'plus'  => $this->audience->newSubscriptions($page, $date),
-                'total' => $this->audience->totalSubscriptions($page, $date),
+                'plus'  => $this->subscribers->newSubscriptions($page, $date),
+                'total' => $this->subscribers->totalSubscriptions($page, $date),
             ];
         }
 
         /**
          * Total number of subscription actions in the given time period.
          */
-        $total = $this->audience->totalSubscriptions($page, $dateString);
+        $total = $this->subscribers->totalSubscriptions($page, $dateString);
 
         return compact('total', 'dates');
     }
 
     /**
      * Total number of active subscribers.
-     * @param Bot $page
+     * @param Bot $bot
      * @return array
      */
-    private function subscriberCount(Bot $page)
+    private function subscriberCount(Bot $bot)
     {
-        return $this->audience->activeSubscribers($page);
+        return $this->subscribers->activeSubscribers($bot);
     }
 
     /**

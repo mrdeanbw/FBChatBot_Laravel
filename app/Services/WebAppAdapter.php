@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Button;
@@ -74,6 +75,10 @@ class WebAppAdapter
      * @type TemplateRepositoryInterface
      */
     private $templateRepo;
+    /**
+     * @type SubscriberRepositoryInterface
+     */
+    private $subscriberRepo;
 
     /**
      * WebAppAdapter constructor.
@@ -82,6 +87,7 @@ class WebAppAdapter
      * @param WelcomeMessageService             $welcomeMessage
      * @param FacebookAPIAdapter                $FacebookAdapter
      * @param Sender                            $FacebookSender
+     * @param SubscriberRepositoryInterface     $subscriberRepo
      * @param MessageService                    $messageBlocks
      * @param DefaultReplyService               $defaultReplies
      * @param AutoReplyRuleService              $AIResponses
@@ -98,6 +104,7 @@ class WebAppAdapter
         WelcomeMessageService $welcomeMessage,
         FacebookAPIAdapter $FacebookAdapter,
         Sender $FacebookSender,
+        SubscriberRepositoryInterface $subscriberRepo,
         MessageService $messageBlocks,
         DefaultReplyService $defaultReplies,
         AutoReplyRuleService $AIResponses,
@@ -123,6 +130,7 @@ class WebAppAdapter
         $this->templates = $templates;
         $this->botRepo = $botRepo;
         $this->templateRepo = $templateRepo;
+        $this->subscriberRepo = $subscriberRepo;
     }
 
     /**
@@ -144,7 +152,7 @@ class WebAppAdapter
                         'text' => 'You are already subscribed to the page.'
                     ],
                 ];
-                $this->FacebookAdapter->send($message, $subscriber, $bot);
+                $this->FacebookAdapter->send($message, $subscriber, $bot->page);
             }
 
             return $subscriber;
@@ -162,10 +170,7 @@ class WebAppAdapter
 
         // If not silent mode, send the welcome message!
         if (! $silentMode) {
-            /** @type Template $template */
-            $template = $this->templateRepo->findByIdOrFail($bot->welcome_message->template_id);
-            // @todo dispatch a new job for this.
-            $this->FacebookAdapter->sendMessages($template, $subscriber, $bot);
+            $this->FacebookAdapter->sendFromContext($bot->welcome_message, $subscriber, $bot);
         }
 
         return $subscriber;
@@ -182,14 +187,13 @@ class WebAppAdapter
         return $this->subscribe($bot, $senderId, true);
     }
 
-
     /**
      * Send a message to the user, asking if he really wants to unsubscribe.
-     * @param Bot             $page
+     * @param Bot             $bot
      * @param Subscriber|null $subscriber
      * @param                 $facebookId
      */
-    public function initiateUnsubscripingProcess(Bot $page, $subscriber, $facebookId)
+    public function initiateUnsubscripingProcess(Bot $bot, $subscriber, $facebookId)
     {
         // If a non-subscribed user, tries to initiate the unsubscription process, handle it properly.
         if (! $subscriber) {
@@ -201,7 +205,7 @@ class WebAppAdapter
                     'id' => $facebookId,
                 ]
             ];
-            $this->FacebookSender->send($page->access_token, $message, false);
+            $this->FacebookSender->send($bot->page->access_token, $message, false);
 
             return;
         }
@@ -213,7 +217,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->FacebookAdapter->send($message, $subscriber, $page);
+            $this->FacebookAdapter->send($message, $subscriber, $bot->page);
 
             return;
         }
@@ -225,7 +229,7 @@ class WebAppAdapter
                     'type'    => 'template',
                     'payload' => [
                         'template_type' => 'button',
-                        'text'          => "Do you really want to unsubscribe from {$page->name}?",
+                        'text'          => "Do you really want to unsubscribe from {$bot->page->name}?",
                         'buttons'       => [
                             [
                                 'type'    => "postback",
@@ -238,15 +242,15 @@ class WebAppAdapter
             ]
         ];
 
-        $this->FacebookAdapter->send($message, $subscriber, $page);
+        $this->FacebookAdapter->send($message, $subscriber, $bot->page);
     }
 
     /**
      * User has confirmed his willingness to unsubscribe, so unsubscribe him!
-     * @param Bot        $page
+     * @param Bot        $bot
      * @param Subscriber $subscriber
      */
-    public function concludeUnsubscriptionProcess(Bot $page, $subscriber)
+    public function concludeUnsubscriptionProcess(Bot $bot, $subscriber)
     {
         // already unsubscribed
         if (! $subscriber || ! $subscriber->active) {
@@ -255,7 +259,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->FacebookAdapter->send($message, $subscriber, $page);
+            $this->FacebookAdapter->send($message, $subscriber, $bot->page);
 
             return;
         }
@@ -268,7 +272,7 @@ class WebAppAdapter
             ],
         ];
 
-        $this->FacebookAdapter->send($message, $subscriber, $page);
+        $this->FacebookAdapter->send($message, $subscriber, $bot->page);
     }
 
     /**
@@ -278,29 +282,100 @@ class WebAppAdapter
      */
     public function sendDefaultReply(Bot $bot, Subscriber $subscriber)
     {
-        // @todo dispatch a new job for this.
-        $this->FacebookAdapter->sendMessages($bot->default_reply, $subscriber);
+        $this->FacebookAdapter->sendFromContext($bot->default_reply, $subscriber, $bot);
     }
 
     /**
      * Handle button click.
-     * @param Bot        $page
+     * @param Bot        $bot
      * @param Subscriber $subscriber
      * @param            $payload
      * @return bool
      */
-    public function handleButtonClick($page, $subscriber, $payload)
+    public function handleButtonClick($bot, $subscriber, $payload)
     {
-        if (! $page || ! $subscriber) {
+        $payload = explode('|', $payload);
+        $broadcastId = isset($payload[1])? $payload[1] : null;
+
+        $payload = explode(':', $payload[0]);
+
+        if ($payload[0] == 'MM') {
+            return $this->handleMainMenuButtonClick($bot, $payload);
+        }
+
+        $payloadSize = count($payload);
+
+        if (! $bot || ! $subscriber || $payloadSize < 7 || $bot->id != $payload[0] || $subscriber->id != $payload[1]) {
             return false;
         }
 
-        // If main menu button
-        if (starts_with($payload, "MAIN_MENU_")) {
-            return $this->handleMainMenuButtonClick($page, $subscriber, $payload);
+        /** @type Template $template */
+        $template = $this->templateRepo->findByIdForBot($payload[2], $bot);
+        if (! $template) {
+            return false;
         }
 
-        return $this->handleNonMainMenuButtonClick($page, $subscriber, $payload);
+        $buttonPath = array_slice($payload, 2);
+        $button = $this->navigateToButton($template, $buttonPath);
+        if (! $button) {
+            return false;
+        }
+
+        $this->templateRepo->recordButtonClick($template, $subscriber, array_slice($payload, 4));
+
+        if ($broadcastId) {
+            $this->broadcastRepo->recordClick();
+        }
+
+        $this->carryOutButtonActions($button, $subscriber, $bot, $buttonPath);
+    }
+
+    /**
+     * Execute the actions associate with a button.
+     * @param array      $buttonPath
+     * @param Button     $button
+     * @param Subscriber $subscriber
+     * @param Bot        $bot
+     */
+    private function carryOutButtonActions(Button $button, Subscriber $subscriber, Bot $bot, array $buttonPath)
+    {
+        $this->subscriberRepo->bulkUpdateForBot($bot, [$subscriber->_id], $button->actions);
+        $this->FacebookAdapter->sendFromButton($button, $buttonPath, $subscriber, $bot);
+    }
+
+    /**
+     * @param Template $template
+     * @param array    $buttonPath
+     * @return Button|null
+     */
+    private function navigateToButton(Template $template, array $buttonPath)
+    {
+        $ret = $template;
+
+        foreach ($buttonPath as $section) {
+
+            if (is_object($ret) && isset($ret->{$section})) {
+                $ret = $ret->{$section};
+                continue;
+            }
+
+            if (is_array($ret) && isset($container[$section])) {
+                $ret = $ret[$section];
+                continue;
+            }
+
+            return null;
+        }
+
+        return is_object($ret) && is_a($ret, Button::class)? $ret : null;
+    }
+
+    /**
+     * Increase the number of clicks for a given message instance
+     * @param array $payload
+     */
+    private function incrementButtonClicks(array $payload)
+    {
     }
 
     /**
@@ -329,38 +404,6 @@ class WebAppAdapter
 
         return true;
     }
-
-    /**
-     * @param Bot        $page
-     * @param Subscriber $subscriber
-     * @param            $payload
-     * @return bool
-     */
-    private function handleNonMainMenuButtonClick(Bot $page, Subscriber $subscriber, $payload)
-    {
-        // decrypt to the model id.
-        if (! ($id = SimpleEncryptionService::decode($payload))) {
-            return false;
-        }
-
-        if (! ($instance = $this->messageInstanceRepo->findByIdForPage($id, $page))) {
-            return false;
-        }
-
-        $block = $instance->message_block;
-
-        // Make sure that the message block is button
-        if (! $block || $block->type != 'button') {
-            return false;
-        }
-
-        $this->incrementMessageInstanceClicks($instance);
-
-        $this->carryOutButtonActions($block, $subscriber);
-
-        return true;
-    }
-
 
     /**
      * @param string $botId
@@ -426,7 +469,7 @@ class WebAppAdapter
             return false;
         }
 
-        $this->incrementMessageInstanceClicks($messageInstance);
+        $this->incrementButtonClicks($messageInstance);
 
         $messageBlock = $messageInstance->message_block;
 
@@ -436,30 +479,6 @@ class WebAppAdapter
 
         return $messageBlock->url;
     }
-
-    /**
-     * Execute the actions associate with a button.
-     * @param Button     $button
-     * @param Subscriber $subscriber
-     */
-    private function carryOutButtonActions(Button $button, Subscriber $subscriber)
-    {
-        if ($button->addTags->count()) {
-            $tags = $button->addTags->pluck('id')->toArray();
-            $this->subscribers->syncTags($subscriber, $tags, false);
-        }
-
-        if ($button->removeTags->count()) {
-            $tags = $button->removeTags->pluck('id')->toArray();
-            $this->subscribers->detachTags($subscriber, $tags);
-        }
-
-        if ($template = $button->template) {
-            // @todo dispatch a new job for this.
-            $this->FacebookAdapter->sendMessages($template, $subscriber);
-        }
-    }
-
 
     /**
      * Get a bot by page facebook ID.
@@ -579,21 +598,6 @@ class WebAppAdapter
     }
 
     /**
-     * Increment the number of clicks for a broadcast/subscriber.
-     * @param MessageInstance $instance
-     * @param int             $incrementBy
-     */
-    private function incrementBroadcastClicks(MessageInstance $instance, $incrementBy = 1)
-    {
-        // @todo the root context Should be identified from the payload itself.
-        $rootContext = $this->messageBlocks->getRootContext($instance->message_block);
-
-        if ($rootContext && is_a($rootContext, Broadcast::class)) {
-            $this->broadcasts->incrementBroadcastSubscriberClicks($rootContext, $instance->subscriber, $incrementBy);
-        }
-    }
-
-    /**
      * Mark the broadcast as delivered to subscriber
      * @param Subscriber $subscriber
      * @param            $dateTime
@@ -659,4 +663,5 @@ class WebAppAdapter
     {
         return $this->subscribers->getByFacebookIdOrCreate($senderId, $page, $isActive);
     }
+
 }

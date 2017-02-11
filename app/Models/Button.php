@@ -20,7 +20,7 @@ class Button extends Message
     ];
     public $clicks = [
         'total'  => 0,
-        'unique' => 0
+        'unique' => []
     ];
 
     /**

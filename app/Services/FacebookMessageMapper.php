@@ -34,6 +34,10 @@ class FacebookMessageMapper
      * @type Broadcast
      */
     protected $broadcast;
+    /**
+     * @type array
+     */
+    protected $buttonPath = [];
 
     /**
      * FacebookMessageMapper constructor.
@@ -81,6 +85,17 @@ class FacebookMessageMapper
     }
 
     /**
+     * @param array $buttonPath
+     * @return FacebookMessageMapper
+     */
+    public function setButtonPath(array $buttonPath)
+    {
+        $this->buttonPath = $buttonPath;
+
+        return $this;
+    }
+
+    /**
      * Map Buttons to Facebook call to actions.
      * @return array
      */
@@ -101,7 +116,7 @@ class FacebookMessageMapper
             return [
                 'type'    => 'postback',
                 'title'   => $button->title,
-                'payload' => "{$this->bot->id}:MM:{$button->id->__toString()}",
+                'payload' => "MM:{$this->bot->id}:{$button->id->__toString()}",
             ];
 
         }, $this->bot->main_menu->buttons);
@@ -313,14 +328,32 @@ class FacebookMessageMapper
      * @param ObjectID $cardContainerId
      * @return string
      */
-    protected function getCardPayload(ObjectID $id, ObjectID $cardContainerId)
+    protected function getAbstractCardPayload(ObjectID $id, ObjectID $cardContainerId)
     {
         $payload = $this->bot->id;
         $payload .= $this->subscriber->id;
-        $payload .= ':' . $this->template->id;
+        $payload .= ':';
+        $payload .= $this->template? $this->template->id : implode(':', $this->buttonPath);
+        $payload .= ':' . 'messages';
         $payload .= ':' . $cardContainerId;
         $payload .= ':' . 'cards';
         $payload .= ':' . $id;
+
+        return $payload;
+    }
+
+    /**
+     * Return a card payload.
+     * @param ObjectID $id
+     * @param ObjectID $cardContainerId
+     * @return string
+     */
+    protected function getCardPayload(ObjectID $id, ObjectID $cardContainerId)
+    {
+        $payload = $this->getAbstractCardPayload($id, $cardContainerId);
+        if ($this->broadcast) {
+            $payload .= '|' . $this->broadcast->id;
+        }
 
         return $payload;
     }
@@ -335,10 +368,16 @@ class FacebookMessageMapper
     {
         $payload = $this->bot->id;
         $payload .= $this->subscriber->id;
-        $payload .= ':' . $this->template->id;
+        $payload .= ':';
+        $payload .= $this->template? $this->template->id : implode(':', $this->buttonPath);
+        $payload .= ':' . 'messages';
         $payload .= ':' . $textId;
         $payload .= ':' . 'buttons';
         $payload .= ':' . $id;
+
+        if ($this->broadcast) {
+            $payload .= '|' . $this->broadcast->id;
+        }
 
         return $payload;
     }
@@ -352,9 +391,14 @@ class FacebookMessageMapper
      */
     protected function getCardButtonPayload(ObjectID $id, ObjectID $cardId, ObjectID $cardContainerId)
     {
-        $payload = $this->getCardPayload($cardId, $cardContainerId);
+        $payload = $this->getAbstractCardPayload($cardId, $cardContainerId);
         $payload .= ':' . 'buttons';
         $payload .= ':' . $id;
+
+        if ($this->broadcast) {
+            $payload .= '|' . $this->broadcast->id;
+        }
+
 
         return $payload;
     }

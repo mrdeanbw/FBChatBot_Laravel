@@ -2,8 +2,8 @@
 
 use Carbon\Carbon;
 use App\Models\Bot;
-use App\Models\Sequence;
 use App\Models\Subscriber;
+use App\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
 use App\Services\Facebook\FacebookUser;
 use App\Repositories\Bot\BotRepositoryInterface;
@@ -127,23 +127,33 @@ class SubscriberService
             'active'               => $isActive,
             'bot_id'               => $bot->_id,
             'last_subscribed_at'   => $isActive? Carbon::now() : null,
-            'last_unsubscribed_at' => $isActive? Carbon::now() : null,
+            'last_unsubscribed_at' => null,
             'tags'                 => [],
             'sequences'            => [],
+            'removed_sequences'    => [],
+            'history'              => [],
         ];
 
-        return $this->subscriberRepo->create($data);
+        /** @type Subscriber $subscriber */
+        $subscriber = $this->subscriberRepo->create($data);
+
+        if ($isActive) {
+            $this->subscribeToSequences($subscriber, $bot);
+        }
+
+        return $subscriber;
     }
 
     /**
      * Make a subscriber "active"
      * @param int $id the subscriber ID
-     * @param Bot $page
+     * @param Bot $bot
      */
-    public function resubscribe($id, Bot $page)
+    public function resubscribe($id, Bot $bot)
     {
-        $subscriber = $this->findByFacebookId($id, $page);
+        $subscriber = $this->findByFacebookId($id, $bot);
         $this->subscriberRepo->resubscribe($subscriber);
+        $this->subscribeToSequences($subscriber, $bot);
     }
 
     /**
@@ -154,6 +164,55 @@ class SubscriberService
     public function unsubscribe(Subscriber $subscriber)
     {
         return $this->subscriberRepo->unsubscribe($subscriber);
+    }
+
+    /**
+     * There are different "matching" techniques: exact matching, prefix, or date string (today, yesterday.. etc).
+     * This method loops all over the filterBy array, make sure that the field is filterable, and return an array of filtering conditions.
+     * A filtering condition has 3 parts:
+     * 1. Type: [a]exact: exact match. [b]prefix: prefix match. [c]date: date lower & upper boundaries.
+     * 2. Attribute: name of the attribute.
+     * 3. Value: value to be matched against.
+     * @param array $filterBy
+     * @return array Array of the filtering conditions.
+     */
+    private function normalizeFilterBy(array $filterBy)
+    {
+        $ret = [];
+
+        $filter = new AudienceFilter($this->normalizeFilter(array_get($filterBy, 'filter', [])));
+
+        if ($filter) {
+            $ret[] = [
+                'operator' => 'subscriber',
+                'filter'   => $filter
+            ];
+        }
+
+        foreach ($filterBy as $attribute => $value) {
+
+            if (! $this->fieldIsFilterable($attribute) || ($value !== '0' && ! $value)) {
+                continue;
+            }
+
+            $operator = '=';
+
+            $attribute = $this->filterFieldsMap[$attribute];
+
+            if (in_array($attribute, ['first_name', 'last_name'])) {
+                $operator = 'prefix';
+            }
+
+            if (in_array($attribute, ['created_at', 'last_contacted_at'])) {
+                $operator = 'date';
+            }
+
+            $ret[] = compact('operator', 'attribute', 'value');
+        }
+
+        $this->addActiveFilter($ret);
+
+        return $ret;
     }
 
     /**
@@ -228,55 +287,6 @@ class SubscriberService
     }
 
     /**
-     * There are different "matching" techniques: exact matching, prefix, or date string (today, yesterday.. etc).
-     * This method loops all over the filterBy array, make sure that the field is filterable, and return an array of filtering conditions.
-     * A filtering condition has 3 parts:
-     * 1. Type: [a]exact: exact match. [b]prefix: prefix match. [c]date: date lower & upper boundaries.
-     * 2. Attribute: name of the attribute.
-     * 3. Value: value to be matched against.
-     * @param array $filterBy
-     * @return array Array of the filtering conditions.
-     */
-    private function normalizeFilterBy(array $filterBy)
-    {
-        $ret = [];
-
-        $filter = $this->normalizeFilter(array_get($filterBy, 'filter', []));
-
-        if ($filter) {
-            $ret[] = [
-                'operator' => 'subscriber',
-                'filter'   => $filter
-            ];
-        }
-
-        foreach ($filterBy as $attribute => $value) {
-
-            if (! $this->fieldIsFilterable($attribute) || ($value !== '0' && ! $value)) {
-                continue;
-            }
-
-            $operator = '=';
-
-            $attribute = $this->filterFieldsMap[$attribute];
-
-            if (in_array($attribute, ['first_name', 'last_name'])) {
-                $operator = 'prefix';
-            }
-
-            if (in_array($attribute, ['created_at', 'last_contacted_at'])) {
-                $operator = 'date';
-            }
-
-            $ret[] = compact('operator', 'attribute', 'value');
-        }
-
-        $this->addActiveFilter($ret);
-
-        return $ret;
-    }
-
-    /**
      * @param array $filterBy
      */
     private function addActiveFilter(array &$filterBy)
@@ -308,10 +318,12 @@ class SubscriberService
     }
 
     /**
+     * @todo one update query.
      * Update a subscriber.
      * @param array $input
      * @param int   $subscriberId
      * @param Bot   $bot
+     * @return Subscriber
      */
     public function update(array $input, $subscriberId, Bot $bot)
     {
@@ -319,10 +331,17 @@ class SubscriberService
         $tags = $input['tags'];
         $this->botRepo->createTagsForBot($bot->_id, $tags);
 
-        return $this->subscriberRepo->update($subscriber, compact('tags'));
+        $this->subscriberRepo->update($subscriber, compact('tags'));
+        $this->subscribeToSequences($subscriber, $bot);
+
+        return $subscriber;
     }
 
     /**
+     * @todo handle sequence subscription:
+     *      -> one query per sequence
+     *      -> For every bot sequence get the list of matching subscribers whose ids
+     *         intersect with $subscriberIds, and then subscribe them.
      * Batch update subscribers.
      * @param array $input
      * @param array $subscriberIds
@@ -337,35 +356,13 @@ class SubscriberService
     }
 
     /**
-     * Determine whether or not a subscriber matches given filtration criteria.
-     * @param Subscriber               $subscriber
-     * @param HasFilterGroupsInterface $model
-     * @param array                    $filterBy
-     * @return bool
-     */
-    public function subscriberIsAmongActiveTargetAudience(Subscriber $subscriber, HasFilterGroupsInterface $model, array $filterBy = [])
-    {
-        $filterBy = $this->addActiveFilter($filterBy);
-
-        $groups = $this->filterRepo->getFilterGroupsAndRulesForModel($model)->toArray();
-
-        return $this->subscriberRepo->subscriberMatchesFilteringCriteria(
-            $subscriber,
-            $groups,
-            $model->filter_type,
-            $model->filter_enabled,
-            $filterBy
-        );
-    }
-
-    /**
      * Return the number of active subscribers for a certain page.
-     * @param Bot $page
+     * @param Bot $bot
      * @return int
      */
-    public function activeSubscribers(Bot $page)
+    public function activeSubscribers(Bot $bot)
     {
-        return $this->subscriberRepo->activeSubscriberCountForPage($page);
+        return $this->subscriberRepo->activeSubscriberCountForBot($bot);
     }
 
     /**
@@ -405,7 +402,6 @@ class SubscriberService
         return $this->subscriberRepo->LastUnsubscribedAtCountForPage($date, $page);
     }
 
-
     /**
      * @param $attribute
      * @return bool
@@ -418,50 +414,35 @@ class SubscriberService
     }
 
     /**
-     * Sync subscriber tags with input.
      * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param bool       $detaching
+     * @param Bot        $bot
      */
-    public function syncTags(Subscriber $subscriber, array $tags, $detaching = true)
+    private function subscribeToSequences(Subscriber $subscriber, Bot $bot)
     {
-        $this->subscriberRepo->syncTags($subscriber, $tags, $detaching);
-    }
+        $sequencesToAdd = [];
+        $sequences = $this->sequenceRepo->getAllForBot($bot);
+        
+        foreach ($sequences as $sequence) {
 
-    /**
-     * Detach tags from a subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param bool       $touch
-     */
-    public function detachTags(Subscriber $subscriber, array $tags, $touch = true)
-    {
-        $this->subscriberRepo->detachTags($subscriber, $tags, $touch);
-    }
+            if (in_array($sequence->id, $subscriber->sequence)) {
+                continue;
+            }
 
-    /**
-     * Subscribe to a sequence, and schedule the first message in that sequence for sending.
-     * @todo [Needs discussion] if resubscribing to sequence, should we send the sequence from the beginning, or we continue from where he unsubscribed.
-     * @param Subscriber $subscriber
-     * @param Sequence   $sequence
-     */
-    public function subscribeToSequence(Subscriber $subscriber, Sequence $sequence)
-    {
-        $this->subscriberRepo->attachSequences($subscriber, (array)$sequence);
+            if (in_array($sequence->id, $subscriber->removed_sequences)) {
+                continue;
+            }
 
-        if ($message = $this->sequenceRepo->getFirstSequenceMessage($sequence)) {
-            $this->sequences->scheduleMessage($message, $subscriber, Carbon::now());
+            if ($this->subscriberRepo->subscriberMatchesRules($subscriber, $sequence->filter)) {
+                continue;
+            }
+
+            $sequencesToAdd[] = $sequence->id;
+
+            // @todo schedule first message, bulk scheduling as well?
         }
-    }
 
-    /**
-     * Unsubscribe from a sequence. Delete any scheduled messages.
-     * @param Subscriber $subscriber
-     * @param Sequence   $sequence
-     */
-    public function unsubscribeFromSequence(Subscriber $subscriber, Sequence $sequence)
-    {
-        $this->sequenceRepo->deleteSequenceScheduledMessageForSubscriber($subscriber, $sequence);
-        $this->subscriberRepo->detachSequences($subscriber, (array)$sequence);
+        if ($sequencesToAdd) {
+            $this->subscriberRepo->addSequences($subscriber, $sequencesToAdd);
+        }
     }
 }

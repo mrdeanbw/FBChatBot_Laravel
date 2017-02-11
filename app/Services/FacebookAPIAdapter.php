@@ -1,10 +1,10 @@
 <?php namespace App\Services;
 
+use App\Models\Button;
 use Exception;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Page;
-use App\Models\Button;
 use App\Models\Message;
 use App\Models\Template;
 use App\Models\Broadcast;
@@ -71,6 +71,40 @@ class FacebookAPIAdapter
         $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forTemplate($template);
 
         return $this->sendMessages($mapper, $template->messages, $subscriber, $bot);
+    }
+
+    /**
+     * @param Button     $button
+     * @param array      $buttonPath
+     * @param Subscriber $subscriber
+     * @param Bot        $bot
+     * @return \object[]
+     */
+    public function sendFromButton(Button $button, array $buttonPath, Subscriber $subscriber, Bot $bot)
+    {
+        if ($button->template_id) {
+            return $this->sendFromContext($button, $subscriber, $bot);
+        }
+
+        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->setButtonPath($buttonPath);
+
+        return $this->sendMessages($mapper, $button->messages, $subscriber, $bot);
+    }
+
+    /**
+     * @param            $context
+     * @param Subscriber $subscriber
+     * @param Bot        $bot
+     * @return \object[]
+     */
+    public function sendFromContext($context, Subscriber $subscriber, Bot $bot)
+    {
+        /** @type Template $template */
+        $this->loadModelsIfNotLoaded($context, ['template']);
+
+        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forTemplate($context->tmeplate);
+
+        return $this->sendMessages($mapper, $context->tmeplate->messages, $subscriber, $bot);
     }
 
     /**
