@@ -2,21 +2,14 @@
 
 use Carbon\Carbon;
 use App\Models\Bot;
+use App\Models\Sequence;
+use App\Models\Broadcast;
 use App\Models\Subscriber;
 use Illuminate\Support\Collection;
-use Illuminate\Pagination\Paginator;
-use App\Repositories\CommonRepositoryInterface;
+use App\Repositories\AssociatedWithBotRepositoryInterface;
 
-interface SubscriberRepositoryInterface extends CommonRepositoryInterface
+interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
-
-    /**
-     * Find a bot subscriber by his artificial ID.
-     * @param int $id
-     * @param Bot $bot
-     * @return Subscriber|null
-     */
-    public function findByIdForBot($id, Bot $bot);
 
     /**
      * Find a bot subscriber by his Facebook ID.
@@ -29,14 +22,14 @@ interface SubscriberRepositoryInterface extends CommonRepositoryInterface
     /**
      * Re-subscribe to the bot.
      * @param Subscriber $subscriber
-     * @return Subscriber
+     * @return bool
      */
     public function resubscribe(Subscriber $subscriber);
 
     /**
      * Unsubscribe from the bot.
      * @param Subscriber $subscriber
-     * @return Subscriber
+     * @return bool
      */
     public function unsubscribe(Subscriber $subscriber);
 
@@ -46,40 +39,6 @@ interface SubscriberRepositoryInterface extends CommonRepositoryInterface
      * @return Subscriber
      */
     public function activeSubscriberCountForPage(Bot $page);
-
-    /**
-     * Get an ordered list of all subscribers matching given criteria.
-     * @param array  $filterGroups
-     * @param string $logicalOperator
-     * @param bool   $targetingIsEnabled
-     * @param array  $filterBy
-     * @param array  $orderBy
-     * @param Bot    $page
-     * @return Collection
-     */
-    public function getAllForPage(array $filterGroups, $logicalOperator, $targetingIsEnabled, array $filterBy, array $orderBy, Bot $page);
-
-    /**
-     * Get a paginated ordered list of all subscribers matching given criteria.
-     * @param Bot   $bot
-     * @param int   $page
-     * @param array $filterBy
-     * @param array $orderBy
-     * @param int   $perPage
-     * @return Paginator
-     */
-    public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage);
-
-    /**
-     * Count the number of subscribers matching given filtering criteria.
-     * @param array  $filterGroups
-     * @param string $logicalOperator
-     * @param bool   $targetingIsEnabled
-     * @param array  $filterBy
-     * @param Bot    $page
-     * @return int
-     */
-    public function countForPage(array $filterGroups, $logicalOperator, $targetingIsEnabled, array $filterBy, Bot $page);
 
     /**
      * Determine if a subscriber matches given filtering criteria.
@@ -157,11 +116,35 @@ interface SubscriberRepositoryInterface extends CommonRepositoryInterface
      * @param bool       $touch
      */
     public function detachSequences(Subscriber $subscriber, array $sequences, $touch = true);
-    
+
     /**
      * @param Bot   $bot
      * @param array $subscriberIds
      * @param array $input
      */
     public function bulkUpdateForBot(Bot $bot, array $subscriberIds, array $input);
+
+
+    /**
+     * @param Bot           $bot
+     * @param string|Carbon $date
+     * @return int
+     */
+    public function subscriptionCountForBot(Bot $bot, $date);
+
+    /**
+     * @param Bot           $bot
+     * @param string|Carbon $date
+     * @return int
+     */
+    public function unsubscriptionCountForBot(Bot $bot, $date);
+
+    /**
+     * @param Broadcast|Sequence $model
+     * @param array              $filterBy
+     * @param array              $orderBy
+     * @return Collection
+     */
+    public function getActiveTargetAudience($model, array $filterBy = [], array $orderBy = []);
+
 }

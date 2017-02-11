@@ -7,6 +7,7 @@ use App\Services\Facebook\MessengerThread;
 class UpdateGreetingTextOnFacebook extends BaseJob
 {
 
+    protected $pushErrorsOnFail = true;
     protected $failMessageBody = "Failed to update the greeting text on Facebook. We are looking into it!";
 
     /**

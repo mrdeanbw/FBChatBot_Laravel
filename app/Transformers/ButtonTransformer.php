@@ -10,14 +10,6 @@ class ButtonTransformer extends BaseTransformer
 
     public function transform(Button $button)
     {
-        $item = $this->includeTemplate($button);
-        if ($data = $item->getData()) {
-            $templateTransformer = $item->getTransformer();
-            $template = $templateTransformer->transform($data);
-        } else {
-            $template = null;
-        }
-
         return [
             'id'       => $button->id->__toString(),
             'type'     => $button->type,
@@ -25,8 +17,26 @@ class ButtonTransformer extends BaseTransformer
             'readonly' => $button->readonly,
             'url'      => $button->url,
             'actions'  => $button->actions,
-            'template' => $template,
+            'template' => $this->getTransformedTemplate($button),
             'messages' => $this->transformInclude($button->messages, new MessageTransformer())
         ];
+    }
+
+    /**
+     * @param Button $button
+     * @return null
+     */
+    private function getTransformedTemplate(Button $button)
+    {
+        $item = $this->includeTemplate($button);
+        
+        if ($data = $item->getData()) {
+            $templateTransformer = $item->getTransformer();
+            $template = $templateTransformer->transform($data);
+
+            return $template;
+        }
+
+        return null;
     }
 }

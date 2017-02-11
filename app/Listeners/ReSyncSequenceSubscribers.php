@@ -3,10 +3,16 @@
 use App\Events\SequenceTargetingWasAltered;
 use App\Events\SubscriberTagsWereAltered;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
+use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use App\Services\SubscriberService;
 
 class ReSyncSequences
 {
+
+    /**
+     * @type SubscriberRepositoryInterface
+     */
+    protected $subscriberRepo;
 
     /**
      * @type SequenceRepositoryInterface
@@ -20,13 +26,15 @@ class ReSyncSequences
     /**
      * Create the event listener.
      *
-     * @param SequenceRepositoryInterface $sequenceRepo
-     * @param SubscriberService           $audience
+     * @param SequenceRepositoryInterface   $sequenceRepo
+     * @param SubscriberService             $audience
+     * @param SubscriberRepositoryInterface $subscriberRepo
      */
-    public function __construct(SequenceRepositoryInterface $sequenceRepo, SubscriberService $audience)
+    public function __construct(SequenceRepositoryInterface $sequenceRepo, SubscriberService $audience, SubscriberRepositoryInterface $subscriberRepo)
     {
         $this->sequenceRepo = $sequenceRepo;
         $this->audience = $audience;
+        $this->subscriberRepo = $subscriberRepo;
     }
 
     /**
@@ -44,7 +52,7 @@ class ReSyncSequences
 
         $oldAudience = $this->sequenceRepo->getSequenceSubscribers($sequence);
         
-        $newAudience = $this->audience->getActiveTargetAudience($sequence);
+        $newAudience = $this->subscriberRepo->getActiveTargetAudience($sequence);
 
         foreach ($newAudience->diff($oldAudience) as $subscriber) {
             $this->audience->subscribeToSequence($subscriber, $sequence);

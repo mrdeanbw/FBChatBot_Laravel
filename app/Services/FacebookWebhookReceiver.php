@@ -62,7 +62,7 @@ class FacebookWebhookReceiver
      */
     private function handleEvent($event)
     {
-        $page = $this->adapter->page($event['recipient']['id']);
+        $page = $this->adapter->bot($event['recipient']['id']);
 
         // If the page is not in our system, then do nothing.
         if (! $page) {

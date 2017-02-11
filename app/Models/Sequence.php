@@ -4,6 +4,7 @@
  * @property string            $name
  * @property SequenceMessage[] $messages
  * @property AudienceFilter    $filter
+ * @property string            $bot_id
  */
 class Sequence extends BaseModel
 {
@@ -13,8 +14,8 @@ class Sequence extends BaseModel
     public $multiArrayModels = [
         'messages' => SequenceMessage::class
     ];
-    
+
     public $arrayModels = [
-        'filter'   => AudienceFilter::class,
+        'filter' => AudienceFilter::class,
     ];
 }

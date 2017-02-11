@@ -1,12 +1,13 @@
 <?php namespace App\Repositories\Bot;
 
 use App\Models\Bot;
+use App\Models\Button;
 use App\Models\User;
 use App\Models\Subscriber;
 use Illuminate\Support\Collection;
-use App\Repositories\CommonRepositoryInterface;
+use App\Repositories\BaseRepositoryInterface;
 
-interface BotRepositoryInterface extends CommonRepositoryInterface
+interface BotRepositoryInterface extends BaseRepositoryInterface
 {
 
     /**
@@ -64,4 +65,10 @@ interface BotRepositoryInterface extends CommonRepositoryInterface
      * @param array $tags
      */
     public function createTagsForBot($botId, array $tags);
+
+    /**
+     * @param Bot    $bot
+     * @param Button $button
+     */
+    public function incrementMainMenuButtonClicks(Bot $bot, Button $button);
 }

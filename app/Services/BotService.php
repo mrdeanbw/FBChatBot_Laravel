@@ -3,14 +3,13 @@
 use App\Models\Bot;
 use App\Models\Page;
 use App\Models\User;
-use App\Models\DefaultReply;
+use MongoDB\BSON\ObjectID;
+use Illuminate\Support\Collection;
+use App\Services\Facebook\MessengerThread;
+use App\Jobs\InitializeBotForFacebookPage;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
-use App\Jobs\InitializeBotForFacebookPage;
-use App\Services\Facebook\MessengerThread;
-use Illuminate\Support\Collection;
 use App\Services\Facebook\PageService as FacebookPage;
-use MongoDB\BSON\ObjectID;
 
 class BotService
 {

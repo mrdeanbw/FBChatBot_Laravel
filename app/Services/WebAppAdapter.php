@@ -12,7 +12,7 @@ use App\Services\Facebook\Sender;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
-use App\Repositories\MessageInstance\MessageInstanceRepository;
+use App\Repositories\MessageInstance\MessageHistoryRepositoryInterface;
 
 class WebAppAdapter
 {
@@ -47,7 +47,7 @@ class WebAppAdapter
      */
     private $AIResponses;
     /**
-     * @type MessageInstanceRepository
+     * @type MessageHistoryRepositoryInterface
      */
     private $messageInstanceRepo;
     /**
@@ -78,20 +78,20 @@ class WebAppAdapter
     /**
      * WebAppAdapter constructor.
      *
-     * @param SubscriberService           $subscribers
-     * @param WelcomeMessageService       $welcomeMessage
-     * @param FacebookAPIAdapter          $FacebookAdapter
-     * @param Sender                      $FacebookSender
-     * @param MessageService              $messageBlocks
-     * @param DefaultReplyService         $defaultReplies
-     * @param AutoReplyRuleService        $AIResponses
-     * @param MessageInstanceRepository   $messageInstanceRepo
-     * @param BotService                  $pages
-     * @param BroadcastService            $broadcasts
-     * @param TemplateService             $templates
-     * @param UserRepositoryInterface     $userRepo
-     * @param BotRepositoryInterface      $botRepo
-     * @param TemplateRepositoryInterface $templateRepo
+     * @param SubscriberService                 $subscribers
+     * @param WelcomeMessageService             $welcomeMessage
+     * @param FacebookAPIAdapter                $FacebookAdapter
+     * @param Sender                            $FacebookSender
+     * @param MessageService                    $messageBlocks
+     * @param DefaultReplyService               $defaultReplies
+     * @param AutoReplyRuleService              $AIResponses
+     * @param MessageHistoryRepositoryInterface $messageInstanceRepo
+     * @param BotService                        $pages
+     * @param BroadcastService                  $broadcasts
+     * @param TemplateService                   $templates
+     * @param UserRepositoryInterface           $userRepo
+     * @param BotRepositoryInterface            $botRepo
+     * @param TemplateRepositoryInterface       $templateRepo
      */
     public function __construct(
         SubscriberService $subscribers,
@@ -101,7 +101,7 @@ class WebAppAdapter
         MessageService $messageBlocks,
         DefaultReplyService $defaultReplies,
         AutoReplyRuleService $AIResponses,
-        MessageInstanceRepository $messageInstanceRepo,
+        MessageHistoryRepositoryInterface $messageInstanceRepo,
         BotService $pages,
         BroadcastService $broadcasts,
         TemplateService $templates,
@@ -144,7 +144,7 @@ class WebAppAdapter
                         'text' => 'You are already subscribed to the page.'
                     ],
                 ];
-                $this->FacebookAdapter->sendMessage($message, $subscriber, $bot);
+                $this->FacebookAdapter->send($message, $subscriber, $bot);
             }
 
             return $subscriber;
@@ -164,7 +164,8 @@ class WebAppAdapter
         if (! $silentMode) {
             /** @type Template $template */
             $template = $this->templateRepo->findByIdOrFail($bot->welcome_message->template_id);
-            $this->FacebookAdapter->sendTemplate($template, $subscriber, $bot);
+            // @todo dispatch a new job for this.
+            $this->FacebookAdapter->sendMessages($template, $subscriber, $bot);
         }
 
         return $subscriber;
@@ -212,7 +213,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
+            $this->FacebookAdapter->send($message, $subscriber, $page);
 
             return;
         }
@@ -237,7 +238,7 @@ class WebAppAdapter
             ]
         ];
 
-        $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
+        $this->FacebookAdapter->send($message, $subscriber, $page);
     }
 
     /**
@@ -254,7 +255,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
+            $this->FacebookAdapter->send($message, $subscriber, $page);
 
             return;
         }
@@ -267,7 +268,7 @@ class WebAppAdapter
             ],
         ];
 
-        $this->FacebookAdapter->sendMessage($message, $subscriber, $page);
+        $this->FacebookAdapter->send($message, $subscriber, $page);
     }
 
     /**
@@ -277,7 +278,8 @@ class WebAppAdapter
      */
     public function sendDefaultReply(Bot $bot, Subscriber $subscriber)
     {
-        $this->FacebookAdapter->sendTemplate($bot->default_reply, $subscriber);
+        // @todo dispatch a new job for this.
+        $this->FacebookAdapter->sendMessages($bot->default_reply, $subscriber);
     }
 
     /**
@@ -361,34 +363,27 @@ class WebAppAdapter
 
 
     /**
-     * @param string $payload
-     * @return null|string
+     * @param string $botId
+     * @param string $buttonId
+     * @return null
      */
-    public function getMainMenuButtonUrl($payload)
+    public function getMainMenuButtonUrl($botId, $buttonId)
     {
-        $payload = explode(':', $payload);
-
-        if (count($payload) !== 3 || $payload[1] !== 'MM') {
+        /** @type Bot $bot */
+        $bot = $this->botRepo->findById($botId);
+        if (! $bot) {
             return null;
         }
 
-        if (! ($bot = $this->bots->findById($payload[0]))) {
-            return null;
-        }
-
-        $buttonId = $payload[2];
         $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
             return $button->id->__toString() === $buttonId;
         });
 
-        if (! $button) {
+        if (! $button || ! $button->url) {
             return null;
         }
 
-        $button->clicks = $button->clicks++;
-
-        //@todo move to repo
-        $bot->save();
+        $this->botRepo->incrementMainMenuButtonClicks($bot, $button);
 
         return $button->url;
     }
@@ -460,19 +455,20 @@ class WebAppAdapter
         }
 
         if ($template = $button->template) {
-            $this->FacebookAdapter->sendTemplate($template, $subscriber);
+            // @todo dispatch a new job for this.
+            $this->FacebookAdapter->sendMessages($template, $subscriber);
         }
     }
 
 
     /**
-     * Get a page by facebook ID.
-     * @param $pageId
+     * Get a bot by page facebook ID.
+     * @param $facebookId
      * @return Bot
      */
-    public function page($pageId)
+    public function bot($facebookId)
     {
-        return $this->bots->findByFacebookId($pageId);
+        return $this->bots->findByFacebookId($facebookId);
     }
 
     /**
@@ -504,7 +500,8 @@ class WebAppAdapter
      */
     public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber)
     {
-        $this->FacebookAdapter->sendTemplate($rule->template, $subscriber);
+        // @todo dispatch a new job for this.
+        $this->FacebookAdapter->sendMessages($rule->template, $subscriber);
     }
 
     /**
@@ -516,7 +513,7 @@ class WebAppAdapter
     {
         $timestamp = $this->normalizeTimestamp($timestamp);
 
-//        $this->messageInstanceRepo->markAsDelivered($subscriber, $timestamp);
+        //        $this->messageInstanceRepo->markAsDelivered($subscriber, $timestamp);
         $this->updateBroadcastDeliveredStats($subscriber, $timestamp);
     }
 

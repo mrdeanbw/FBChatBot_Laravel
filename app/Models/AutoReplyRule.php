@@ -1,7 +1,5 @@
 <?php namespace App\Models;
 
-use Carbon\Carbon;
-
 /**
  * @property bool   $readonly
  * @property string $mode
@@ -10,6 +8,7 @@ use Carbon\Carbon;
  */
 class AutoReplyRule extends BaseModel
 {
+
     public static function boot()
     {
         parent::boot();

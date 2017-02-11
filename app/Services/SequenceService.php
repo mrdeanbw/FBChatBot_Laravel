@@ -125,7 +125,7 @@ class SequenceService
     {
         $data = [
             'name'     => $input['name'],
-            'bot_id'   => $bot->id,
+            'bot_id'   => $bot->_id,
             'filter'   => new AudienceFilter(['enabled' => false]),
             'messages' => $this->defaultSequenceMessages($bot),
         ];
@@ -185,10 +185,10 @@ class SequenceService
     {
         $sequence = $this->findByIdForBotOrFail($sequenceId, $bot);
 
-        $template = $this->templates->createImplicit($input['template']['messages'], $bot->id);
+        $template = $this->templates->createImplicit($input['template']['messages'], $bot->_id);
 
         $message = new SequenceMessage([
-            'template_id' => $template->id,
+            'template_id' => $template->_id,
             'live'        => array_get($input, 'live', false),
             'conditions'  => $this->normalizeMessageConditions($input)
         ]);
@@ -340,7 +340,7 @@ class SequenceService
         return [
             [
                 '_id'      => new ObjectID(),
-                'bot_id'   => $bot->id,
+                'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
                     $this->textMessage("Remind your subscriber who you are and why are they getting messages from you. Then deliver valuable information (don't forget to replace these help messages!)."),
@@ -350,7 +350,7 @@ class SequenceService
 
             [
                 '_id'      => new ObjectID(),
-                'bot_id'   => $bot->id,
+                'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
                     $this->textMessage("First messages are the most important. Focus on being extremely useful.")
@@ -360,7 +360,7 @@ class SequenceService
 
             [
                 '_id'      => new ObjectID(),
-                'bot_id'   => $bot->id,
+                'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
                     $this->textMessage("First messages are the most important. Focus on being extremely useful.")
@@ -370,7 +370,7 @@ class SequenceService
 
             [
                 '_id'      => new ObjectID(),
-                'bot_id'   => $bot->id,
+                'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
                     $this->textMessage("Make your message educational, but find a soft way to mention your product. Something like a P.S. at the end can be a good way to do it.")
@@ -380,7 +380,7 @@ class SequenceService
 
             [
                 '_id'      => new ObjectID(),
-                'bot_id'   => $bot->id,
+                'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
                     $this->textMessage("Keep being incredibly useful. Remember that your subscription base is the most important asset. Take time to build the relationship.")

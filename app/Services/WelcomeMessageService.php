@@ -51,7 +51,7 @@ class WelcomeMessageService
     public function defaultWelcomeMessage($botId)
     {
         return new WelcomeMessage([
-            'template_id' => $this->newDefaultTemplateInstance($botId)->id
+            'template_id' => $this->newDefaultTemplateInstance($botId)->_id
         ]);
     }
 

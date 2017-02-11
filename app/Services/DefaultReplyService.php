@@ -53,7 +53,7 @@ class DefaultReplyService
     public function defaultDefaultReply($botId)
     {
         return new DefaultReply([
-            'template_id' => $this->templates->createImplicit([], $botId)->id
+            'template_id' => $this->templates->createImplicit([], $botId)->_id
         ]);
     }
 }

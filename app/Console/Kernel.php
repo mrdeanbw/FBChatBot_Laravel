@@ -1,8 +1,6 @@
-<?php
+<?php namespace App\Console;
 
-namespace App\Console;
-
-use App\Console\Commands\Broadcast;
+use App\Console\Commands\SendDueBroadcasts;
 use App\Console\Commands\Sequence;
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
@@ -16,7 +14,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        Broadcast::class,
+        SendDueBroadcasts::class,
         Sequence::class
     ];
 

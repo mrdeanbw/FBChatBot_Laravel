@@ -1,30 +1,19 @@
 <?php namespace App\Repositories\Subscriber;
 
+use App\Models\Broadcast;
+use App\Models\Sequence;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Subscriber;
-use Illuminate\Support\Collection;
-use Illuminate\Pagination\Paginator;
-use App\Repositories\BaseDBRepository;
 use Illuminate\Database\Eloquent\Builder;
+use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepositoryInterface
+class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implements SubscriberRepositoryInterface
 {
 
     public function model()
     {
         return Subscriber::class;
-    }
-
-    /**
-     * Find a subscriber by his ID.
-     * @param int $id
-     * @param Bot $bot
-     * @return Subscriber|null
-     */
-    public function findByIdForBot($id, Bot $bot)
-    {
-        return Subscriber::where('bot_id', $bot->id)->find($id);
     }
 
     /**
@@ -35,13 +24,18 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
      */
     public function findByFacebookIdForBot($id, Bot $bot)
     {
-        return Subscriber::where('bot_id', $bot->id)->where('facebook_id', $id)->first();
+        $filter = [
+            ['operator' => '=', 'key' => 'facebook_id', 'value' => $id],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+        ];
+
+        return $this->getOne($filter);
     }
 
     /**
      * Re-subscribe to the bot.
      * @param Subscriber $subscriber
-     * @return Subscriber
+     * @return bool
      */
     public function resubscribe(Subscriber $subscriber)
     {
@@ -50,17 +44,16 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
             return $subscriber;
         }
 
-        $subscriber->active = true;
-        $subscriber->last_subscribed_at = Carbon::now();
-        $subscriber->save();
-
-        return $subscriber;
+        return $this->update($subscriber, [
+            'active'             => true,
+            'last_subscribed_at' => Carbon::now()
+        ]);
     }
 
     /**
      * Unsubscribe from the bot.
      * @param Subscriber $subscriber
-     * @return Subscriber
+     * @return bool
      */
     public function unsubscribe(Subscriber $subscriber)
     {
@@ -69,70 +62,25 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
             return $subscriber;
         }
 
-        $subscriber->active = false;
-        $subscriber->last_unsubscribed_at = Carbon::now();
-        $subscriber->save();
-
-        return $subscriber;
+        return $this->update($subscriber, [
+            'active'               => false,
+            'last_unsubscribed_at' => Carbon::now()
+        ]);
     }
 
     /**
      * Count the number of active subscribers for a certain page.
-     * @param Bot $page
+     * @param Bot $bot
      * @return Subscriber
      */
-    public function activeSubscriberCountForPage(Bot $page)
+    public function activeSubscriberCountForPage(Bot $bot)
     {
-        return $page->subscribers()->whereIsActive(1)->count();
-    }
+        $filter = [
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+            ['operator' => '=', 'key' => 'active', 'value' => true]
+        ];
 
-    /**
-     * Count the number of subscribers matching given filtering criteria.
-     * @param array  $filterGroups
-     * @param string $logicalOperator
-     * @param bool   $targetingIsEnabled
-     * @param array  $filterBy
-     * @param Bot    $page
-     * @return int
-     */
-    public function countForPage(array $filterGroups, $logicalOperator, $targetingIsEnabled, array $filterBy, Bot $page)
-    {
-        $query = $this->filter($filterGroups, $logicalOperator, $targetingIsEnabled, $filterBy, $page);
-
-        return $query->count();
-    }
-
-    /**
-     * Get an ordered list of all subscribers matching given criteria.
-     * @param array  $filterGroups
-     * @param string $logicalOperator
-     * @param bool   $targetingIsEnabled
-     * @param array  $filterBy
-     * @param array  $orderBy
-     * @param Bot    $page
-     * @return Collection
-     */
-    public function getAllForPage(array $filterGroups, $logicalOperator, $targetingIsEnabled, array $filterBy, array $orderBy, Bot $page)
-    {
-        $query = $this->filter($filterGroups, $logicalOperator, $targetingIsEnabled, $filterBy, $page);
-
-        return $query->get();
-    }
-
-    /**
-     * Get a paginated ordered list of all subscribers matching given criteria.
-     * @param Bot   $bot
-     * @param int   $page
-     * @param array $filterBy
-     * @param array $orderBy
-     * @param int   $perPage
-     * @return Paginator
-     */
-    public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage)
-    {
-        $filterBy[] = ['type' => 'exact', 'attribute' => 'bot_id', 'value' => $bot->id];
-
-        return $this->paginate($page, $filterBy, $orderBy, $perPage);
+        return $this->count($filter);
     }
 
     /**
@@ -142,7 +90,7 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
      */
     public function applyQueryFilter($query, array $filter)
     {
-        if ($filter['type'] === 'subscriber') {
+        if ($filter['operator'] === 'subscriber') {
 
             // If the filtering is not enabled. Then no subscribers should be matched.
             if (! $filter['filter']['enabled']) {
@@ -275,7 +223,7 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
 
         $filter = [
             '$and' => [
-                ['bot_id' => $bot->id],
+                ['bot_id' => $bot->_id],
                 ['id' => ['$in' => $subscriberIds]]
             ]
         ];
@@ -319,7 +267,7 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
             $targetingIsEnabled,
             $filterBy,
             $subscriber->page
-        )->where('_id', $subscriber->id)->exists();
+        )->where('_id', $subscriber->_id)->exists();
     }
 
     /**
@@ -357,18 +305,6 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
     }
 
     /**
-     * Attach tags to subscriber.
-     * @param Subscriber $subscriber
-     * @param array      $tags
-     * @param array      $attributes
-     * @param bool       $touch
-     */
-    public function attachTags(Subscriber $subscriber, array $tags, array $attributes = [], $touch = true)
-    {
-        $subscriber->tags()->attach($tags, $attributes, $touch);
-    }
-
-    /**
      * Detach tags from a subscriber.
      * @param Subscriber $subscriber
      * @param array      $tags
@@ -377,17 +313,6 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
     public function detachTags(Subscriber $subscriber, array $tags, $touch = true)
     {
         $subscriber->tags()->detach($tags, $touch);
-    }
-
-    /**
-     * Sync a subscriber's sequences
-     * @param Subscriber $subscriber
-     * @param array      $sequences
-     * @param bool       $detaching Whether or not to detach the attached tags which are not included in the passed $tags
-     */
-    public function syncSequences(Subscriber $subscriber, array $sequences, $detaching = true)
-    {
-        $subscriber->sequences()->sync($sequences, $detaching);
     }
 
     /**
@@ -438,5 +363,24 @@ class DBSubscriberRepository extends BaseDBRepository implements SubscriberRepos
         }
 
         return $update;
+    }
+
+
+    /**
+     * Get an ordered list of all active subscribers matching some filtration criteria.
+     * @param Sequence|Broadcast $model
+     * @param array              $filterBy
+     * @param array              $orderBy
+     * @return \Illuminate\Support\Collection
+     */
+    public function getActiveTargetAudience($model, array $filterBy = [], array $orderBy = [])
+    {
+        $filterBy = array_merge([
+            ['operator' => '=', 'key' => 'active', 'value' => true],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $model->bot_id],
+            ['operator' => 'subscriber', 'filter' => $model->filter],
+        ], $filterBy);
+
+        return $this->getAll($filterBy, $orderBy);
     }
 }

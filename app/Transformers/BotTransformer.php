@@ -1,6 +1,7 @@
 <?php namespace App\Transformers;
 
 use App\Models\Bot;
+use MongoDB\BSON\ObjectID;
 
 class BotTransformer extends BaseTransformer
 {
@@ -23,7 +24,7 @@ class BotTransformer extends BaseTransformer
             'timezone_offset' => $bot->timezone_offset,
             'tags'            => $bot->tags,
         ];
-        
+
         if ($subscriberId = $this->getSubscriberId($bot)) {
             $ret['subscriber_id'] = $subscriberId;
         }
@@ -88,8 +89,8 @@ class BotTransformer extends BaseTransformer
         }
 
         foreach ($bot->users as $user) {
-            if ($user['user_id'] === $bot->current_user->id) {
-                return $user['subscriber_id'];
+            if ($user['user_id'] === $bot->current_user->_id) {
+                return $user['subscriber_id']->__toString();
             }
         }
 

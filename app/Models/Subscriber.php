@@ -8,6 +8,7 @@
  * @property \Carbon\Carbon $last_unsubscribed_at
  * @property string         $first_name
  * @property string         $last_name
+ * @property string         $full_name
  * @property string         $avatar_url
  * @property string         $gender
  * @property \Carbon\Carbon $last_contacted_at
@@ -18,5 +19,10 @@ class Subscriber extends BaseModel
 {
 
     public $dates = ['last_contacted_at', 'last_subscribed_at', 'last_unsubscribed_at'];
+
+    public function getFullNameAttribute()
+    {
+        return $this->first_name . ' ' . $this->last_name;
+    }
 
 }

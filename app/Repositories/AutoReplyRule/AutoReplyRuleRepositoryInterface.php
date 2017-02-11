@@ -2,20 +2,10 @@
 
 use App\Models\Bot;
 use App\Models\AutoReplyRule;
-use App\Repositories\CommonRepositoryInterface;
-use Illuminate\Pagination\Paginator;
+use App\Repositories\AssociatedWithBotRepositoryInterface;
 
-interface AutoReplyRuleRepositoryInterface extends CommonRepositoryInterface
+interface AutoReplyRuleRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
-
-    /**
-     * Find an auto reply rule by his artificial ID.
-     * @param int $id
-     * @param Bot $bot
-     * @return AutoReplyRule|null
-     */
-    public function findByIdForBot($id, Bot $bot);
-
     /**
      * Get the first matching auto reply rule.
      * @param string $keyword
@@ -23,14 +13,4 @@ interface AutoReplyRuleRepositoryInterface extends CommonRepositoryInterface
      * @return AutoReplyRule|null
      */
     public function getMatchingRuleForPage($keyword, Bot $bot);
-
-    /**
-     * @param Bot   $bot
-     * @param int   $page
-     * @param array $filterBy
-     * @param array $orderBy
-     * @param int   $perPage
-     * @return Paginator
-     */
-    public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage);
 }

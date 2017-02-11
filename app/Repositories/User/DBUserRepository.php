@@ -4,9 +4,9 @@ use DB;
 use App\Models\Bot;
 use App\Models\User;
 use App\Models\Subscriber;
-use App\Repositories\BaseDBRepository;
+use App\Repositories\DBBaseRepository;
 
-class DBUserRepository extends BaseDBRepository implements UserRepositoryInterface
+class DBUserBaseRepository extends DBBaseRepository implements UserRepositoryInterface
 {
 
     /**

@@ -14,19 +14,16 @@ class RepositoryServiceProvider extends ServiceProvider
     public function register()
     {
         $interfaceToConcreteMap = [
-            Repositories\Bot\BotRepositoryInterface::class               => Repositories\Bot\DBBotRepository::class,
-            Repositories\Tag\TagRepository::class                        => Repositories\Tag\EloquentTagRepository::class,
-            Repositories\User\UserRepositoryInterface::class             => Repositories\User\DBUserRepository::class,
-            Repositories\Filter\FilterRepository::class                  => Repositories\Filter\DBFilterRepository::class,
-            Repositories\Sequence\SequenceRepositoryInterface::class     => Repositories\Sequence\DBSequenceRepository::class,
-            Repositories\Template\TemplateRepositoryInterface::class     => Repositories\Template\DBTemplateRepository::class,
-            Repositories\Broadcast\BroadcastRepository::class            => Repositories\Broadcast\DBBroadcastRepository::class,
-            Repositories\Subscriber\SubscriberRepositoryInterface::class => Repositories\Subscriber\DBSubscriberRepository::class,
-            Repositories\PaymentPlan\PaymentPlanRepository::class        => Repositories\PaymentPlan\EloquentPaymentPlanRepository::class,
-            Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface::class => Repositories\AutoReplyRule\DBAutoReplyRuleRepository::class,
-            Repositories\Subscriber\SubscriberHistoryRepository::class         => Repositories\Subscriber\DBSubscriberHistoryRepository::class,
-            Repositories\MessagePreview\MessagePreviewRepository::class        => Repositories\MessagePreview\DBMessagePreviewRepository::class,
-            Repositories\MessageInstance\MessageInstanceRepository::class      => Repositories\MessageInstance\EloquentMessageInstanceRepository::class,
+            Repositories\Bot\BotRepositoryInterface::class                       => Repositories\Bot\DBBotBaseRepository::class,
+            Repositories\User\UserRepositoryInterface::class                     => Repositories\User\DBUserBaseRepository::class,
+            Repositories\Sequence\SequenceRepositoryInterface::class             => Repositories\Sequence\DBSequenceBaseRepository::class,
+            Repositories\Template\TemplateRepositoryInterface::class             => Repositories\Template\DBTemplateBaseRepository::class,
+            Repositories\Broadcast\BroadcastRepositoryInterface::class           => Repositories\Broadcast\DBBroadcastBaseRepository::class,
+            Repositories\Subscriber\SubscriberRepositoryInterface::class         => Repositories\Subscriber\DBSubscriberBaseRepository::class,
+            Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface::class   => Repositories\AutoReplyRule\DBAutoReplyRuleBaseRepository::class,
+            Repositories\MessagePreview\MessagePreviewRepositoryInterface::class => Repositories\MessagePreview\DBMessagePreviewBaseRepository::class,
+
+            Repositories\MessageInstance\MessageHistoryRepositoryInterface::class => Repositories\MessageInstance\DBMessageHistoryRepository::class,
         ];
 
         foreach ($interfaceToConcreteMap as $interface => $concrete) {

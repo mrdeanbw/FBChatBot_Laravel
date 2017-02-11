@@ -3,6 +3,7 @@
 use App\Models\Bot;
 use App\Services\FacebookAPIAdapter;
 use App\Services\Facebook\MessengerThread;
+use App\Services\FacebookMessageMapper;
 
 class UpdateMainMenuOnFacebook extends BaseJob
 {
@@ -12,6 +13,7 @@ class UpdateMainMenuOnFacebook extends BaseJob
      */
     private $bot;
 
+    protected $pushErrorsOnFail = true;
     protected $failMessageBody = "Failed to update the main menu on Facebook. We are looking into it!";
 
     /**
@@ -28,15 +30,14 @@ class UpdateMainMenuOnFacebook extends BaseJob
     /**
      * Execute the job.
      *
-     * @param FacebookAPIAdapter $FacebookAdapter
-     * @param MessengerThread    $MessengerThreads
+     * @param MessengerThread $MessengerThreads
      * @throws \Exception
      */
-    public function handle(FacebookAPIAdapter $FacebookAdapter, MessengerThread $MessengerThreads)
+    public function handle(MessengerThread $MessengerThreads)
     {
-        $blocks = $FacebookAdapter->mapMainMenuButtons($this->bot);
+        $messages = (new FacebookMessageMapper($this->bot))->mapMainMenuButtons();
 
-        $response = $MessengerThreads->setPersistentMenu($this->bot->page->access_token, $blocks);
+        $response = $MessengerThreads->setPersistentMenu($this->bot->page->access_token, $messages);
 
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 

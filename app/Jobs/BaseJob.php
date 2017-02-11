@@ -12,7 +12,7 @@ abstract class BaseJob implements ShouldQueue
 
     protected $userId;
 
-    protected $pushErrorsOnFail = true;
+    protected $pushErrorsOnFail = false;
     protected $failMessageTitle = "Unexpected Error!";
     protected $failMessageBody = "An unexpected error has occurred. We are looking into it!";
 

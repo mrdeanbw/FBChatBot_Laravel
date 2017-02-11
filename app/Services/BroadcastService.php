@@ -1,65 +1,39 @@
 <?php namespace App\Services;
 
-use App\Models\AudienceFilter;
-use DB;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Broadcast;
-use App\Models\Subscriber;
-use App\Repositories\Broadcast\BroadcastRepository;
+use App\Models\AudienceFilter;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Repositories\Broadcast\BroadcastRepositoryInterface;
 
 class BroadcastService
 {
 
     /**
-     * @type MessageService
+     * @type TemplateService
      */
-    private $messageBlocks;
-    /**
-     * @type SubscriberService
-     */
-    private $audience;
+    private $templates;
     /**
      * @type TimezoneService
      */
     private $timezones;
     /**
-     * @type FilterGroupService
-     */
-    private $filterGroups;
-    /**
-     * @type BroadcastRepository
+     * @type BroadcastRepositoryInterface
      */
     private $broadcastRepo;
-    /**
-     * @type TemplateService
-     */
-    private $templates;
 
     /**
      * BroadcastService constructor.
-     * @param BroadcastRepository $broadcastRepo
-     * @param MessageService      $messageBlocks
-     * @param SubscriberService   $audience
-     * @param TimezoneService     $timezones
-     * @param FilterGroupService  $filterGroups
-     * @param TemplateService     $templates
+     * @param TemplateService              $templates
+     * @param TimezoneService              $timezones
+     * @param BroadcastRepositoryInterface $broadcastRepo
      */
-    public function __construct(
-        BroadcastRepository $broadcastRepo,
-        MessageService $messageBlocks,
-        SubscriberService $audience,
-        TimezoneService $timezones,
-        FilterGroupService $filterGroups,
-        TemplateService $templates
-    ) {
-        $this->messageBlocks = $messageBlocks;
-        $this->audience = $audience;
+    public function __construct(TemplateService $templates, TimezoneService $timezones, BroadcastRepositoryInterface $broadcastRepo)
+    {
         $this->timezones = $timezones;
-        $this->filterGroups = $filterGroups;
-        $this->broadcastRepo = $broadcastRepo;
         $this->templates = $templates;
+        $this->broadcastRepo = $broadcastRepo;
     }
 
     /**
@@ -124,8 +98,8 @@ class BroadcastService
         $template = $this->templates->createImplicit($input['template']['messages'], $bot);
 
         $data = array_merge($this->cleanInput($input, $bot), [
-            'bot_id'      => $bot->id,
-            'template_id' => $template->id
+            'bot_id'      => $bot->_id,
+            'template_id' => $template->_id
         ]);
 
         /** @type Broadcast $broadcast */
@@ -177,8 +151,10 @@ class BroadcastService
                 'status' => 'pending',
                 'filter' => new AudienceFilter($input['filter'], true),
             ],
-            $this->calculateScheduleDateTime($data, $bot)
+            $this->calculateFirstScheduleDateTime($data, $bot)
         );
+
+        $data['notification'] = strtoupper($data['notification']);
 
         return $data;
     }
@@ -189,7 +165,7 @@ class BroadcastService
      * @param Bot   $bot
      * @return array [Carbon, double|null]
      */
-    private function calculateScheduleDateTime(array $data, Bot $bot)
+    private function calculateFirstScheduleDateTime(array $data, Bot $bot)
     {
         // start by creating a copy from the original broadcast send at date/time.
         $sendAt = $this->getTimeInUTC($data['date'], $data['time'], $bot->timezone_offset)->copy();
@@ -204,32 +180,45 @@ class BroadcastService
 
         $sendAt->setTimezone($this->getPrettyTimezoneOffset($offset));
 
+
         // If the timezone mode is limit time, then we will make sure that the send date / time falls in this limit.
         if ($data['timezone'] == 'limit_time') {
-            $lowerBound = $sendAt->copy()->hour($data['send_from']);
-            $upperBound = $sendAt->copy()->hour($data['send_to']);
-
-            // If the upper bound date is less than the lower bound, then add 1 day to the upper bound to fix it.
-            if ($upperBound->lt($lowerBound)) {
-                $upperBound->addDay(1);
-            }
-
-            // If the send at date/time is less than the lower bound. Send it at the lower bound date/time.
-            if ($sendAt->lt($lowerBound)) {
-                $sendAt = $lowerBound;
-            }
-
-            // If the send at date/time is greater than the upper bound. Send it at the upper bound date/time.
-            if ($sendAt->gt($upperBound)) {
-                $sendAt = $upperBound;
-            }
-
-            // Otherwise, it falls between lower and upper bound. Don't change it.
+            $sendAt = $this->applyLimitTime($sendAt, $data['send_from'], $data['send_to']);
         }
 
         return [
             'next_send_at'    => $sendAt,
             'next_utc_offset' => $offset
+        ];
+    }
+
+    /**
+     * @param Broadcast $broadcast
+     * @return array
+     */
+    public function calculateNextScheduleDateTime(Broadcast $broadcast)
+    {
+        if ($broadcast->timezone == 'same_time') {
+            return ['next_send_at' => null];
+        }
+
+        $sendAt = null;
+
+        if ($nextTimezone = $this->timezones->getNext($broadcast->next_utc_offset)) {
+
+            $minutes = 60.0 * ($nextTimezone - $broadcast->next_utc_offset);
+
+            $sendAt = $broadcast->next_send_at->addMinutes((int)$minutes);
+
+            if ($broadcast->timezone == 'limit_time') {
+                $sendAt = $this->applyLimitTime($sendAt, $broadcast->send_from, $broadcast->send_to);
+            }
+        }
+
+
+        return [
+            'next_send_at'    => $sendAt,
+            'next_utc_offset' => $nextTimezone
         ];
     }
 
@@ -273,30 +262,33 @@ class BroadcastService
     }
 
     /**
-     * @param Broadcast  $broadcast
-     * @param Subscriber $subscriber
-     * @param int        $incrementBy
+     * If the timezone mode is limit time, then we will make sure that the send date / time falls in this limit.
+     * @param Carbon $dateTime
+     * @param int    $from
+     * @param int    $to
+     * @return Carbon
      */
-    public function incrementBroadcastSubscriberClicks(Broadcast $broadcast, Subscriber $subscriber, $incrementBy = 1)
+    private function applyLimitTime(Carbon $dateTime, $from, $to)
     {
-        $this->broadcastRepo->updateBroadcastSubscriberClicks($broadcast, $subscriber, $incrementBy);
-    }
+        $lowerBound = $dateTime->copy()->hour($from);
+        $upperBound = $dateTime->copy()->hour($to);
 
-    /**
-     * @param Subscriber $subscriber
-     * @param  string    $dateTime
-     */
-    public function updateBroadcastSubscriberDeliveredAt(Subscriber $subscriber, $dateTime)
-    {
-        $this->broadcastRepo->updateBroadcastSubscriberDeliveredAt($subscriber, $dateTime);
-    }
+        // If the upper bound date is less than the lower bound, then add 1 day to the upper bound to fix it.
+        if ($upperBound->lt($lowerBound)) {
+            $upperBound->addDay(1);
+        }
 
-    /**
-     * @param Subscriber $subscriber
-     * @param string     $dateTime
-     */
-    public function updateBroadcastSubscriberReadAt(Subscriber $subscriber, $dateTime)
-    {
-        $this->broadcastRepo->updateBroadcastSubscriberReadAt($subscriber, $dateTime);
+        // If the send at date/time is less than the lower bound. Send it at the lower bound date/time.
+        if ($dateTime->lt($lowerBound)) {
+            $dateTime = $lowerBound;
+        }
+
+        // If the send at date/time is greater than the upper bound. Send it at the upper bound date/time.
+        if ($dateTime->gt($upperBound)) {
+            $dateTime = $upperBound;
+        }
+
+        // Otherwise, it falls between lower and upper bound. Don't change it.
+        return $dateTime;
     }
 }

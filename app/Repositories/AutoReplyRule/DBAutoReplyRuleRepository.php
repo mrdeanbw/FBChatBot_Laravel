@@ -2,44 +2,17 @@
 
 use App\Models\Bot;
 use App\Models\AutoReplyRule;
-use Illuminate\Pagination\Paginator;
-use App\Repositories\BaseDBRepository;
 use Illuminate\Database\Eloquent\Builder;
+use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBAutoReplyRuleRepository extends BaseDBRepository implements AutoReplyRuleRepositoryInterface
+class DBAutoReplyRuleBaseRepository extends DBAssociatedWithBotRepository implements AutoReplyRuleRepositoryInterface
 {
 
     public function model()
     {
         return AutoReplyRule::class;
     }
-
-    /**
-     * Find an auto reply rule by his artificial ID.
-     * @param int $id
-     * @param Bot $bot
-     * @return AutoReplyRule|null
-     */
-    public function findByIdForBot($id, Bot $bot)
-    {
-        return AutoReplyRule::where('bot_id', $bot->id)->find($id);
-    }
-
-    /**
-     * @param Bot   $bot
-     * @param int   $page
-     * @param array $filterBy
-     * @param array $orderBy
-     * @param int   $perPage
-     * @return Paginator
-     */
-    public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage)
-    {
-        $filterBy[] = ['type' => 'exact', 'attribute' => 'bot_id', 'value' => $bot->id];
-
-        return $this->paginate($page, $filterBy, $orderBy, $perPage);
-    }
-
+    
     /**
      * Get the first matching auto reply rule.
      * @param string $keyword
@@ -50,7 +23,7 @@ class DBAutoReplyRuleRepository extends BaseDBRepository implements AutoReplyRul
     {
 
         /** @type Builder $query */
-        $query = AutoReplyRule::where("bot_id", $bot->id)->where(function (Builder $query) use ($keyword) {
+        $query = AutoReplyRule::where("bot_id", $bot->_id)->where(function (Builder $query) use ($keyword) {
 
             $query->orWhere(function ($subQuery) use ($keyword) {
                 $subQuery->where('mode', 'is')->where('keyword', $keyword);

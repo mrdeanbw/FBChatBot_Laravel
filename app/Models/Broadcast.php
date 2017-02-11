@@ -13,10 +13,13 @@
  * @property int            $send_from
  * @property \Carbon\Carbon $created_at
  * @property AudienceFilter $filter
+ * @property \Carbon\Carbon $next_send_at
+ * @property double         $next_utc_offset
+ * @property string         $bot_id
  */
 class Broadcast extends BaseModel
 {
-    
+
     use HasEmbeddedArrayModels;
 
     protected $dates = ['next_send_at'];

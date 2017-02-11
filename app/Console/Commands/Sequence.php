@@ -141,7 +141,8 @@ class Sequence extends Command
         }
 
         $this->info("Sending using facebook API.");
-        $this->FacebookAdapter->sendTemplate($sequenceMessage, $subscriber);
+        // @todo dispatch a new job for this.
+        $this->FacebookAdapter->sendMessages($sequenceMessage, $subscriber);
 
         return true;
     }

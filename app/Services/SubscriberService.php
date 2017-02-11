@@ -1,20 +1,17 @@
 <?php namespace App\Services;
 
-use App\Repositories\Bot\BotRepositoryInterface;
-use DB;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Sequence;
+use App\Models\Broadcast;
 use App\Models\Subscriber;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use App\Services\Facebook\FacebookUser;
-use App\Events\SubscriberTagsWereAltered;
-use App\Repositories\Filter\FilterRepository;
+use App\Repositories\Bot\BotRepositoryInterface;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
-use App\Repositories\Subscriber\SubscriberHistoryRepository;
 
 class SubscriberService
 {
@@ -40,14 +37,6 @@ class SubscriberService
      */
     private $subscriberRepo;
     /**
-     * @type FilterRepository
-     */
-    private $filterRepo;
-    /**
-     * @type SubscriberHistoryRepository
-     */
-    private $subscriberHistoryRepo;
-    /**
      * @type SequenceRepositoryInterface
      */
     private $sequenceRepo;
@@ -63,26 +52,20 @@ class SubscriberService
     /**
      * AudienceService constructor.
      * @param SubscriberRepositoryInterface $subscriberRepo
-     * @param SubscriberHistoryRepository   $subscriberHistoryRepo
      * @param SequenceRepositoryInterface   $sequenceRepo
-     * @param FilterRepository              $filterRepo
      * @param FacebookUser                  $FacebookUsers
      * @param SequenceService               $sequences
      * @param BotRepositoryInterface        $botRepo
      */
     public function __construct(
         SubscriberRepositoryInterface $subscriberRepo,
-        SubscriberHistoryRepository $subscriberHistoryRepo,
         SequenceRepositoryInterface $sequenceRepo,
-        FilterRepository $filterRepo,
         FacebookUser $FacebookUsers,
         SequenceService $sequences,
         BotRepositoryInterface $botRepo
     ) {
-        $this->filterRepo = $filterRepo;
         $this->FacebookUsers = $FacebookUsers;
         $this->subscriberRepo = $subscriberRepo;
-        $this->subscriberHistoryRepo = $subscriberHistoryRepo;
         $this->sequenceRepo = $sequenceRepo;
         $this->sequences = $sequences;
         $this->botRepo = $botRepo;
@@ -144,7 +127,7 @@ class SubscriberService
             'timezone'             => $publicProfile->timezone,
             'gender'               => $publicProfile->gender,
             'active'               => $isActive,
-            'bot_id'               => $bot->id,
+            'bot_id'               => $bot->_id,
             'last_subscribed_at'   => $isActive? Carbon::now() : null,
             'last_unsubscribed_at' => $isActive? Carbon::now() : null,
             'tags'                 => [],
@@ -158,13 +141,11 @@ class SubscriberService
      * Make a subscriber "active"
      * @param int $id the subscriber ID
      * @param Bot $page
-     * @return Subscriber
      */
     public function resubscribe($id, Bot $page)
     {
         $subscriber = $this->findByFacebookId($id, $page);
-
-        return $this->subscriberRepo->resubscribe($subscriber);
+        $this->subscriberRepo->resubscribe($subscriber);
     }
 
     /**
@@ -266,8 +247,8 @@ class SubscriberService
 
         if ($filter) {
             $ret[] = [
-                'type'   => 'subscriber',
-                'filter' => $filter
+                'operator' => 'subscriber',
+                'filter'   => $filter
             ];
         }
 
@@ -277,22 +258,22 @@ class SubscriberService
                 continue;
             }
 
-            $type = 'exact';
+            $operator = '=';
 
             $attribute = $this->filterFieldsMap[$attribute];
 
             if (in_array($attribute, ['first_name', 'last_name'])) {
-                $type = 'prefix';
+                $operator = 'prefix';
             }
 
             if (in_array($attribute, ['created_at', 'last_contacted_at'])) {
-                $type = 'date';
+                $operator = 'date';
             }
 
-            $ret[] = compact('type', 'attribute', 'value');
+            $ret[] = compact('operator', 'attribute', 'value');
         }
 
-        $this->addIsActiveFilter($ret);
+        $this->addActiveFilter($ret);
 
         return $ret;
     }
@@ -300,10 +281,10 @@ class SubscriberService
     /**
      * @param array $filterBy
      */
-    private function addIsActiveFilter(array &$filterBy)
+    private function addActiveFilter(array &$filterBy)
     {
         $filterBy[] = [
-            'type'      => 'exact',
+            'operator'  => '=',
             'attribute' => 'active',
             'value'     => true
         ];
@@ -312,10 +293,10 @@ class SubscriberService
     /**
      * Return an associative array of order fields.
      * Every key is the attribute to be sorted by, and the value is either "asc" / "desc"
-     * @param $orderBy
+     * @param array $orderBy
      * @return array
      */
-    private function normalizeOrderBy($orderBy)
+    private function normalizeOrderBy(array $orderBy)
     {
         $ret = [];
         foreach ($orderBy as $attribute => $order) {
@@ -338,7 +319,7 @@ class SubscriberService
     {
         $subscriber = $this->findForBotOrFail($subscriberId, $bot);
         $tags = $input['tags'];
-        $this->botRepo->createTagsForBot($bot->id, $tags);
+        $this->botRepo->createTagsForBot($bot->_id, $tags);
 
         return $this->subscriberRepo->update($subscriber, compact('tags'));
     }
@@ -352,53 +333,9 @@ class SubscriberService
     public function batchUpdate(array $input, array $subscriberIds, Bot $bot)
     {
         if ($subscriberIds) {
-            $this->botRepo->createTagsForBot($bot->id, array_merge($input['add_tags'], $input['remove_tags']));
+            $this->botRepo->createTagsForBot($bot->_id, array_merge($input['add_tags'], $input['remove_tags']));
             $this->subscriberRepo->bulkUpdateForBot($bot, $subscriberIds, $input);
         }
-    }
-
-    /**
-     * Get an ordered list of all active subscribers matching some filtration criteria.
-     * @param HasFilterGroupsInterface $model
-     * @param array                    $filterBy
-     * @param array                    $orderBy
-     * @return Collection
-     */
-    public function getActiveTargetAudience(HasFilterGroupsInterface $model, array $filterBy = [], array $orderBy = [])
-    {
-        $filterBy = $this->addIsActiveFilter($filterBy);
-
-        $groups = $this->filterRepo->getFilterGroupsAndRulesForModel($model)->toArray();
-
-        return $this->subscriberRepo->getAllForPage(
-            $groups,
-            $model->filter_type,
-            $model->filter_enabled,
-            $filterBy,
-            $orderBy,
-            $model->page
-        );
-    }
-
-    /**
-     * Get the count of active subscribers matching some filtration criteria.
-     * @param HasFilterGroupsInterface $model
-     * @param array                    $filterBy
-     * @return int
-     */
-    public function activeTargetAudienceCount(HasFilterGroupsInterface $model, array $filterBy = [])
-    {
-        $filterBy = $this->addIsActiveFilter($filterBy);
-
-        $groups = $this->filterRepo->getFilterGroupsAndRulesForModel($model)->toArray();
-
-        return $this->subscriberRepo->countForPage(
-            $groups,
-            $model->filter_type,
-            $model->filter_enabled,
-            $filterBy,
-            $model->page
-        );
     }
 
     /**
@@ -410,7 +347,7 @@ class SubscriberService
      */
     public function subscriberIsAmongActiveTargetAudience(Subscriber $subscriber, HasFilterGroupsInterface $model, array $filterBy = [])
     {
-        $filterBy = $this->addIsActiveFilter($filterBy);
+        $filterBy = $this->addActiveFilter($filterBy);
 
         $groups = $this->filterRepo->getFilterGroupsAndRulesForModel($model)->toArray();
 
@@ -436,14 +373,14 @@ class SubscriberService
     /**
      * Return the total number of subscription actions in a given period of time.
      * Calculated as the difference between subscription and unsubscription actions.
-     * @param Bot           $page
+     * @param Bot           $bot
      * @param Carbon|string $date
      * @return integer
      */
-    public function totalSubscriptions(Bot $page, $date)
+    public function totalSubscriptions(Bot $bot, $date)
     {
-        $subscriptions = $this->subscriberHistoryRepo->subscriptionCountForPage($date, $page);
-        $unsubscriptions = $this->subscriberHistoryRepo->unsubscriptionCountForPage($date, $page);
+        $subscriptions = $this->subscriberRepo->subscriptionCountForBot($bot, $date);
+        $unsubscriptions = $this->subscriberRepo->unsubscriptionCountForBot($bot, $date);
 
         return $subscriptions - $unsubscriptions;
     }
@@ -529,5 +466,4 @@ class SubscriberService
         $this->sequenceRepo->deleteSequenceScheduledMessageForSubscriber($subscriber, $sequence);
         $this->subscriberRepo->detachSequences($subscriber, (array)$sequence);
     }
-
 }

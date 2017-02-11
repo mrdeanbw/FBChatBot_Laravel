@@ -6,7 +6,7 @@ use App\Models\Button;
 use App\Models\MainMenu;
 use MongoDB\BSON\ObjectID;
 use App\Jobs\UpdateMainMenuOnFacebook;
-use App\Repositories\Bot\DBBotRepository;
+use App\Repositories\Bot\DBBotBaseRepository;
 use App\Services\Facebook\MessengerThread;
 use Dingo\Api\Exception\ValidationHttpException;
 
@@ -27,22 +27,22 @@ class MainMenuService
      */
     private $FacebookAdapter;
     /**
-     * @type DBBotRepository
+     * @type DBBotBaseRepository
      */
     private $botRepo;
 
     /**
      * MainMenuService constructor.
-     * @param MessageService     $messages
-     * @param MessengerThread    $facebookThread
-     * @param FacebookAPIAdapter $FacebookAdapter
-     * @param DBBotRepository    $botRepo
+     * @param MessageService      $messages
+     * @param MessengerThread     $facebookThread
+     * @param FacebookAPIAdapter  $FacebookAdapter
+     * @param DBBotBaseRepository $botRepo
      */
     public function __construct(
         MessageService $messages,
         MessengerThread $facebookThread,
         FacebookAPIAdapter $FacebookAdapter,
-        DBBotRepository $botRepo
+        DBBotBaseRepository $botRepo
     ) {
         $this->botRepo = $botRepo;
         $this->messages = $messages;
@@ -143,7 +143,7 @@ class MainMenuService
             return new Button($button);
         }, $input['buttons']);
 
-        $buttons = $this->messages->makeMessages($buttons, $bot->main_menu->buttons, $bot->id);
+        $buttons = $this->messages->makeMessages($buttons, $bot->main_menu->buttons, $bot->_id);
         if (! $buttons) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }

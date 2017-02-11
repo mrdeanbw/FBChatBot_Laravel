@@ -6,7 +6,7 @@ use App\Models\Subscriber;
 use App\Models\MessagePreview;
 use App\Repositories\Bot\BotRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Repositories\MessagePreview\MessagePreviewRepository;
+use App\Repositories\MessagePreview\MessagePreviewRepositoryInterface;
 
 class MessagePreviewService
 {
@@ -20,7 +20,7 @@ class MessagePreviewService
      */
     private $FacebookAdapter;
     /**
-     * @type MessagePreviewRepository
+     * @type MessagePreviewRepositoryInterface
      */
     private $messagePreviewRepo;
     /**
@@ -30,16 +30,16 @@ class MessagePreviewService
 
     /**
      * MessagePreviewService constructor.
-     * @param TemplateService          $templates
-     * @param BotRepositoryInterface   $botRepo
-     * @param FacebookAPIAdapter       $FacebookAdapter
-     * @param MessagePreviewRepository $messagePreviewRepo
+     * @param TemplateService                   $templates
+     * @param BotRepositoryInterface            $botRepo
+     * @param FacebookAPIAdapter                $FacebookAdapter
+     * @param MessagePreviewRepositoryInterface $messagePreviewRepo
      */
     public function __construct(
         TemplateService $templates,
         BotRepositoryInterface $botRepo,
         FacebookAPIAdapter $FacebookAdapter,
-        MessagePreviewRepository $messagePreviewRepo
+        MessagePreviewRepositoryInterface $messagePreviewRepo
     ) {
         $this->botRepo = $botRepo;
         $this->templates = $templates;
@@ -61,7 +61,7 @@ class MessagePreviewService
         $messagePreview = $this->create($input, $user, $bot);
 
         // @todo dispatch a new job for this.
-        $this->FacebookAdapter->sendTemplate($messagePreview->template, $subscriber, $bot);
+        $this->FacebookAdapter->sendMessages($messagePreview->template, $subscriber, $bot);
 
         return $messagePreview;
     }
@@ -77,13 +77,13 @@ class MessagePreviewService
     {
         $input['template']['messages'] = $this->removeMessageIds($input['template']['messages']);
 
-        $template = $this->templates->createImplicit($input['template']['messages'], $bot->id);
+        $template = $this->templates->createImplicit($input['template']['messages'], $bot->_id);
 
         /** @type MessagePreview $messagePreview */
         $messagePreview = $this->messagePreviewRepo->create([
-            'user_id'     => $user->id,
-            'bot_id'      => $bot->id,
-            'template_id' => $template->id
+            'user_id'     => $user->_id,
+            'bot_id'      => $bot->_id,
+            'template_id' => $template->_id
         ]);
 
         $messagePreview->template = $template;

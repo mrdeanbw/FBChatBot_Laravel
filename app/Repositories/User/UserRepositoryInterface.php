@@ -3,9 +3,9 @@
 use App\Models\Bot;
 use App\Models\User;
 use App\Models\Subscriber;
-use App\Repositories\CommonRepositoryInterface;
+use App\Repositories\BaseRepositoryInterface;
 
-interface UserRepositoryInterface extends CommonRepositoryInterface
+interface UserRepositoryInterface extends BaseRepositoryInterface
 {
 
     /**

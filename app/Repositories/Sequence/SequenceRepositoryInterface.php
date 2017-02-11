@@ -1,30 +1,14 @@
 <?php namespace App\Repositories\Sequence;
 
-use App\Models\Bot;
 use App\Models\Sequence;
-use App\Models\SequenceMessage;
 use App\Models\Subscriber;
-use App\Repositories\CommonRepositoryInterface;
+use App\Models\SequenceMessage;
 use Illuminate\Support\Collection;
+use App\Repositories\AssociatedWithBotRepositoryInterface;
 
-interface SequenceRepositoryInterface extends CommonRepositoryInterface
+interface SequenceRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
-
-    /**
-     * Return list of all sequences that belong to a bot.
-     * @param Bot $bot
-     * @return Collection
-     */
-    public function getAllForBot(Bot $bot);
-
-    /**
-     * Find a sequence for a given bot.
-     * @param      $id
-     * @param Bot  $bot
-     * @return Sequence|null
-     */
-    public function findByIdForBot($id, Bot $bot);
-
+    
     /**
      * Create a message and attach it to sequence.
      * @param Sequence        $sequence

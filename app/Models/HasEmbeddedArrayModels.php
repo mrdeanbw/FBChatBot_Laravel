@@ -1,8 +1,5 @@
 <?php namespace App\Models;
 
-/**
- * Class HasEmbeddedModels
- */
 trait HasEmbeddedArrayModels
 {
     /**

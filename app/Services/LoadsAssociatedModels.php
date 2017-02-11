@@ -1,13 +1,14 @@
 <?php namespace App\Services;
 
-use App\Repositories\BaseDBRepository;
+use App\Models\BaseModel;
+use App\Repositories\DBBaseRepository;
 
 trait LoadsAssociatedModels
 {
 
     /**
-     * @param       $model
-     * @param array $modelsToLoad
+     * @param BaseModel $model
+     * @param string[]  $modelsToLoad
      */
     public function loadModelsIfNotLoaded(&$model, array $modelsToLoad)
     {
@@ -21,13 +22,16 @@ trait LoadsAssociatedModels
     }
 
     /**
-     * @param      $model
-     * @param      $modelToLoad
+     * @param BaseModel $model
+     * @param string    $modelToLoad
      * @return \App\Models\BaseModel|null
      */
     public function loadModel($model, $modelToLoad)
     {
         switch ($modelToLoad) {
+            case 'bot':
+                return $this->getRepo('bot')->findById($model->bot_id);
+
             case 'template':
                 return $this->getRepo('template')->findById($model->template_id);
 

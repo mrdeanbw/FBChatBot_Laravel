@@ -63,7 +63,7 @@ class TemplateService
     {
         $input['explicit'] = true;
 
-        return $this->create($input, $bot->id);
+        return $this->create($input, $bot->_id);
     }
 
     /**
@@ -137,7 +137,7 @@ class TemplateService
      */
     private function update(Template $template, array $input, Bot $bot)
     {
-        $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages, $bot->id);
+        $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages, $bot->_id);
         if (! $input['messages']) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }

@@ -1,9 +1,9 @@
 <?php namespace App\Repositories\MessagePreview;
 
 use App\Models\MessagePreview;
-use App\Repositories\BaseDBRepository;
+use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBMessagePreviewRepository extends BaseDBRepository implements MessagePreviewRepository
+class DBMessagePreviewBaseRepository extends DBAssociatedWithBotRepository implements MessagePreviewRepositoryInterface
 {
 
     /**

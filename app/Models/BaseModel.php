@@ -5,12 +5,13 @@ use Jenssegers\Mongodb\Eloquent\Model;
 /**
  * App\Models\Models
  *
- * @property int      $id
+ * @property string $id
+ * @property \MongoDB\BSON\ObjectID  $_id
  */
 abstract class BaseModel extends Model
 {
 
-    protected $guarded = ['_id'];
+    protected $guarded = ['_id', 'id'];
 
     /**
      * @param $query

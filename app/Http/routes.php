@@ -1,6 +1,5 @@
 <?php
 
-use Carbon\Carbon;
 use Dingo\Api\Routing\Router;
 
 /** @type Router $api */
@@ -16,7 +15,6 @@ $options = [
 $api->version('v1', $options, function (Router $api) {
 
     $api->get('/test', function () {
-        dd(Carbon::now()->toDayDateTimeString());
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');
@@ -107,5 +105,5 @@ $app->group(['prefix' => 'callback'], function () use ($app) {
     $app->post('stripe/web-hook', '\Laravel\Cashier\Http\Controllers\WebhookController@handleWebhook');
 });
 
+$app->get('/mb/{botId}/{buttonId}', 'ClickHandlingController@mainMenuButton');
 $app->get('/ba/{messageBlockHash}/{subscriberHash}', 'ClickHandlingController@handle');
-$app->get('/mb/{payload}', 'ClickHandlingController@mainMenuButton');

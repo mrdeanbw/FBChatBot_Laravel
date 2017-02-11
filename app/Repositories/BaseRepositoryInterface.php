@@ -1,15 +1,48 @@
 <?php namespace App\Repositories;
 
 use App\Models\BaseModel;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-interface CommonRepositoryInterface
+interface BaseRepositoryInterface
 {
-    
+
     /**
      * @return string
      */
     public function model();
+
+    /**
+     * @param array $filterBy
+     * @param array $orderBy
+     * @return Collection
+     */
+    public function getAll(array $filterBy, array $orderBy);
+
+    /**
+     * @param array $filterBy
+     * @param array $orderBy
+     * @return BaseModel
+     */
+    public function getOne(array $filterBy, array $orderBy);
+
+    /**
+     * @param array $filterBy
+     * @param array $orderBy
+     * @return int
+     */
+    public function count(array $filterBy, array $orderBy);
+
+    /**
+     * Get a paginated ordered list of all subscribers matching given criteria.
+     * @param int   $page
+     * @param array $filterBy
+     * @param array $orderBy
+     * @param int   $perPage
+     * @return Paginator
+     */
+    public function paginate($page, array $filterBy, array $orderBy, $perPage);
 
     /**
      * Find resource by ID.

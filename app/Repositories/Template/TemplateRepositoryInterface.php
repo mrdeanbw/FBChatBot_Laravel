@@ -3,19 +3,11 @@
 use App\Models\Bot;
 use App\Models\Template;
 use Illuminate\Support\Collection;
-use App\Repositories\CommonRepositoryInterface;
+use App\Repositories\AssociatedWithBotRepositoryInterface;
 
-interface TemplateRepositoryInterface extends CommonRepositoryInterface
+interface TemplateRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
 
-    /**
-     * Find a template for a given bot
-     * @param int $id
-     * @param Bot $bot
-     * @return Template|null
-     */
-    public function findByIdForPage($id, Bot $bot);
-    
     /**
      * Return a list of all explicit templates for a bot.
      * @param Bot $bot

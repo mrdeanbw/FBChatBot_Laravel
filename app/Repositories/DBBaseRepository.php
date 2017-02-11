@@ -1,24 +1,70 @@
 <?php namespace App\Repositories;
 
-use Carbon\Carbon;
 use App\Models\BaseModel;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\UTCDatetime;
+use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
-use MongoDB\BSON\UTCDatetime;
 
-abstract class BaseDBRepository implements CommonRepositoryInterface
+abstract class DBBaseRepository implements BaseRepositoryInterface
 {
 
     /**
-     * @param $id
+     * @param array $filterBy
+     * @param array $orderBy
+     * @return Collection
+     */
+    public function getAll(array $filterBy = [], array $orderBy = [])
+    {
+        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->get();
+    }
+
+    /**
+     * @param array $filterBy
+     * @param array $orderBy
+     * @return BaseModel|null
+     */
+    public function getOne(array $filterBy = [], array $orderBy = [])
+    {
+        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->first();
+    }
+
+    /**
+     * @param array $filterBy
+     * @param array $orderBy
+     * @return int
+     */
+    public function count(array $filterBy = [], array $orderBy = [])
+    {
+        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->count();
+    }
+
+
+    /**
+     * @param int   $page
+     * @param array $filterBy
+     * @param array $orderBy
+     * @param int   $perPage
+     * @return Paginator
+     */
+    public function paginate($page, array $filterBy, array $orderBy, $perPage)
+    {
+        $query = $this->applyFilterByAndOrderBy($filterBy, $orderBy);
+
+        return $query->paginate((int)$perPage, ['*'], 'page', (int)$page);
+    }
+
+    /**
+     * @param string|ObjectID $id
      * @return BaseModel
      */
     public function findById($id)
     {
-        /** @type string|BaseModel $model */
-        $model = $this->model();
+        $filter = [['operator' => '=', 'key' => '_id', 'value' => $id]];
 
-        return $model::find($id);
+        return $this->getOne($filter);
     }
 
     /**
@@ -27,10 +73,13 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
      */
     public function findByIdOrFail($id)
     {
-        /** @type string|BaseModel $model */
-        $model = $this->model();
+        $filter = [['operator' => '=', 'key' => '_id', 'value' => $id]];
 
-        return $model::findOrFail($id);
+        if (! is_null($result = $this->getOne($filter))) {
+            return $result;
+        }
+
+        throw (new ModelNotFoundException)->setModel($this->model(), $id);
     }
 
     /**
@@ -73,9 +122,11 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
     public function update($model, array $data)
     {
         $class = $this->model();
+
         $model->fill($data);
 
         $update = [];
+
         foreach (array_keys($data) as $key) {
             if (is_a($model->{$key}, \Carbon\Carbon::class)) {
                 $update[$key] = new UTCDateTime($model->{$key}->getTimestamp() * 1000);
@@ -84,7 +135,7 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
             }
         }
 
-        $class::where('_id', $model->id)->update($update);
+        return $class::where('_id', $model->_id)->update($update);
     }
 
     /**
@@ -97,29 +148,6 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
     }
 
     /**
-     * @param int   $page
-     * @param array $filterBy
-     * @param array $orderBy
-     * @param int   $perPage
-     * @return Paginator
-     */
-    public function paginate($page, array $filterBy, array $orderBy, $perPage)
-    {
-        /** @type string|BaseModel $model */
-        $model = $this->model();
-
-        $query = $model::query();
-
-        foreach ($filterBy as $filter) {
-            $this->applyQueryFilter($query, $filter);
-        }
-
-        $this->applyOrderBy($query, $orderBy);
-
-        return $query->paginate((int)$perPage, ['*'], 'page', (int)$page);
-    }
-
-    /**
      * @param array   $filter with the following keys: type, attribute and value
      * @param Builder $query
      * @return Builder
@@ -127,11 +155,7 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
     protected function applyQueryFilter($query, array $filter)
     {
 
-        switch ($filter['type']) {
-            case 'exact':
-                $query->where($filter['attribute'], '=', $filter['value']);
-                break;
-
+        switch ($filter['operator']) {
             case 'prefix':
                 $query->where($filter['attribute'], 'regexp', "/^{$filter['value']}.*?/");
                 break;
@@ -143,11 +167,14 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
             case 'date':
                 $query->date($filter['attribute'], $filter['value']);
                 break;
+            
+            default:
+                $query->where($filter['attribute'], $filter['operator'], $filter['value']);
+                
         }
 
         return $query;
     }
-
 
     /**
      * @param array   $orderBy
@@ -160,4 +187,24 @@ abstract class BaseDBRepository implements CommonRepositoryInterface
         }
     }
 
+    /**
+     * @param array $filterBy
+     * @param array $orderBy
+     * @return Builder
+     */
+    private function applyFilterByAndOrderBy(array $filterBy, array $orderBy)
+    {
+        /** @type string|BaseModel $model */
+        $model = $this->model();
+
+        $query = $model::query();
+
+        foreach ($filterBy as $filter) {
+            $this->applyQueryFilter($query, $filter);
+        }
+
+        $this->applyOrderBy($query, $orderBy);
+
+        return $query;
+    }
 }

@@ -35,12 +35,13 @@ class ClickHandlingController extends Controller
     }
 
     /**
-     * @param $payload
-     * @return \Illuminate\Http\Response|\Laravel\Lumen\Http\ResponseFactory
+     * @param string $botId
+     * @param string $buttonId
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Laravel\Lumen\Http\Redirector|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function mainMenuButton($payload)
+    public function mainMenuButton($botId, $buttonId)
     {
-        $redirectTo = $this->adapter->getMainMenuButtonUrl($payload);
+        $redirectTo = $this->adapter->getMainMenuButtonUrl($botId, $buttonId);
 
         // @todo redirect to the frontend with invalid button page.
         return is_null($redirectTo)? response("", 200) : redirect($redirectTo);

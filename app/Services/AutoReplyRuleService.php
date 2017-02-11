@@ -53,7 +53,7 @@ class AutoReplyRuleService
         if ($keyword = array_get($filterBy, 'keyword')) {
             $filterBy = [
                 [
-                    'type'      => 'contains',
+                    'operator'      => 'contains',
                     'attribute' => 'keyword',
                     'value'     => $keyword
                 ]
@@ -79,7 +79,7 @@ class AutoReplyRuleService
             'mode'        => $input['mode'],
             'keyword'     => $input['keyword'],
             'template_id' => $input['template']['id'],
-            'bot_id'      => $bot->id,
+            'bot_id'      => $bot->_id,
             'readonly'    => false,
         ];
 
@@ -148,7 +148,7 @@ class AutoReplyRuleService
             'unsubscribe' => ['stop', 'unsubscribe']
         ];
 
-        $bot_id = $bot->id;
+        $bot_id = $bot->_id;
 
         // Exact Match
         $mode = 'is';

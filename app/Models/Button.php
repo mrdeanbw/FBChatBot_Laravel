@@ -1,7 +1,5 @@
 <?php namespace App\Models;
 
-use MongoDB\BSON\ObjectID;
-
 /**
  * @property Template $template
  */
@@ -20,6 +18,10 @@ class Button extends Message
         'add_sequences'    => [],
         'remove_sequences' => [],
     ];
+    public $clicks = [
+        'total'  => 0,
+        'unique' =>
+   ];
 
     /**
      * Button constructor.

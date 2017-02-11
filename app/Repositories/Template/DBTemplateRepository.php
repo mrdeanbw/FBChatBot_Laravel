@@ -3,9 +3,9 @@
 use App\Models\Bot;
 use App\Models\Template;
 use Illuminate\Support\Collection;
-use App\Repositories\BaseDBRepository;
+use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBTemplateRepository extends BaseDBRepository implements TemplateRepositoryInterface
+class DBTemplateBaseRepository extends DBAssociatedWithBotRepository implements TemplateRepositoryInterface
 {
 
     /**
@@ -17,24 +17,18 @@ class DBTemplateRepository extends BaseDBRepository implements TemplateRepositor
     }
 
     /**
-     * Find a template for a given bot
-     * @param int $id
-     * @param Bot $bot
-     * @return Template|null
-     */
-    public function findByIdForPage($id, Bot $bot)
-    {
-        return Template::where('bot_id', $bot->id)->find($id);
-    }
-
-    /**
      * Return a list of all explicit templates for a bot.
      * @param Bot $bot
      * @return Collection
      */
     public function explicitTemplatesForBot(Bot $bot)
     {
-        return Template::where('bot_id', $bot->id)->where('explicit', true)->get();
+        $filter = [
+            ['operator' => '=', 'key' => 'explicit', 'value' => true],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+        ];
+
+        return $this->getAll($filter);
     }
 
     /**
@@ -45,6 +39,12 @@ class DBTemplateRepository extends BaseDBRepository implements TemplateRepositor
      */
     public function findExplicitByIdForBot($id, Bot $bot)
     {
-        return Template::where('bot_id', $bot->id)->where('explicit', true)->find($id);
+        $filter = [
+            ['operator' => '=', 'key' => '_id', 'value' => $id],
+            ['operator' => '=', 'key' => 'explicit', 'value' => true],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+        ];
+
+        return $this->getOne($filter);
     }
 }

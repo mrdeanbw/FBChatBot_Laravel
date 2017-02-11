@@ -6,37 +6,16 @@ use App\Models\Sequence;
 use App\Models\Subscriber;
 use App\Models\SequenceMessage;
 use Illuminate\Support\Collection;
-use App\Repositories\BaseDBRepository;
+use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBSequenceRepository extends BaseDBRepository implements SequenceRepositoryInterface
+class DBSequenceBaseRepository extends DBAssociatedWithBotRepository implements SequenceRepositoryInterface
 {
 
     public function model()
     {
         return Sequence::class;
     }
-
-    /**
-     * Return list of all sequences that belong to a page.
-     * @param Bot $bot
-     * @return Collection
-     */
-    public function getAllForBot(Bot $bot)
-    {
-        return Sequence::where('bot_id', $bot->id)->get();
-    }
-
-    /**
-     * Find a sequence for a given page.
-     * @param      $id
-     * @param Bot  $bot
-     * @return Sequence|null
-     */
-    public function findByIdForBot($id, Bot $bot)
-    {
-        return Sequence::where('bot_id', $bot->id)->find($id);
-    }
-
+    
     /**
      * Create a message and attach it to sequence.
      * @param Sequence        $sequence
@@ -55,7 +34,7 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
      */
     public function updateSequenceMessage(Sequence $sequence, SequenceMessage $message)
     {
-        Sequence::where('_id', $sequence->id)->where('messages.id', $message->id)->update([
+        Sequence::where('_id', $sequence->_id)->where('messages.id', $message->id)->update([
             'messages.$' => $message
         ]);
     }
@@ -67,7 +46,7 @@ class DBSequenceRepository extends BaseDBRepository implements SequenceRepositor
      */
     public function deleteMessage(Sequence $sequence, SequenceMessage $message)
     {
-        Sequence::where('_id', $sequence->id)->where('messages.id', $message->id)->pull('messages', 'message.$');
+        Sequence::where('_id', $sequence->_id)->where('messages.id', $message->id)->pull('messages', 'message.$');
     }
 
     /**

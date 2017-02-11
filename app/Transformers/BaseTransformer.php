@@ -8,6 +8,10 @@ abstract class BaseTransformer extends TransformerAbstract
 
     use LoadsAssociatedModels;
 
+    /**
+     * @param $model
+     * @return \League\Fractal\Resource\Item|\League\Fractal\Resource\NullResource
+     */
     public function includeTemplate($model)
     {
         if (! $model->template_id) {
@@ -23,6 +27,11 @@ abstract class BaseTransformer extends TransformerAbstract
         return $this->item($model->template, new ImplicitTemplateTransformer, false);
     }
 
+    /**
+     * @param $data
+     * @param $transformer
+     * @return array|mixed
+     */
     public function transformInclude($data, $transformer)
     {
         if (is_array($data)) {

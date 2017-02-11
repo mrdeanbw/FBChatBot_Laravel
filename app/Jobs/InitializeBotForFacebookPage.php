@@ -10,6 +10,8 @@ class InitializeBotForFacebookPage extends BaseJob
      * @type Bot
      */
     private $bot;
+    protected $pushErrorsOnFail = true;
+    protected $failMessageBody = "Failed to subscriber our app to your page!";
 
     /**
      * InitializeBotForFacebookPage constructor.
