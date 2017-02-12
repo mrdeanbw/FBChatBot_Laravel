@@ -3,8 +3,6 @@
 use Illuminate\Auth\Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
-use App\Repositories\User\UserRepositoryInterface;
 
 /**
  * @property string $jwt_token

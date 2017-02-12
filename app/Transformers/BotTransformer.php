@@ -1,7 +1,6 @@
 <?php namespace App\Transformers;
 
 use App\Models\Bot;
-use MongoDB\BSON\ObjectID;
 
 class BotTransformer extends BaseTransformer
 {
