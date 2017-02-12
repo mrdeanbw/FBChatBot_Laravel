@@ -7,7 +7,7 @@ use App\Models\Subscriber;
 use Illuminate\Support\Collection;
 use App\Repositories\DBBaseRepository;
 
-class DBBotBaseRepository extends DBBaseRepository implements BotRepositoryInterface
+class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
 {
 
     public function model()
@@ -93,7 +93,7 @@ class DBBotBaseRepository extends DBBaseRepository implements BotRepositoryInter
     public function getSubscriberForUser(User $user, Bot $bot)
     {
         $admin = array_first($bot->users, function ($admin) use ($user) {
-            return $admin['user_id'] === $user->_id;
+            return $admin['user_id'] == $user->_id;
         });
 
         if (! $admin) {

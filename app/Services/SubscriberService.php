@@ -17,14 +17,15 @@ class SubscriberService
     /**
      * @type array
      */
-    protected $filterFieldsMap = [
-        'first_name'          => 'first_name',
-        'last_name'           => 'last_name',
-        'active'              => 'active',
-        'gender'              => 'gender',
-        'last_contacted_at'   => 'last_contacted_at',
-        'first_subscribed_at' => 'created_at',
-    ];
+    protected $filterFieldsMap
+        = [
+            'first_name'          => 'first_name',
+            'last_name'           => 'last_name',
+            'active'              => 'active',
+            'gender'              => 'gender',
+            'last_contacted_at'   => 'last_contacted_at',
+            'first_subscribed_at' => 'created_at',
+        ];
 
     /**
      * @type FacebookUser
@@ -49,6 +50,7 @@ class SubscriberService
 
     /**
      * AudienceService constructor.
+     *
      * @param SubscriberRepositoryInterface $subscriberRepo
      * @param SequenceRepositoryInterface   $sequenceRepo
      * @param FacebookUser                  $FacebookUsers
@@ -71,6 +73,7 @@ class SubscriberService
 
     /**
      * @param      $id
+     *
      * @return Subscriber
      */
     public function find($id)
@@ -81,6 +84,7 @@ class SubscriberService
     /**
      * @param      $id
      * @param Bot  $bot
+     *
      * @return Subscriber
      */
     public function findForBotOrFail($id, Bot $bot)
@@ -94,6 +98,7 @@ class SubscriberService
     /**
      * @param      $id
      * @param Bot  $page
+     *
      * @return Subscriber|null
      */
     public function findByFacebookId($id, Bot $page)
@@ -103,9 +108,11 @@ class SubscriberService
 
     /**
      * Get or create a new subscriber to a given page.
+     *
      * @param      $id
      * @param Bot  $bot
      * @param bool $isActive whether or not the user is actually an active subscriber or not.
+     *
      * @return Subscriber|null
      */
     public function getByFacebookIdOrCreate($id, Bot $bot, $isActive = false)
@@ -126,7 +133,7 @@ class SubscriberService
             'gender'               => $publicProfile->gender,
             'active'               => $isActive,
             'bot_id'               => $bot->_id,
-            'last_subscribed_at'   => $isActive? Carbon::now() : null,
+            'last_subscribed_at'   => $isActive ? Carbon::now() : null,
             'last_unsubscribed_at' => null,
             'tags'                 => [],
             'sequences'            => [],
@@ -146,6 +153,7 @@ class SubscriberService
 
     /**
      * Make a subscriber "active"
+     *
      * @param int $id the subscriber ID
      * @param Bot $bot
      */
@@ -158,7 +166,9 @@ class SubscriberService
 
     /**
      * Make a subscriber inactive.
+     *
      * @param Subscriber $subscriber
+     *
      * @return Subscriber
      */
     public function unsubscribe(Subscriber $subscriber)
@@ -173,7 +183,9 @@ class SubscriberService
      * 1. Type: [a]exact: exact match. [b]prefix: prefix match. [c]date: date lower & upper boundaries.
      * 2. Attribute: name of the attribute.
      * 3. Value: value to be matched against.
+     *
      * @param array $filterBy
+     *
      * @return array Array of the filtering conditions.
      */
     private function normalizeFilterBy(array $filterBy)
@@ -189,25 +201,25 @@ class SubscriberService
             ];
         }
 
-        foreach ($filterBy as $attribute => $value) {
+        foreach ($filterBy as $key => $value) {
 
-            if (! $this->fieldIsFilterable($attribute) || ($value !== '0' && ! $value)) {
+            if (! $this->fieldIsFilterable($key) || ($value !== '0' && ! $value)) {
                 continue;
             }
 
             $operator = '=';
 
-            $attribute = $this->filterFieldsMap[$attribute];
+            $key = $this->filterFieldsMap[$key];
 
-            if (in_array($attribute, ['first_name', 'last_name'])) {
+            if (in_array($key, ['first_name', 'last_name'])) {
                 $operator = 'prefix';
             }
 
-            if (in_array($attribute, ['created_at', 'last_contacted_at'])) {
+            if (in_array($key, ['created_at', 'last_contacted_at'])) {
                 $operator = 'date';
             }
 
-            $ret[] = compact('operator', 'attribute', 'value');
+            $ret[] = compact('operator', 'key', 'value');
         }
 
         $this->addActiveFilter($ret);
@@ -219,11 +231,13 @@ class SubscriberService
      * Return a list of filtered and sorted subscribers.
      * Subscribers may be filtered by simple attribute matching,
      * or by more complicated Filter Groups and Filter Rules (using logical and/or).
+     *
      * @param Bot   $bot
      * @param int   $page
      * @param array $filterBy
      * @param array $orderBy
      * @param int   $perPage
+     *
      * @return Paginator
      */
     public function paginate(Bot $bot, $page = 1, $filterBy = [], $orderBy = [], $perPage = 20)
@@ -240,7 +254,9 @@ class SubscriberService
 
     /**
      * Normalize the filter groups by removing empty rules and empty groups.
+     *
      * @param $filter
+     *
      * @return mixed
      */
     private function normalizeFilter(array $filter)
@@ -276,7 +292,9 @@ class SubscriberService
 
     /**
      * If a rule has no value, then remove it from the filter groups.
+     *
      * @param $rules
+     *
      * @return array
      */
     private function removeRulesWithoutValues($rules)
@@ -292,16 +310,18 @@ class SubscriberService
     private function addActiveFilter(array &$filterBy)
     {
         $filterBy[] = [
-            'operator'  => '=',
-            'attribute' => 'active',
-            'value'     => true
+            'operator' => '=',
+            'key'      => 'active',
+            'value'    => true
         ];
     }
 
     /**
      * Return an associative array of order fields.
      * Every key is the attribute to be sorted by, and the value is either "asc" / "desc"
+     *
      * @param array $orderBy
+     *
      * @return array
      */
     private function normalizeOrderBy(array $orderBy)
@@ -310,7 +330,7 @@ class SubscriberService
         foreach ($orderBy as $attribute => $order) {
             if ($this->fieldIsFilterable($attribute)) {
                 $attribute = $this->filterFieldsMap[$attribute];
-                $ret[$attribute] = strtolower($order) == 'desc'? 'desc' : 'asc';
+                $ret[$attribute] = strtolower($order) == 'desc' ? 'desc' : 'asc';
             }
         }
 
@@ -320,9 +340,11 @@ class SubscriberService
     /**
      * @todo one update query.
      * Update a subscriber.
+     *
      * @param array $input
      * @param int   $subscriberId
      * @param Bot   $bot
+     *
      * @return Subscriber
      */
     public function update(array $input, $subscriberId, Bot $bot)
@@ -343,6 +365,7 @@ class SubscriberService
      *      -> For every bot sequence get the list of matching subscribers whose ids
      *         intersect with $subscriberIds, and then subscribe them.
      * Batch update subscribers.
+     *
      * @param array $input
      * @param array $subscriberIds
      * @param Bot   $bot
@@ -357,7 +380,9 @@ class SubscriberService
 
     /**
      * Return the number of active subscribers for a certain page.
+     *
      * @param Bot $bot
+     *
      * @return int
      */
     public function activeSubscribers(Bot $bot)
@@ -368,8 +393,10 @@ class SubscriberService
     /**
      * Return the total number of subscription actions in a given period of time.
      * Calculated as the difference between subscription and unsubscription actions.
+     *
      * @param Bot           $bot
      * @param Carbon|string $date
+     *
      * @return integer
      */
     public function totalSubscriptions(Bot $bot, $date)
@@ -382,8 +409,10 @@ class SubscriberService
 
     /**
      * Count the number of subscribers who last unsubscribed in a given time period or on a specific date.
+     *
      * @param Bot           $page
      * @param Carbon|string $date
+     *
      * @return int
      */
     public function newSubscriptions(Bot $page, $date)
@@ -393,8 +422,10 @@ class SubscriberService
 
     /**
      * Count the number of subscribers who last unsubscribed in a given time period or on a specific date.
+     *
      * @param Bot           $page
      * @param Carbon|string $date
+     *
      * @return int
      */
     public function newUnsubscriptions(Bot $page, $date)
@@ -404,6 +435,7 @@ class SubscriberService
 
     /**
      * @param $attribute
+     *
      * @return bool
      */
     private function fieldIsFilterable($attribute)
@@ -421,7 +453,7 @@ class SubscriberService
     {
         $sequencesToAdd = [];
         $sequences = $this->sequenceRepo->getAllForBot($bot);
-        
+
         foreach ($sequences as $sequence) {
 
             if (in_array($sequence->id, $subscriber->sequence)) {

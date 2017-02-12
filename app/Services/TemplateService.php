@@ -21,6 +21,7 @@ class TemplateService
 
     /**
      * TemplateService constructor.
+     *
      * @param TemplateRepositoryInterface $templateRepo
      * @param MessageService              $messages
      */
@@ -33,6 +34,7 @@ class TemplateService
 
     /**
      * @param Bot $page
+     *
      * @return \Illuminate\Support\Collection
      */
     public function explicitTemplates(Bot $page)
@@ -43,6 +45,7 @@ class TemplateService
     /**
      * @param      $id
      * @param Bot  $page
+     *
      * @return Template
      */
     public function findExplicitOrFail($id, Bot $page)
@@ -55,8 +58,10 @@ class TemplateService
 
     /**
      * Create a new explicit template.
+     *
      * @param Bot   $bot
      * @param array $input
+     *
      * @return Template
      */
     public function createExplicit(array $input, Bot $bot)
@@ -69,25 +74,30 @@ class TemplateService
     /**
      * @param array $messages
      * @param       $botId
+     * @param bool  $allowReadOnly
+     *
      * @return Template
      */
-    public function createImplicit(array $messages, $botId)
+    public function createImplicit(array $messages, $botId, $allowReadOnly = false)
     {
         $input['name'] = null;
         $input['explicit'] = false;
         $input['messages'] = $messages;
 
-        return $this->create($input, $botId);
+        return $this->create($input, $botId, $allowReadOnly);
     }
 
     /**
      * @param array $input
      * @param       $botId
-     * @return \App\Models\BaseModel
+     *
+     * @param bool  $allowReadOnly
+     *
+     * @return \App\Models\BaseModel|Template
      */
-    private function create(array $input, $botId)
+    private function create(array $input, $botId, $allowReadOnly = false)
     {
-        $messages = $this->normalizeMessages($input['messages'], [], $botId);
+        $messages = $this->normalizeMessages($input['messages'], [], $botId, $allowReadOnly);
         if ($input['messages'] && ! $messages) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }
@@ -102,9 +112,11 @@ class TemplateService
 
     /**
      * Update a message template.
+     *
      * @param       $id
      * @param Bot   $bot
      * @param array $input
+     *
      * @return Template
      */
     public function updateExplicit($id, array $input, Bot $bot)
@@ -119,6 +131,7 @@ class TemplateService
      * @param string $templateId
      * @param array  $data
      * @param Bot    $bot
+     *
      * @return Template
      */
     public function updateImplicit($templateId, array $data, Bot $bot)
@@ -133,6 +146,7 @@ class TemplateService
      * @param Template $template
      * @param array    $input
      * @param Bot      $bot
+     *
      * @return Template
      */
     private function update(Template $template, array $input, Bot $bot)
@@ -151,13 +165,16 @@ class TemplateService
      * @param array     $messages
      * @param Message[] $original
      * @param           $botId
+     *
+     * @param bool      $allowReadOnly
+     *
      * @return \App\Models\Message[]
      */
-    private function normalizeMessages(array $messages, array $original = [], $botId)
+    private function normalizeMessages(array $messages, array $original = [], $botId, $allowReadOnly = false)
     {
         $messages = $this->messages->normalizeMessages($messages);
 
-        return $this->messages->makeMessages($messages, $original, $botId);
+        return $this->messages->makeMessages($messages, $original, $botId, $allowReadOnly);
     }
 
 }

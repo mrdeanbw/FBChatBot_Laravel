@@ -40,6 +40,7 @@ class SendDueBroadcasts extends Command
 
     /**
      * Broadcast constructor.
+     *
      * @param BroadcastRepositoryInterface  $broadcastRepo
      * @param BroadcastService              $broadcasts
      * @param SubscriberRepositoryInterface $subscriberRepo
@@ -75,7 +76,7 @@ class SendDueBroadcasts extends Command
     {
         $this->markAsRunning($broadcast);
 
-        $this->run($broadcast);
+        $this->send($broadcast);
 
         $this->scheduleNextRunAndMarkAsCompleted($broadcast);
     }
@@ -88,7 +89,7 @@ class SendDueBroadcasts extends Command
         $this->broadcastRepo->update($broadcast, ['status' => 'running']);
     }
 
-    public function run(Broadcast $broadcast)
+    public function send(Broadcast $broadcast)
     {
         $subscribers = $this->getTargetAudience($broadcast);
 
@@ -113,6 +114,7 @@ class SendDueBroadcasts extends Command
 
     /**
      * @param $broadcast
+     *
      * @return Collection
      */
     protected function getTargetAudience(Broadcast $broadcast)
@@ -120,9 +122,9 @@ class SendDueBroadcasts extends Command
         $filters = [];
         if ($broadcast->timezone != 'same_time') {
             $filters[] = [
-                'operator'  => '=',
-                'attribute' => 'timezone',
-                'value'     => $broadcast->next_utc_offset
+                'operator' => '=',
+                'key'      => 'timezone',
+                'value'    => $broadcast->next_utc_offset
             ];
         }
 

@@ -1,4 +1,4 @@
-<?php namespace App\Repositories\MessageInstance;
+<?php namespace App\Repositories\MessageHistory;
 
 use Carbon\Carbon;
 use App\Models\Subscriber;

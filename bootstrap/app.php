@@ -100,7 +100,6 @@ $app->register(Laravel\Cashier\CashierServiceProvider::class);
 
 $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\EventServiceProvider::class);
-$app->register(App\Providers\RegisterAPITransformersProvider::class);
 $app->register(App\Providers\CatchAllOptionsRequestsProvider::class);
 $app->register(App\Providers\RepositoryServiceProvider::class);
 $app->register(App\Providers\PusherServiceProvider::class);

@@ -17,6 +17,7 @@ class AutoReplyRuleService
 
     /**
      * AutoReplyRuleService constructor.
+     *
      * @param AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
      */
     public function __construct(AutoReplyRuleRepositoryInterface $autoReplyRuleRepo)
@@ -27,6 +28,7 @@ class AutoReplyRuleService
     /**
      * @param      $ruleId
      * @param Bot  $bot
+     *
      * @return AutoReplyRule
      */
     private function findOrFail($ruleId, Bot $bot)
@@ -46,6 +48,7 @@ class AutoReplyRuleService
      * @param array $filterBy
      * @param array $orderBy
      * @param int   $perPage
+     *
      * @return Paginator
      */
     public function paginate(Bot $bot, $page = 1, $filterBy = [], $orderBy = [], $perPage = 20)
@@ -53,16 +56,16 @@ class AutoReplyRuleService
         if ($keyword = array_get($filterBy, 'keyword')) {
             $filterBy = [
                 [
-                    'operator'      => 'contains',
-                    'attribute' => 'keyword',
-                    'value'     => $keyword
+                    'operator' => 'contains',
+                    'key'      => 'keyword',
+                    'value'    => $keyword
                 ]
             ];
         } else {
             $filterBy = [];
         }
 
-        $orderBy = $orderBy?: ['_id' => 'asc'];
+        $orderBy = $orderBy ?: ['_id' => 'asc'];
 
         return $this->autoReplyRuleRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
@@ -70,6 +73,7 @@ class AutoReplyRuleService
     /**
      * @param array $input
      * @param Bot   $bot
+     *
      * @return AutoReplyRule
      */
     public function create(array $input, Bot $bot)
@@ -90,6 +94,7 @@ class AutoReplyRuleService
      * @param string $id
      * @param array  $input
      * @param Bot    $bot
+     *
      * @return AutoReplyRule
      */
     public function update($id, array $input, Bot $bot)
@@ -106,11 +111,14 @@ class AutoReplyRuleService
             'template_id' => $input['template']['id'],
         ];
 
-        return $this->autoReplyRuleRepo->update($rule, $data);
+        $this->autoReplyRuleRepo->update($rule, $data);
+
+        return $rule;
     }
 
     /**
      * Delete an auto reply rule.
+     *
      * @param      $ruleId
      * @param Bot  $page
      */
@@ -128,6 +136,7 @@ class AutoReplyRuleService
     /**
      * @param string $text
      * @param Bot    $page
+     *
      * @return AutoReplyRule
      */
     public function getMatchingRule($text, Bot $page)
@@ -137,7 +146,9 @@ class AutoReplyRuleService
 
     /**
      * Create the default (subscription/unsubscription) auto reply rules.
+     *
      * @param Bot $bot
+     *
      * @return bool
      */
     public function createDefaultAutoReplyRules(Bot $bot)

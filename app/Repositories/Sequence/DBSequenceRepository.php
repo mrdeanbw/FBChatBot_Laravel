@@ -8,7 +8,7 @@ use App\Models\SequenceMessage;
 use Illuminate\Support\Collection;
 use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBSequenceBaseRepository extends DBAssociatedWithBotRepository implements SequenceRepositoryInterface
+class DBSequenceRepository extends DBAssociatedWithBotRepository implements SequenceRepositoryInterface
 {
 
     public function model()

@@ -7,7 +7,7 @@ use App\Models\Subscriber;
 use Illuminate\Support\Facades\Crypt;
 use App\Repositories\DBBaseRepository;
 
-class DBUserBaseRepository extends DBBaseRepository implements UserRepositoryInterface
+class DBUserRepository extends DBBaseRepository implements UserRepositoryInterface
 {
 
     /**

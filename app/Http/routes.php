@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Template;
 use Dingo\Api\Routing\Router;
+use MongoDB\BSON\ObjectID;
 
 /** @type Router $api */
 $api = app(Router::class);
@@ -15,6 +17,7 @@ $options = [
 $api->version('v1', $options, function (Router $api) {
 
     $api->get('/test', function () {
+        return Template::where('bot_id', '589fe2190085c81bc4003440')->find("589fe5ef0085c81bc400345e");
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');

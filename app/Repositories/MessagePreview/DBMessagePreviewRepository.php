@@ -3,7 +3,7 @@
 use App\Models\MessagePreview;
 use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBMessagePreviewBaseRepository extends DBAssociatedWithBotRepository implements MessagePreviewRepositoryInterface
+class DBMessagePreviewRepository extends DBAssociatedWithBotRepository implements MessagePreviewRepositoryInterface
 {
 
     /**

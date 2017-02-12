@@ -13,7 +13,7 @@ use App\Services\Facebook\Sender;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
-use App\Repositories\MessageInstance\MessageHistoryRepositoryInterface;
+use App\Repositories\MessageHistory\MessageHistoryRepositoryInterface;
 
 class WebAppAdapter
 {
@@ -135,9 +135,11 @@ class WebAppAdapter
 
     /**
      * Subscribe a message sender to the page.
+     *
      * @param Bot    $bot
      * @param string $senderId
      * @param bool   $silentMode
+     *
      * @return Subscriber
      */
     public function subscribe(Bot $bot, $senderId, $silentMode = false)
@@ -178,8 +180,10 @@ class WebAppAdapter
 
     /**
      * Subscribe a user without actually sending him the welcome message.
+     *
      * @param Bot  $bot
      * @param      $senderId
+     *
      * @return Subscriber
      */
     public function subscribeSilently(Bot $bot, $senderId)
@@ -189,6 +193,7 @@ class WebAppAdapter
 
     /**
      * Send a message to the user, asking if he really wants to unsubscribe.
+     *
      * @param Bot             $bot
      * @param Subscriber|null $subscriber
      * @param                 $facebookId
@@ -247,6 +252,7 @@ class WebAppAdapter
 
     /**
      * User has confirmed his willingness to unsubscribe, so unsubscribe him!
+     *
      * @param Bot        $bot
      * @param Subscriber $subscriber
      */
@@ -277,6 +283,7 @@ class WebAppAdapter
 
     /**
      * Send the default reply.
+     *
      * @param Bot        $bot
      * @param Subscriber $subscriber
      */
@@ -287,15 +294,17 @@ class WebAppAdapter
 
     /**
      * Handle button click.
+     *
      * @param Bot        $bot
      * @param Subscriber $subscriber
      * @param            $payload
+     *
      * @return bool
      */
     public function handleButtonClick($bot, $subscriber, $payload)
     {
         $payload = explode('|', $payload);
-        $broadcastId = isset($payload[1])? $payload[1] : null;
+        $broadcastId = isset($payload[1]) ? $payload[1] : null;
 
         $payload = explode(':', $payload[0]);
 
@@ -332,6 +341,7 @@ class WebAppAdapter
 
     /**
      * Execute the actions associate with a button.
+     *
      * @param array      $buttonPath
      * @param Button     $button
      * @param Subscriber $subscriber
@@ -346,6 +356,7 @@ class WebAppAdapter
     /**
      * @param Template $template
      * @param array    $buttonPath
+     *
      * @return Button|null
      */
     private function navigateToButton(Template $template, array $buttonPath)
@@ -367,11 +378,12 @@ class WebAppAdapter
             return null;
         }
 
-        return is_object($ret) && is_a($ret, Button::class)? $ret : null;
+        return is_object($ret) && is_a($ret, Button::class) ? $ret : null;
     }
 
     /**
      * Increase the number of clicks for a given message instance
+     *
      * @param array $payload
      */
     private function incrementButtonClicks(array $payload)
@@ -380,9 +392,11 @@ class WebAppAdapter
 
     /**
      * Handle a main menu button click.
+     *
      * @param Bot        $page
      * @param Subscriber $subscriber
      * @param            $payload
+     *
      * @return bool
      */
     private function handleMainMenuButtonClick(Bot $page, Subscriber $subscriber, $payload)
@@ -408,6 +422,7 @@ class WebAppAdapter
     /**
      * @param string $botId
      * @param string $buttonId
+     *
      * @return null
      */
     public function getMainMenuButtonUrl($botId, $buttonId)
@@ -433,8 +448,10 @@ class WebAppAdapter
 
     /**
      * Return the redirect URL from a button/card, via the message block hash.
+     *
      * @param $messageBlockHash
      * @param $subscriberHash
+     *
      * @return bool|string
      */
     public function getMessageBlockRedirectURL($messageBlockHash, $subscriberHash)
@@ -482,7 +499,9 @@ class WebAppAdapter
 
     /**
      * Get a bot by page facebook ID.
+     *
      * @param $facebookId
+     *
      * @return Bot
      */
     public function bot($facebookId)
@@ -492,8 +511,10 @@ class WebAppAdapter
 
     /**
      * Get a subscriber by Facebook ID.
+     *
      * @param      $senderId
      * @param Bot  $page
+     *
      * @return Subscriber|null
      */
     public function subscriber($senderId, Bot $page)
@@ -503,8 +524,10 @@ class WebAppAdapter
 
     /**
      * Get matching AI Rules.
+     *
      * @param      $message
      * @param Bot  $page
+     *
      * @return AutoReplyRule
      */
     public function matchingAutoReplyRule($message, Bot $page)
@@ -514,6 +537,7 @@ class WebAppAdapter
 
     /**
      * Send an auto reply.
+     *
      * @param AutoReplyRule $rule
      * @param Subscriber    $subscriber
      */
@@ -525,19 +549,21 @@ class WebAppAdapter
 
     /**
      * Mark all messages sent to a subscriber before a specific date as read.
+     *
      * @param Subscriber $subscriber
      * @param int        $timestamp
      */
     public function markMessageBlocksAsDelivered(Subscriber $subscriber, $timestamp)
     {
-        $timestamp = $this->normalizeTimestamp($timestamp);
+        //        $timestamp = $this->normalizeTimestamp($timestamp);
 
         //        $this->messageInstanceRepo->markAsDelivered($subscriber, $timestamp);
-        $this->updateBroadcastDeliveredStats($subscriber, $timestamp);
+        //        $this->updateBroadcastDeliveredStats($subscriber, $timestamp);
     }
 
     /**
      * Mark all messages sent to a subscriber before a specific date as read.
+     *
      * @param Subscriber $subscriber
      * @param            $timestamp
      */
@@ -545,16 +571,17 @@ class WebAppAdapter
     {
         // if a message is read, then it is definitely delivered.
         // this is to handle Facebook sometimes not sending the delivery callback.
-        $this->markMessageBlocksAsDelivered($subscriber, $timestamp);
+        //        $this->markMessageBlocksAsDelivered($subscriber, $timestamp);
 
-        $timestamp = $this->normalizeTimestamp($timestamp);
+        //        $timestamp = $this->normalizeTimestamp($timestamp);
 
-        $this->messageInstanceRepo->markAsRead($subscriber, $timestamp);
-        $this->updateBroadcastReadStats($subscriber, $timestamp);
+        //        $this->messageInstanceRepo->markAsRead($subscriber, $timestamp);
+        //        $this->updateBroadcastReadStats($subscriber, $timestamp);
     }
 
     /**
      * Increase the number of clicks for a given message instance
+     *
      * @param MessageInstance $instance
      * @param int             $incrementBy
      */
@@ -567,7 +594,9 @@ class WebAppAdapter
 
     /**
      * If the auto reply rule should trigger unsubscription action
+     *
      * @param AutoReplyRule $rule
+     *
      * @return bool
      */
     public function isUnsubscriptionMessage(AutoReplyRule $rule)
@@ -577,7 +606,9 @@ class WebAppAdapter
 
     /**
      * If the auto reply rule should trigger subscription action
+     *
      * @param AutoReplyRule $rule
+     *
      * @return bool
      */
     public function isSubscriptionMessage(AutoReplyRule $rule)
@@ -587,7 +618,9 @@ class WebAppAdapter
 
     /**
      * Convert the timestamp sent by Facebook (in milliseconds) to date-time string.
+     *
      * @param int $timestamp
+     *
      * @return string
      */
     private function normalizeTimestamp($timestamp)
@@ -599,6 +632,7 @@ class WebAppAdapter
 
     /**
      * Mark the broadcast as delivered to subscriber
+     *
      * @param Subscriber $subscriber
      * @param            $dateTime
      */
@@ -609,6 +643,7 @@ class WebAppAdapter
 
     /**
      * Mark the broadcast as read by subscriber
+     *
      * @param Subscriber $subscriber
      * @param            $dateTime
      */
@@ -619,9 +654,11 @@ class WebAppAdapter
 
     /**
      * Make a user (page admin) into "subscriber" for a page.
+     *
      * @param      $payload
      * @param Bot  $bot
      * @param      $senderId
+     *
      * @return bool
      */
     public function subscribePageUser($payload, Bot $bot, $senderId)
@@ -657,6 +694,7 @@ class WebAppAdapter
      * @param Bot  $page
      * @param      $senderId
      * @param      $isActive
+     *
      * @return Subscriber|null
      */
     public function persistSubscriber(Bot $page, $senderId, $isActive)

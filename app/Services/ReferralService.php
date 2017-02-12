@@ -2,12 +2,12 @@
 
 use DB;
 use App\Models\User;
-use App\Repositories\User\UserRepository;
+use App\Repositories\User\UserRepositoryInterface;
 
 class ReferralService
 {
     /**
-     * @type UserRepository
+     * @type UserRepositoryInterface
      */
 
     private $userRepository;
@@ -21,7 +21,7 @@ class ReferralService
     private $unlimitedAmount;
 
 
-    public function __construct(UserRepository $userRepo)
+    public function __construct(UserRepositoryInterface $userRepo)
     {
         $this->userRepository = $userRepo;
         $this->rewardAmount = 5;

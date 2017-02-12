@@ -49,7 +49,7 @@ class GreetingTextService
     /**
      * Get the default greeting text.
      * @param string $pageName
-     * @return array
+     * @return GreetingText
      */
     public function defaultGreetingText($pageName)
     {

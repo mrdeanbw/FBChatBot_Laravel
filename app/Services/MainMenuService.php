@@ -7,7 +7,7 @@ use App\Models\MainMenu;
 use MongoDB\BSON\ObjectID;
 use App\Jobs\UpdateMainMenuOnFacebook;
 use App\Services\Facebook\MessengerThread;
-use App\Repositories\Bot\DBBotBaseRepository;
+use App\Repositories\Bot\DBBotRepository;
 use Dingo\Api\Exception\ValidationHttpException;
 
 class MainMenuService
@@ -27,22 +27,23 @@ class MainMenuService
      */
     private $FacebookAdapter;
     /**
-     * @type DBBotBaseRepository
+     * @type DBBotRepository
      */
     private $botRepo;
 
     /**
      * MainMenuService constructor.
-     * @param MessageService      $messages
-     * @param MessengerThread     $facebookThread
-     * @param FacebookAPIAdapter  $FacebookAdapter
-     * @param DBBotBaseRepository $botRepo
+     *
+*@param MessageService           $messages
+     * @param MessengerThread    $facebookThread
+     * @param FacebookAPIAdapter $FacebookAdapter
+     * @param DBBotRepository    $botRepo
      */
     public function __construct(
         MessageService $messages,
         MessengerThread $facebookThread,
         FacebookAPIAdapter $FacebookAdapter,
-        DBBotBaseRepository $botRepo
+        DBBotRepository $botRepo
     ) {
         $this->botRepo = $botRepo;
         $this->messages = $messages;

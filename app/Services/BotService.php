@@ -3,6 +3,7 @@
 use App\Models\Bot;
 use App\Models\Page;
 use App\Models\User;
+use App\Models\WelcomeMessage;
 use MongoDB\BSON\ObjectID;
 use Illuminate\Support\Collection;
 use App\Services\Facebook\MessengerThread;
@@ -205,7 +206,7 @@ class BotService
 
     /**
      * @param $botId
-     * @return array
+     * @return WelcomeMessage
      */
     private function getDefaultWelcomeMessage($botId)
     {

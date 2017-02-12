@@ -66,7 +66,7 @@ class WelcomeMessageService
     {
         $messages = $this->defaultMessages();
 
-        return $this->templates->createImplicit($messages, $botId);
+        return $this->templates->createImplicit($messages, $botId, true);
     }
 
     /**
@@ -82,7 +82,7 @@ class WelcomeMessageService
     }
 
     /**
-     * @return array
+     * @return Text
      */
     private function initialTextMessage()
     {
@@ -92,7 +92,7 @@ class WelcomeMessageService
     }
 
     /**
-     * @return array
+     * @return Text
      */
     private function copyrightMessage()
     {

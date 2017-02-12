@@ -32,7 +32,7 @@ abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements
      */
     public function getAllForBot(Bot $bot)
     {
-        $filter = [['operator' => '=', 'attribute' => 'bot_id', 'value' => $bot->_id]];
+        $filter = [['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id]];
 
         return $this->getAll($filter);
     }
@@ -47,7 +47,7 @@ abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements
      */
     public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage)
     {
-        $filterBy[] = ['operator' => '=', 'attribute' => 'bot_id', 'value' => $bot->_id];
+        $filterBy[] = ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id];
 
         return $this->paginate($page, $filterBy, $orderBy, $perPage);
     }

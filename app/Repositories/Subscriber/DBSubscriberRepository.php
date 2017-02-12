@@ -12,7 +12,7 @@ use App\Models\AudienceFilterGroup;
 use Jenssegers\Mongodb\Eloquent\Builder;
 use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBSubscriberBaseRepository extends DBAssociatedWithBotRepository implements SubscriberRepositoryInterface
+class DBSubscriberRepository extends DBAssociatedWithBotRepository implements SubscriberRepositoryInterface
 {
 
     public function model()

@@ -5,7 +5,7 @@ use App\Models\Broadcast;
 use Illuminate\Support\Collection;
 use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBBroadcastBaseRepository extends DBAssociatedWithBotRepository implements BroadcastRepositoryInterface
+class DBBroadcastRepository extends DBAssociatedWithBotRepository implements BroadcastRepositoryInterface
 {
 
     public function model()

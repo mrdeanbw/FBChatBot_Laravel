@@ -5,7 +5,7 @@ use App\Models\AutoReplyRule;
 use Illuminate\Database\Eloquent\Builder;
 use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBAutoReplyRuleBaseRepository extends DBAssociatedWithBotRepository implements AutoReplyRuleRepositoryInterface
+class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements AutoReplyRuleRepositoryInterface
 {
 
     public function model()

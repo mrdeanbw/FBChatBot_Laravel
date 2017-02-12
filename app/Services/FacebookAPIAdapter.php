@@ -11,7 +11,7 @@ use App\Models\Broadcast;
 use App\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
 use App\Services\Facebook\Sender;
-use App\Repositories\MessageInstance\MessageHistoryRepositoryInterface;
+use App\Repositories\MessageHistory\MessageHistoryRepositoryInterface;
 
 class FacebookAPIAdapter
 {
@@ -68,9 +68,9 @@ class FacebookAPIAdapter
         /** @type Bot $bot */
         $this->loadModelsIfNotLoaded($template, ['bot']);
 
-        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forTemplate($template);
+        $mapper = (new FacebookMessageMapper($template->bot))->forSubscriber($subscriber)->forTemplate($template);
 
-        return $this->sendMessages($mapper, $template->messages, $subscriber, $bot);
+        return $this->sendMessages($mapper, $template->messages, $subscriber, $template->bot);
     }
 
     /**

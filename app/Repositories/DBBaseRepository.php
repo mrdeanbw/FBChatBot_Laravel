@@ -15,6 +15,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     /**
      * @param array $filterBy
      * @param array $orderBy
+     *
      * @return Collection
      */
     public function getAll(array $filterBy = [], array $orderBy = [])
@@ -25,6 +26,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     /**
      * @param array $filterBy
      * @param array $orderBy
+     *
      * @return BaseModel|null
      */
     public function getOne(array $filterBy = [], array $orderBy = [])
@@ -35,6 +37,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     /**
      * @param array $filterBy
      * @param array $orderBy
+     *
      * @return int
      */
     public function count(array $filterBy = [], array $orderBy = [])
@@ -48,6 +51,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
      * @param array $filterBy
      * @param array $orderBy
      * @param int   $perPage
+     *
      * @return Paginator
      */
     public function paginate($page, array $filterBy, array $orderBy, $perPage)
@@ -59,6 +63,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * @param string|ObjectID $id
+     *
      * @return BaseModel
      */
     public function findById($id)
@@ -70,6 +75,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * @param $id
+     *
      * @return BaseModel
      */
     public function findByIdOrFail($id)
@@ -85,6 +91,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * @param array $data
+     *
      * @return BaseModel
      */
     public function create(array $data)
@@ -97,6 +104,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * @param array $data
+     *
      * @return bool
      */
     public function bulkCreate(array $data)
@@ -115,8 +123,10 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * Update a model.
+     *
      * @param BaseModel $model
      * @param array     $data
+     *
      * @return bool
      */
     public function update($model, array $data)
@@ -125,17 +135,17 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
         $model->fill($data);
 
-        if (starts_with(key($values), '$')) {
+        if (starts_with(key($data), '$')) {
             return $class::where('_id', $model->_id)->update($data);
         }
 
         $update = [];
 
-        foreach (array_keys($data) as $key) {
-            if (is_a($model->{$key}, Carbon::class)) {
-                $update[$key] = mongo_date($model->{$key});
+        foreach ($data as $key => $value) {
+            if ($model->{$key} && is_a($model->{$key}, Carbon::class)) {
+                $update[$key] = mongo_date($value);
             } else {
-                $update[$key] = $model->{$key};
+                $update[$key] = $value;
             }
         }
 
@@ -144,6 +154,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * Delete a model
+     *
      * @param BaseModel $model
      */
     public function delete($model)
@@ -154,6 +165,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     /**
      * @param array   $filter with the following keys: type, attribute and value
      * @param Builder $query
+     *
      * @return Builder
      */
     protected function applyQueryFilter($query, array $filter)
@@ -161,19 +173,19 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
         switch ($filter['operator']) {
             case 'prefix':
-                $query->where($filter['attribute'], 'regexp', "/^{$filter['value']}.*?/");
+                $query->where($filter['key'], 'regexp', "/^{$filter['value']}.*?/");
                 break;
 
             case 'contains':
-                $query->where($filter['attribute'], 'regexp', "/.*?{$filter['value']}.*?/");
+                $query->where($filter['key'], 'regexp', "/.*?{$filter['value']}.*?/");
                 break;
 
             case 'date':
-                $query->date($filter['attribute'], $filter['value']);
+                $query->date($filter['key'], $filter['value']);
                 break;
 
             default:
-                $query->where($filter['attribute'], $filter['operator'], $filter['value']);
+                $query->where($filter['key'], $filter['operator'], $filter['value']);
 
         }
 
@@ -194,6 +206,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     /**
      * @param array $filterBy
      * @param array $orderBy
+     *
      * @return Builder
      */
     protected function applyFilterByAndOrderBy(array $filterBy = [], array $orderBy = [])

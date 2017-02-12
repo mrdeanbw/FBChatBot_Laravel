@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use App\Transformers\BaseTransformer;
 use App\Services\AutoReplyRuleService;
 use App\Transformers\AutoReplyRuleTransformer;
+use Illuminate\Validation\Rule;
 
 class AutoReplyRuleController extends APIController
 {
@@ -26,7 +27,9 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Return the list of auto reply rules.
+     *
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function index(Request $request)
@@ -43,7 +46,9 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Create a new rule.
+     *
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function create(Request $request)
@@ -59,8 +64,10 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Update a rule.
+     *
      * @param         $id
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
@@ -69,14 +76,16 @@ class AutoReplyRuleController extends APIController
 
         $this->validate($request, $this->validationRules($bot, $id));
 
-        $this->autoReplies->update($id, $request->all(), $bot);
+        $rule = $this->autoReplies->update($id, $request->all(), $bot);
 
-        return $this->response->accepted();
+        return $this->itemResponse($rule);
     }
 
     /**
      * Delete a rule.
+     *
      * @param $id
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function destroy($id)
@@ -90,22 +99,37 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Array of validation rules for creating a new auto reply rule.
+     *
      * @param Bot  $bot
      * @param null $ruleId
+     *
      * @return array
      */
     private function validationRules(Bot $bot, $ruleId = null)
     {
-        $keywordUniqueRule = "unique:auto_reply_rules,keyword,";
-        $keywordUniqueRule .= $ruleId? "{$ruleId},_id," : "NULL,NULL,";
-        $keywordUniqueRule .= "bot_id,{$bot->id}";
-
         return [
             'mode'        => 'bail|required|in:is,contains,begins_with',
-            'keyword'     => "bail|required|max:255|{$keywordUniqueRule}",
+            'keyword'     => [
+                'bail',
+                'required',
+                'max:255',
+                Rule::unique('auto_reply_rules')->where(function ($query) use ($ruleId, $bot) {
+                    if ($ruleId) {
+                        $query->where('_id', '!=', $ruleId);
+                    }
+                    $query->where('bot_id', $bot->_id);
+                })
+            ],
             'action'      => 'bail|required|in:send',
             'template'    => 'bail|required|array',
-            'template.id' => 'bail|required|exists:templates,_id,bot_id,' . $bot->id
+            'template.id' => [
+                'bail',
+                'required',
+                'required',
+                Rule::exists('templates', '_id')->where(function ($query) use ($bot) {
+                    $query->where('bot_id', $bot->_id);
+                }),
+            ]
         ];
     }
 

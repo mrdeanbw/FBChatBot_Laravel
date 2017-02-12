@@ -6,7 +6,7 @@ use App\Models\Template;
 use Illuminate\Support\Collection;
 use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBTemplateBaseRepository extends DBAssociatedWithBotRepository implements TemplateRepositoryInterface
+class DBTemplateRepository extends DBAssociatedWithBotRepository implements TemplateRepositoryInterface
 {
 
     /**

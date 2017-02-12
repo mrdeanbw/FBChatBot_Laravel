@@ -17,12 +17,12 @@ abstract class APIController extends Controller
     use Helpers {
         user as APIUser;
     }
-    
+
     /**
      * @type Bot
      */
     protected $bot;
-    
+
     /**
      * Parses the request for the bot id, and fetches the bot from the database.
      * @return Bot
@@ -50,7 +50,7 @@ abstract class APIController extends Controller
         if ($bot = $botService->findByIdForUser($botId, $this->user())){
             return $this->bot = $bot;
         }
-        
+
         $this->response->errorNotFound();
     }
 
@@ -62,7 +62,7 @@ abstract class APIController extends Controller
     {
         return $this->APIUser();
     }
-    
+
     /**
      * @return BaseTransformer
      */

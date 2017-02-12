@@ -36,12 +36,13 @@ class MessageService
 
     /**
      * @param array $input
+     *
      * @return \App\Models\Message[]
      */
     public function normalizeMessages(array $input)
     {
         return array_map(function ($message) {
-            return is_array($message)? Message::factory($message, true) : $message;
+            return is_array($message) ? Message::factory($message, true) : $message;
         }, $input);
     }
 
@@ -49,9 +50,11 @@ class MessageService
      * @param Message[] $input
      * @param Message[] $current
      * @param           $botId
+     * @param bool      $allowReadOnly
+     *
      * @return \App\Models\Message[]
      */
-    public function makeMessages(array $input, array $current = [], $botId)
+    public function makeMessages(array $input, array $current = [], $botId, $allowReadOnly = false)
     {
         $current = (new Collection($current))->keyBy(function (Message $message) {
             return $message->id->__toString();
@@ -67,6 +70,8 @@ class MessageService
                 $message->id = new ObjectID($message->id);
             }
 
+            $original = null;
+
             // If the message id is not in the original messages,
             // it means the user entered an invalid id (manually)
             // just skip it for now.
@@ -74,15 +79,20 @@ class MessageService
                 continue;
             }
 
-            // @todo add additional field? like stats when creating?
-            $message->type = $isNew? $message->type : $original->type;
-            $message->readonly = $isNew? false : $original->readonly;
+            $message->type = $isNew ? $message->type : $original->type;
+            if (is_null($message->readonly)) {
+                $message->readonly = false;
+            }
+
+            if (! $allowReadOnly) {
+                $message->readonly = $isNew ? false : $original->readonly;
+            }
 
             if ($message->type === 'button') {
                 $tags = array_merge($message->actions['add_tags'], $message->actions['remove_tags']);
                 $this->botRepo->createTagsForBot($botId, $tags);
                 if ($message->messages) {
-                    $message->messages = $this->makeMessages($message->messages, $isNew? [] : $original->messages, $botId);
+                    $message->messages = $this->makeMessages($message->messages, $isNew ? [] : $original->messages, $botId);
                     if (! $message->messages && ! $message->url) {
                         throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
                     }
@@ -94,14 +104,14 @@ class MessageService
             }
 
             if ($message->type === 'card_container') {
-                $message->cards = $this->makeMessages($message->cards, $isNew? [] : $original->cards, $botId);
+                $message->cards = $this->makeMessages($message->cards, $isNew ? [] : $original->cards, $botId);
                 if (! $message->cards) {
                     throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
                 }
             }
 
             if (in_array($message->type, ['text', 'card'])) {
-                $message->buttons = $this->makeMessages($message->buttons, $isNew? [] : $original->buttons, $botId);
+                $message->buttons = $this->makeMessages($message->buttons, $isNew ? [] : $original->buttons, $botId);
             }
 
             $normalized[] = $message;
@@ -117,6 +127,7 @@ class MessageService
 
     /**
      * Moves the disabled message blocks to the end of the array, while maintaining the input order.
+     *
      * @param Message[] $messages
      */
     private function moveReadonlyBlockToTheBottom(array &$messages)
@@ -125,7 +136,7 @@ class MessageService
             $aIsReadOnly = (bool)$a->readonly;
             $bIsReadOnly = (bool)$b->readonly;
 
-            return $aIsReadOnly < $bIsReadOnly? -1 : ($aIsReadOnly > $bIsReadOnly? 1 : 0);
+            return $aIsReadOnly < $bIsReadOnly ? -1 : ($aIsReadOnly > $bIsReadOnly ? 1 : 0);
         });
     }
 
@@ -148,7 +159,9 @@ class MessageService
 
     /**
      * Generate a random file name.
+     *
      * @param $extension
+     *
      * @return string
      */
     protected function randomFileName($extension)

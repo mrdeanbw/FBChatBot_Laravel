@@ -1,5 +1,6 @@
 <?php namespace App\Http\Controllers\API;
 
+use App\Repositories\User\UserRepositoryInterface;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Http\Request;
 use App\Services\AuthService;
@@ -9,7 +10,6 @@ use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use App\Repositories\User\UserRepository;
 use App\Models\User;
 use App\Services\ReferralService;
 
@@ -30,9 +30,12 @@ class UserController extends APIController
 
     /**
      * AuthController constructor.
-     * @param AuthService $account
+     *
+     * @param AuthService             $account
+     * @param UserRepositoryInterface $userRepo
+     * @param ReferralService         $refService
      */
-    public function __construct(AuthService $account)
+    public function __construct(AuthService $account, UserRepositoryInterface $userRepo, ReferralService $refService)
     {
         $this->account = $account;
         $this->JWTAuth = app('tymon.jwt.auth');
