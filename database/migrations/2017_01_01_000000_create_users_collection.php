@@ -12,9 +12,9 @@ class CreateUsersCollection extends Migration
      */
     public function up()
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->index('facebook_id');
-        });
+//        Schema::create('users', function (Blueprint $table) {
+//            $table->index('facebook_id');
+//        });
     }
 
     /**
@@ -24,6 +24,6 @@ class CreateUsersCollection extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('users');
+//        Schema::dropIfExists('users');
     }
 }

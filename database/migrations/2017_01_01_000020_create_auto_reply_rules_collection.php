@@ -12,10 +12,10 @@ class CreateAutoReplyRulesCollection extends Migration
      */
     public function up()
     {
-        Schema::create('auto_reply_rules', function (Blueprint $table) {
-//            $table->index(['bot_id', 'mode', 'keyword', 'mode_priority']);
-            $table->index(['bot_id', 'mode', 'keyword']);
-        });
+//        Schema::create('auto_reply_rules', function (Blueprint $table) {
+////            $table->index(['bot_id', 'mode', 'keyword', 'mode_priority']);
+//            $table->index(['bot_id', 'mode', 'keyword']);
+//        });
     }
 
     /**
@@ -25,6 +25,6 @@ class CreateAutoReplyRulesCollection extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('auto_reply_rules');
+//        Schema::dropIfExists('auto_reply_rules');
     }
 }

@@ -12,9 +12,9 @@ class CreateBotsCollection extends Migration
      */
     public function up()
     {
-        Schema::create('bots', function (Blueprint $table) {
-            $table->index('page.id');
-        });
+//        Schema::create('bots', function (Blueprint $table) {
+//            $table->index('page.id');
+//        });
     }
 
     /**
@@ -24,6 +24,6 @@ class CreateBotsCollection extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('bots');
+//        Schema::dropIfExists('bots');
     }
 }
