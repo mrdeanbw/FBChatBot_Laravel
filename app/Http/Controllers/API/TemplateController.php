@@ -1,6 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
+use App\Models\Bot;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Services\TemplateService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\TemplateTransformer;
@@ -25,6 +27,7 @@ class TemplateController extends APIController
 
     /**
      * Return a list of message trees.
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function index()
@@ -36,7 +39,9 @@ class TemplateController extends APIController
 
     /**
      * Return the details of a message tree.
+     *
      * @param         $id
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function show($id)
@@ -48,7 +53,9 @@ class TemplateController extends APIController
 
     /**
      * Create a new message tree.
+     *
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function store(Request $request)
@@ -62,8 +69,10 @@ class TemplateController extends APIController
 
     /**
      * Update a message tree.
+     *
      * @param         $id
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
@@ -77,15 +86,26 @@ class TemplateController extends APIController
 
     /**
      * Make the validator for message trees.
-     * @param $id
-     * @param $bot
+     *
+     * @param     $id
+     * @param Bot $bot
+     *
      * @return array
      */
-    protected function validationRules($id, $bot)
+    protected function validationRules($id, Bot $bot)
     {
-        $idString = $id? "{$id}" : "NULL";
         $rules = [
-            'name'       => "bail|required|max:255|unique:templates,name,{$idString},_id,bot_id,{$bot->id}",
+            'name'       => [
+                'bail',
+                'required',
+                'max:255',
+                Rule::unique('templates')->where(function ($query) use ($id, $bot) {
+                    if ($id) {
+                        $query->where('_id', '!=', $id);
+                    }
+                    $query->where('bot_id', $bot->_id);
+                })
+            ],
             'messages'   => 'bail|required|array|max:10',
             'messages.*' => 'bail|required|message',
         ];

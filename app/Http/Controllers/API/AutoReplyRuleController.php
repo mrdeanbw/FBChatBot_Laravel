@@ -2,10 +2,10 @@
 
 use App\Models\Bot;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Transformers\BaseTransformer;
 use App\Services\AutoReplyRuleService;
 use App\Transformers\AutoReplyRuleTransformer;
-use Illuminate\Validation\Rule;
 
 class AutoReplyRuleController extends APIController
 {

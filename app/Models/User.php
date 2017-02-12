@@ -67,10 +67,10 @@ class User extends BaseModel implements AuthenticatableContract, JWTSubject
 
     public static function boot()
     {
-        static::created(function(User $user)
-        {
-            $user->userRepository->generateReferralLink($user->id);
-        });
+//        static::created(function(User $user)
+//        {
+//            $user->userRepository->generateReferralLink($user->id);
+//        });
 
         parent::boot();
     }
