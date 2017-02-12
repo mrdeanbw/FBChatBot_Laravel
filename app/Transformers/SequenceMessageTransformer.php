@@ -14,8 +14,8 @@ class SequenceMessageTransformer extends BaseTransformer
             'name'       => $message->name,
             'conditions' => $message->conditions,
             'live'       => $message->live,
-            'is_deleted' => false,
-            'queued'     => 0,
+            'is_deleted' => (bool)$message->deleted_at,
+            'queued'     => $message->queued,
         ];
     }
 }

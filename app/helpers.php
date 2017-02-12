@@ -190,16 +190,16 @@ if (! function_exists('to_bytes')) {
 if (! function_exists('mongo_date')) {
 
     /**
-     * @param Carbon|UTCDatetime|string|int|null $date
-     * @return UTCDatetime
+     * @param Carbon|UTCDateTime|string|int|null $date
+     * @return UTCDateTime
      */
     function mongo_date($date = null)
     {
         if ($date === null) {
-            return new UTCDatetime();
+            return new UTCDateTime();
         }
         
-        if (is_a($date, UTCDatetime::class)) {
+        if (is_a($date, UTCDateTime::class)) {
             return $date;
         }
 

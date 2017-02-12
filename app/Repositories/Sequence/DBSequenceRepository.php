@@ -15,11 +15,13 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
     {
         return Sequence::class;
     }
-    
+
     /**
      * Create a message and attach it to sequence.
+     *
      * @param Sequence        $sequence
      * @param SequenceMessage $message
+     *
      * @return SequenceMessage
      */
     public function addMessageToSequence(Sequence $sequence, SequenceMessage $message)
@@ -29,6 +31,7 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Update a sequence message.
+     *
      * @param Sequence        $sequence
      * @param SequenceMessage $message
      */
@@ -41,17 +44,34 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Delete a sequence message.
+     *
      * @param Sequence        $sequence
      * @param SequenceMessage $message
      */
-    public function deleteMessage(Sequence $sequence, SequenceMessage $message)
+    public function deleteSequenceMessage(Sequence $sequence, SequenceMessage $message)
     {
-        Sequence::where('_id', $sequence->_id)->where('messages.id', $message->id)->pull('messages', 'message.$');
+        Sequence::where('_id', $sequence->_id)->pull('messages', ['id' => $message->id]);
+    }
+
+    /**
+     * Delete a sequence message.
+     *
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     */
+    public function softDeleteSequenceMessage(Sequence $sequence, SequenceMessage $message)
+    {
+        $message->deleted_at = Carbon::now();
+        Sequence::where('_id', $sequence->_id)->where('messages.id', $message->id)->update([
+            'messages.$.deleted_at' => mongo_date($message->deleted_at)
+        ]);
     }
 
     /**
      * Get the next message in a sequence.
+     *
      * @param SequenceMessage $sequenceMessage
+     *
      * @return SequenceMessage|null
      */
     public function getNextSequenceMessage(SequenceMessage $sequenceMessage)
@@ -61,6 +81,7 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Delete all scheduled messages from a certain sequence for a specific subscriber.
+     *
      * @param Subscriber $subscriber
      * @param Sequence   $sequence
      */
@@ -71,8 +92,10 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Find a sequence message by ID
+     *
      * @param int      $id
      * @param Sequence $sequence
+     *
      * @return SequenceMessage
      */
     public function findSequenceMessageById($id, Sequence $sequence)
@@ -84,7 +107,9 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Return a collection of subscribers, who are subscribed to a sequence.
+     *
      * @param Sequence $sequence
+     *
      * @return Collection
      */
     public function getSequenceSubscribers(Sequence $sequence)
@@ -96,6 +121,7 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
      * @param array           $data
      * @param SequenceMessage $message
      * @param Subscriber      $subscriber
+     *
      * @return SequenceMessageSchedule
      */
     public function createMessageSchedule(array $data, SequenceMessage $message, Subscriber $subscriber)
@@ -107,6 +133,7 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Get list of sending-due sequence message schedules
+     *
      * @return Collection
      */
     public function getDueMessageSchedule()
@@ -116,8 +143,10 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Return the sequence message associated with this schedule
+     *
      * @param SequenceMessageSchedule $schedule
      * @param bool                    $includingSoftDeleted whether or not to return the message if it has been soft deleted
+     *
      * @return SequenceMessage|null
      */
     public function getMessageFromSchedule(SequenceMessageSchedule $schedule, $includingSoftDeleted)
@@ -132,6 +161,7 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Update a sequence message schedule.
+     *
      * @param SequenceMessageSchedule $schedule
      * @param array                   $data
      */
@@ -142,6 +172,7 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
 
     /**
      * Return the trashed (soft deleted) sequence messages which have no schedules.
+     *
      * @return Collection
      */
     public function getTrashedMessagesWithNoSchedules()

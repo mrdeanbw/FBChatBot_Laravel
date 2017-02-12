@@ -11,8 +11,6 @@ class SequenceMessage extends ArrayModel
 
     public $name;
 
-    public $order;
-
     /** @type  array */
     public $conditions;
 
@@ -23,6 +21,14 @@ class SequenceMessage extends ArrayModel
     /** @type \Carbon\Carbon */
     public $deleted_at;
 
+    public $queued = 0;
+
+    /**
+     * SequenceMessage constructor.
+     *
+     * @param array $data
+     * @param bool  $strict
+     */
     public function __construct(array $data, $strict = false)
     {
         parent::__construct($data, $strict);

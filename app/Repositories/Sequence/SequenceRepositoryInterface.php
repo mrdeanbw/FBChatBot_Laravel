@@ -52,8 +52,15 @@ interface SequenceRepositoryInterface extends AssociatedWithBotRepositoryInterfa
      * @param Sequence        $sequence
      * @param SequenceMessage $message
      */
-    public function deleteMessage(Sequence $sequence, SequenceMessage $message);
-    
+    public function deleteSequenceMessage(Sequence $sequence, SequenceMessage $message);
+
+    /**
+     * Delete a sequence message.
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     */
+    public function softDeleteSequenceMessage(Sequence $sequence, SequenceMessage $message);
+
     /**
      * Return a collection of subscribers, who are subscribed to a sequence.
      * @param Sequence $sequence

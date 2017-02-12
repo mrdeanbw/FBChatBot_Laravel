@@ -132,10 +132,11 @@ class SequenceService
     public function create(array $input, Bot $bot)
     {
         $data = [
-            'name'     => $input['name'],
-            'bot_id'   => $bot->_id,
-            'filter'   => new AudienceFilter(['enabled' => false]),
-            'messages' => $this->defaultSequenceMessages($bot),
+            'name'             => $input['name'],
+            'bot_id'           => $bot->_id,
+            'filter'           => new AudienceFilter(['enabled' => false]),
+            'messages'         => $this->defaultSequenceMessages($bot),
+            'subscriber_count' => 0,
         ];
 
         return $this->sequenceRepo->create($data);
@@ -157,15 +158,24 @@ class SequenceService
 
         $sequence->filter = new AudienceFilter($input['filter'], true);
 
-        $this->scheduleFirstMessageForNewSubscribers($sequence);
+        /** @type SequenceMessage $message */
+        list($message, $index) = $this->getFirstSendableMessage($sequence);
+
+        if ($message) {
+            $this->scheduleFirstMessageForNewSubscribers($sequence, $message);
+        }
 
         $newSubscribers = $this->subscriberRepo->subscribeToSequenceIfNotUnsubscribed($sequence);
 
         $data = [
             'name'             => $input['name'],
             'filter'           => $sequence->filter,
-            'subscriber_count' => $sequence->subscriber_count + $newSubscribers
+            'subscriber_count' => $sequence->subscriber_count + $newSubscribers,
         ];
+
+        if ($message) {
+            $data["messages.{$index}.queued"] = $message->queued + $newSubscribers;
+        }
 
         $this->sequenceRepo->update($sequence, $data);
 
@@ -262,34 +272,36 @@ class SequenceService
 
 
     /**
-     * @todo soft delete if it has queued subscribers.
      * Delete a sequence message.
      *
-     * @param $id
-     * @param $sequenceId
-     * @param $page
+     * @param     $id
+     * @param     $sequenceId
+     * @param Bot $bot
+     *
+     * @return SequenceMessage|null
      */
-    public function deleteMessage($id, $sequenceId, $page)
+    public function deleteMessage($id, $sequenceId, Bot $bot)
     {
-        $sequence = $this->findByIdForBotOrFail($sequenceId, $page);
+        $sequence = $this->findByIdForBotOrFail($sequenceId, $bot);
         $message = $this->findMessageOrFail($id, $sequence);
-        $this->sequenceRepo->deleteMessage($sequence, $message);
+
+        if ($message->queued) {
+            $this->sequenceRepo->softDeleteSequenceMessage($sequence, $message);
+
+            return $message;
+        }
+
+        $this->sequenceRepo->deleteSequenceMessage($sequence, $message);
+
+        return null;
     }
 
     /**
-     * @param Sequence $sequence
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
      */
-    private function scheduleFirstMessageForNewSubscribers(Sequence $sequence)
+    private function scheduleFirstMessageForNewSubscribers(Sequence $sequence, SequenceMessage $message)
     {
-        /** @type SequenceMessage $message */
-        $message = array_first($sequence->messages, function (SequenceMessage $message) {
-            return is_null($message->deleted_at);
-        });
-
-        if (! $message) {
-            return;
-        }
-
         $subscribers = $this->subscriberRepo->subscribersWhoShouldSubscribeToSequence($sequence);
 
         if ($subscribers->isEmpty()) {
@@ -470,6 +482,22 @@ class SequenceService
         $dateTime->addMinutes($message->conditions['wait_for']['minutes']);
 
         return $dateTime;
+    }
+
+    /**
+     * @param Sequence $sequence
+     *
+     * @return array|null [SequenceMessage, int]
+     */
+    private function getFirstSendableMessage(Sequence $sequence)
+    {
+        foreach ($sequence->messages as $i => $temp) {
+            if (is_null($temp->deleted_at)) {
+                return [$temp, $i];
+            }
+        }
+
+        return null;
     }
 
 }

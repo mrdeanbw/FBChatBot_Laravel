@@ -86,9 +86,9 @@ class SequenceMessageController extends APIController
      */
     public function destroy($id, $sequenceId)
     {
-        $this->sequences->deleteMessage($id, $sequenceId, $this->bot());
+        $message = $this->sequences->deleteMessage($id, $sequenceId, $this->bot());
 
-        return $this->response->accepted();
+        return $this->itemResponse($message);
     }
 
     /** @return BaseTransformer */

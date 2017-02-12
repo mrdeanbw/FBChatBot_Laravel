@@ -175,7 +175,7 @@ class Sequence extends Command
         $messagesWithNoQueuedSchedules = $this->sequenceRepo->getTrashedMessagesWithNoSchedules();
 
         $messagesWithNoQueuedSchedules->each(function (SequenceMessage $message) {
-            $this->sequenceRepo->deleteMessage($message, true);
+            $this->sequenceRepo->deleteSequenceMessage($message, true);
         });
     }
 

@@ -1,8 +1,6 @@
 <?php
 
-use App\Models\SequenceSchedule;
 use Dingo\Api\Routing\Router;
-use MongoDB\Collection;
 
 /** @type Router $api */
 $api = app(Router::class);
