@@ -14,7 +14,6 @@ class FacebookWebhookMiddleware
      * @param Closure $next
      *
      * @return Response
-     * @TODO: remove log after this feature be stable (to avoid log flooding)
      */
     public function handle(Request $request, Closure $next)
     {
@@ -28,8 +27,6 @@ class FacebookWebhookMiddleware
         $payload = $request->getContent();
 
         if ($signature === null || empty($signature)) {
-            Log::warning("request to callback with missing signature Payload: " . $payload);
-
             return response('Signature is missing.', 400);
         }
 
@@ -37,8 +34,6 @@ class FacebookWebhookMiddleware
         $hash = 'sha1=' . hash_hmac('sha1', $payload, config('services.facebook.client_secret'));
 
         if ($signature !== $hash) {
-            Log::warning("request to callback with invalid signature Payload: " . $payload);
-
             return response('Invalid Signature', 400);
         }
 
