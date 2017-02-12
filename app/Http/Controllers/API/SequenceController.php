@@ -23,6 +23,7 @@ class SequenceController extends APIController
 
     /**
      * SequenceController constructor.
+     *
      * @param SequenceService   $sequences
      * @param SubscriberService $audience
      */
@@ -34,6 +35,7 @@ class SequenceController extends APIController
 
     /**
      * List of sequences.
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function index()
@@ -45,7 +47,9 @@ class SequenceController extends APIController
 
     /**
      * Return the details of a sequence.
+     *
      * @param $id
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function show($id)
@@ -58,7 +62,9 @@ class SequenceController extends APIController
 
     /**
      * Create a sequence.
+     *
      * @param Request $request
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function store(Request $request)
@@ -74,8 +80,10 @@ class SequenceController extends APIController
 
     /**
      * Update a sequence.
+     *
      * @param         $id
      * @param Request $request
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function update($id, Request $request)
@@ -84,11 +92,11 @@ class SequenceController extends APIController
 
         $rules = [
             'name'                          => 'required|max:255',
-            'filter'                        => 'bail|array',
+            'filter'                        => 'bail|required|array',
             'filter.enabled'                => 'bail|required',
             'filter.join_type'              => 'bail|required_if:filter.enabled,true|in:and,or',
-            'filter.groups'                 => 'bail|required_if:filter.enabled,true|array',
-            'filter.groups.*'               => 'bail|required_if:filter.enabled,true|array',
+            'filter.groups'                 => 'bail|array',
+            'filter.groups.*'               => 'bail|required|array',
             'filter.groups.*.join_type'     => 'bail|required|in:and,or,none',
             'filter.groups.*.rules'         => 'bail|required|array',
             'filter.groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
@@ -98,13 +106,15 @@ class SequenceController extends APIController
         $this->validate($request, $rules, $this->filterGroupRuleValidationCallback($bot));
 
         $sequence = $this->sequences->update($id, $request->all(), $bot);
-        
+
         return $this->itemResponse($sequence);
     }
 
     /**
      * Delete a sequence.
+     *
      * @param $id
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function destroy($id)

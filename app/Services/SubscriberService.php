@@ -145,7 +145,7 @@ class SubscriberService
         $subscriber = $this->subscriberRepo->create($data);
 
         if ($isActive) {
-            $this->subscribeToSequences($subscriber, $bot);
+            $this->subscribeToBotSequences($subscriber, $bot);
         }
 
         return $subscriber;
@@ -161,7 +161,7 @@ class SubscriberService
     {
         $subscriber = $this->findByFacebookId($id, $bot);
         $this->subscriberRepo->resubscribe($subscriber);
-        $this->subscribeToSequences($subscriber, $bot);
+        $this->subscribeToBotSequences($subscriber, $bot);
     }
 
     /**
@@ -354,7 +354,7 @@ class SubscriberService
         $this->botRepo->createTagsForBot($bot->_id, $tags);
 
         $this->subscriberRepo->update($subscriber, compact('tags'));
-        $this->subscribeToSequences($subscriber, $bot);
+        $this->subscribeToBotSequences($subscriber, $bot);
 
         return $subscriber;
     }
@@ -449,7 +449,7 @@ class SubscriberService
      * @param Subscriber $subscriber
      * @param Bot        $bot
      */
-    private function subscribeToSequences(Subscriber $subscriber, Bot $bot)
+    private function subscribeToBotSequences(Subscriber $subscriber, Bot $bot)
     {
         $sequencesToAdd = [];
         $sequences = $this->sequenceRepo->getAllForBot($bot);

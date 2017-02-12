@@ -25,6 +25,7 @@ class BroadcastService
 
     /**
      * BroadcastService constructor.
+     *
      * @param TemplateService              $templates
      * @param TimezoneService              $timezones
      * @param BroadcastRepositoryInterface $broadcastRepo
@@ -38,6 +39,7 @@ class BroadcastService
 
     /**
      * @param Bot $bot
+     *
      * @return \Illuminate\Support\Collection
      */
     public function all(Bot $bot)
@@ -48,6 +50,7 @@ class BroadcastService
     /**
      * @param      $id
      * @param Bot  $bot
+     *
      * @return Broadcast|null
      */
     public function findById($id, Bot $bot)
@@ -57,8 +60,10 @@ class BroadcastService
 
     /**
      * Find a broadcast by ID, throw exception if it doesn't exist.
+     *
      * @param      $id
      * @param Bot  $bot
+     *
      * @return Broadcast|null
      */
     public function findByIdOrFail($id, Bot $bot)
@@ -71,9 +76,11 @@ class BroadcastService
 
     /**
      * Find a broadcast by ID and status, throw exception if it doesn't exist.
+     *
      * @param      $id
      * @param Bot  $bot
      * @param      $status
+     *
      * @return Broadcast
      */
     public function findByIdAndStatusOrFail($id, $status, Bot $bot)
@@ -89,8 +96,10 @@ class BroadcastService
 
     /**
      * Create a broadcast
+     *
      * @param array $input
      * @param Bot   $bot
+     *
      * @return Broadcast
      */
     public function create(array $input, Bot $bot)
@@ -111,9 +120,11 @@ class BroadcastService
 
     /**
      * Update a broadcast.
+     *
      * @param        $id
      * @param array  $input
      * @param Bot    $bot
+     *
      * @return Broadcast
      */
     public function update($id, array $input, Bot $bot)
@@ -131,6 +142,7 @@ class BroadcastService
     /**
      * @param array $input
      * @param Bot   $bot
+     *
      * @return array
      */
     private function cleanInput(array $input, Bot $bot)
@@ -148,8 +160,9 @@ class BroadcastService
         $data = array_merge(
             $data,
             [
-                'status' => 'pending',
-                'filter' => new AudienceFilter($input['filter'], true),
+                'status'       => 'pending',
+                'completed_at' => null,
+                'filter'       => new AudienceFilter($input['filter'], true),
             ],
             $this->calculateFirstScheduleDateTime($data, $bot)
         );
@@ -161,8 +174,10 @@ class BroadcastService
 
     /**
      * Calculate the date/time when a specific timezone subscribers should receive the broadcast messages.
+     *
      * @param array $data
      * @param Bot   $bot
+     *
      * @return array [Carbon, double|null]
      */
     private function calculateFirstScheduleDateTime(array $data, Bot $bot)
@@ -194,6 +209,7 @@ class BroadcastService
 
     /**
      * @param Broadcast $broadcast
+     *
      * @return array
      */
     public function calculateNextScheduleDateTime(Broadcast $broadcast)
@@ -226,6 +242,7 @@ class BroadcastService
      * @param string $date
      * @param string $time
      * @param string $timezoneOffset
+     *
      * @return Carbon
      */
     private function getTimeInUTC($date, $time, $timezoneOffset)
@@ -243,12 +260,14 @@ class BroadcastService
      * 2 => "+02:00"
      * -9.5 => "-09:30"
      * 5.75 => "+05:45"
+     *
      * @param double $timezoneOffset
+     *
      * @return string
      */
     private function getPrettyTimezoneOffset($timezoneOffset)
     {
-        return ($timezoneOffset >= 0? '+' : '-') . date("H:i", abs($timezoneOffset) * 3600);
+        return ($timezoneOffset >= 0 ? '+' : '-') . date("H:i", abs($timezoneOffset) * 3600);
     }
 
     /**
@@ -263,9 +282,11 @@ class BroadcastService
 
     /**
      * If the timezone mode is limit time, then we will make sure that the send date / time falls in this limit.
+     *
      * @param Carbon $dateTime
      * @param int    $from
      * @param int    $to
+     *
      * @return Carbon
      */
     private function applyLimitTime(Carbon $dateTime, $from, $to)

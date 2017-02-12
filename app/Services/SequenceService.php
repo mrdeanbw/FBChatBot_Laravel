@@ -1,6 +1,6 @@
 <?php namespace App\Services;
 
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Text;
@@ -12,18 +12,11 @@ use App\Models\SequenceMessage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
+use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 
 class SequenceService
 {
 
-    /**
-     * @type MessageService
-     */
-    private $messageBlocks;
-    /**
-     * @type TimezoneService
-     */
-    private $timezones;
     /**
      * @type SequenceRepositoryInterface
      */
@@ -40,35 +33,41 @@ class SequenceService
      * @type SubscriberRepositoryInterface
      */
     private $subscriberRepo;
+    /**
+     * @var SequenceScheduleRepositoryInterface
+     */
+    private $sequenceScheduleRepo;
 
     /**
      * SequenceService constructor.
-     * @param SequenceRepositoryInterface   $sequenceRepo
-     * @param MessageService                $messageBlocks
-     * @param TimezoneService               $timezones
-     * @param TemplateRepositoryInterface   $templateRepo
-     * @param TemplateService               $templates
-     * @param SubscriberRepositoryInterface $subscriberRepo
+     *
+     * @param SequenceRepositoryInterface         $sequenceRepo
+     * @param TimezoneService                     $timezones
+     * @param TemplateRepositoryInterface         $templateRepo
+     * @param TemplateService                     $templates
+     * @param SubscriberRepositoryInterface       $subscriberRepo
+     * @param SequenceScheduleRepositoryInterface $sequenceScheduleRepo
      */
     public function __construct(
-        SequenceRepositoryInterface $sequenceRepo,
-        MessageService $messageBlocks,
         TimezoneService $timezones,
-        TemplateRepositoryInterface $templateRepo,
         TemplateService $templates,
-        SubscriberRepositoryInterface $subscriberRepo
+        SequenceRepositoryInterface $sequenceRepo,
+        TemplateRepositoryInterface $templateRepo,
+        SubscriberRepositoryInterface $subscriberRepo,
+        SequenceScheduleRepositoryInterface $sequenceScheduleRepo
     ) {
-        $this->messageBlocks = $messageBlocks;
-        $this->timezones = $timezones;
-        $this->sequenceRepo = $sequenceRepo;
-        $this->templateRepo = $templateRepo;
         $this->templates = $templates;
+        $this->sequenceRepo = $sequenceRepo;
         $this->subscriberRepo = $subscriberRepo;
+        $this->templateRepo = $templateRepo;
+        $this->sequenceScheduleRepo = $sequenceScheduleRepo;
     }
 
     /**
      * Return all sequences for page.
+     *
      * @param Bot $bot
+     *
      * @return \Illuminate\Support\Collection
      */
     public function all(Bot $bot)
@@ -78,8 +77,10 @@ class SequenceService
 
     /**
      * Find a sequence for a page.
+     *
      * @param             $id
      * @param Bot         $bot
+     *
      * @return Sequence
      */
     public function findByIdForBot($id, Bot $bot)
@@ -89,8 +90,10 @@ class SequenceService
 
     /**
      * Find a sequence for page, or thrown an exception if the sequence doesn't exit.
+     *
      * @param             $id
      * @param Bot         $page
+     *
      * @return Sequence
      */
     public function findByIdForBotOrFail($id, Bot $page)
@@ -103,8 +106,10 @@ class SequenceService
 
     /**
      * Find a sequence message by ID, throw an exception if it doesn't exist.
+     *
      * @param          $id
      * @param Sequence $sequence
+     *
      * @return SequenceMessage
      */
     public function findMessageOrFail($id, Sequence $sequence)
@@ -118,8 +123,10 @@ class SequenceService
 
     /**
      * Create a sequence
+     *
      * @param array $input
      * @param Bot   $bot
+     *
      * @return Sequence
      */
     public function create(array $input, Bot $bot)
@@ -131,41 +138,43 @@ class SequenceService
             'messages' => $this->defaultSequenceMessages($bot),
         ];
 
-        $sequence = $this->sequenceRepo->create($data);
-
-        return $sequence;
+        return $this->sequenceRepo->create($data);
     }
 
     /**
      * Update a sequence.
+     *
      * @param      $id
      * @param      $input
-     * @param Bot  $page
+     * @param Bot  $bot
+     *
      * @return Sequence
      */
-    public function update($id, $input, Bot $page)
+    public function update($id, $input, Bot $bot)
     {
         /** @type Sequence $sequence */
-        $sequence = $this->findByIdForBotOrFail($id, $page);
+        $sequence = $this->findByIdForBotOrFail($id, $bot);
 
-        if ($filter = array_get($input, 'filter')) {
-            $filter = new AudienceFilter($filter, true);
-        }
+        $sequence->filter = new AudienceFilter($input['filter'], true);
+
+        $this->scheduleFirstMessageForNewSubscribers($sequence);
+
+        $newSubscribers = $this->subscriberRepo->subscribeToSequenceIfNotUnsubscribed($sequence);
 
         $data = [
-            'name'   => $input['name'],
-            'filter' => $filter,
+            'name'             => $input['name'],
+            'filter'           => $sequence->filter,
+            'subscriber_count' => $sequence->subscriber_count + $newSubscribers
         ];
 
         $this->sequenceRepo->update($sequence, $data);
-
-        $this->subscriberRepo->subscribeToSequenceIfNotUnsubscribed($sequence);
 
         return $sequence;
     }
 
     /**
      * Delete a sequence.
+     *
      * @param      $id
      * @param Bot  $page
      */
@@ -177,9 +186,11 @@ class SequenceService
 
     /**
      * Add a new message to a sequences.
+     *
      * @param array $input
      * @param int   $sequenceId
      * @param Bot   $bot
+     *
      * @return SequenceMessage
      */
     public function createMessage(array $input, $sequenceId, Bot $bot)
@@ -191,7 +202,7 @@ class SequenceService
         $message = new SequenceMessage([
             'template_id' => $template->_id,
             'live'        => array_get($input, 'live', false),
-            'conditions'  => $this->normalizeMessageConditions($input)
+            'conditions'  => $input['conditions']
         ]);
 
         $this->sequenceRepo->addMessageToSequence($sequence, $message);
@@ -203,10 +214,12 @@ class SequenceService
 
     /**
      * Update a sequence message.
+     *
      * @param array $input
      * @param int   $id
      * @param int   $sequenceId
      * @param Bot   $bot
+     *
      * @return SequenceMessage
      */
     public function updateMessage(array $input, $id, $sequenceId, Bot $bot)
@@ -218,7 +231,7 @@ class SequenceService
 
         $message->name = $input['name'];
         $message->live = array_get($input, 'live', false);
-        $message->conditions = $this->normalizeMessageConditions($input);
+        $message->normalizeConditions($input['conditions']);
 
         $this->sequenceRepo->updateSequenceMessage($sequence, $message);
 
@@ -229,17 +242,19 @@ class SequenceService
 
     /**
      * Update a sequence message.
+     *
      * @param array $input
      * @param int   $id
      * @param int   $sequenceId
      * @param Bot   $bot
+     *
      * @return SequenceMessage
      */
     public function updateMessageConditions(array $input, $id, $sequenceId, Bot $bot)
     {
         $sequence = $this->findByIdForBotOrFail($sequenceId, $bot);
         $message = $this->findMessageOrFail($id, $sequence);
-        $message->conditions = $this->normalizeMessageConditions($input);
+        $message->normalizeConditions($input['conditions']);
         $this->sequenceRepo->updateSequenceMessage($sequence, $message);
 
         return $message;
@@ -249,6 +264,7 @@ class SequenceService
     /**
      * @todo soft delete if it has queued subscribers.
      * Delete a sequence message.
+     *
      * @param $id
      * @param $sequenceId
      * @param $page
@@ -260,13 +276,48 @@ class SequenceService
         $this->sequenceRepo->deleteMessage($sequence, $message);
     }
 
+    /**
+     * @param Sequence $sequence
+     */
+    private function scheduleFirstMessageForNewSubscribers(Sequence $sequence)
+    {
+        /** @type SequenceMessage $message */
+        $message = array_first($sequence->messages, function (SequenceMessage $message) {
+            return is_null($message->deleted_at);
+        });
+
+        if (! $message) {
+            return;
+        }
+
+        $subscribers = $this->subscriberRepo->subscribersWhoShouldSubscribeToSequence($sequence);
+
+        if ($subscribers->isEmpty()) {
+            return;
+        }
+
+        $data = [];
+        foreach ($subscribers as $subscriber) {
+            $data[] = [
+                'sequence_id'   => $sequence->_id,
+                'message_id'    => $message->id,
+                'subscriber_id' => $subscriber->_id,
+                'status'        => 'pending',
+                'send_at'       => $this->applyConditions(Carbon::now(), $message),
+            ];
+        }
+
+        $this->sequenceScheduleRepo->bulkCreate($data);
+    }
 
     /**
      * Schedule the next sequence message to be sent to a subscriber.
      * Schedule message data = send date of previous message + time period to be waited before sending this message
+     *
      * @param SequenceMessage $message
      * @param Subscriber      $subscriber
      * @param                 $previousMessagesWasSentAt (or subscribed at for first message).
+     *
      * @return SequenceMessageSchedule
      */
     public function scheduleMessage(SequenceMessage $message, Subscriber $subscriber, Carbon $previousMessagesWasSentAt)
@@ -281,6 +332,7 @@ class SequenceService
 
     /**
      * @param Bot $bot
+     *
      * @return array
      */
     private function defaultSequenceMessages(Bot $bot)
@@ -334,6 +386,7 @@ class SequenceService
 
     /**
      * @param Bot $bot
+     *
      * @return array
      */
     private function getDefaultTemplates(Bot $bot)
@@ -393,7 +446,8 @@ class SequenceService
 
     /**
      * @param $text
-     * @return array
+     *
+     * @return Text
      */
     private function textMessage($text)
     {
@@ -404,20 +458,18 @@ class SequenceService
     }
 
     /**
-     * @param array $input
-     * @return array
+     * @param Carbon          $dateTime
+     * @param SequenceMessage $message
+     *
+     * @return Carbon
      */
-    private function normalizeMessageConditions(array $input)
+    private function applyConditions(Carbon $dateTime, SequenceMessage $message)
     {
-        $conditions = [
-            'wait_for' => [
-                'days'    => $input['conditions']['wait_for']['days'],
-                'hours'   => $input['conditions']['wait_for']['hours'],
-                'minutes' => $input['conditions']['wait_for']['minutes'],
-            ]
-        ];
+        $dateTime->addDays($message->conditions['wait_for']['days']);
+        $dateTime->addHours($message->conditions['wait_for']['hours']);
+        $dateTime->addMinutes($message->conditions['wait_for']['minutes']);
 
-        return $conditions;
+        return $dateTime;
     }
 
 }

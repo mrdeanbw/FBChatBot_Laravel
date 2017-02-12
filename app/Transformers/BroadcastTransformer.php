@@ -10,16 +10,17 @@ class BroadcastTransformer extends BaseTransformer
     public function transform(Broadcast $broadcast)
     {
         return [
-            'id'             => $broadcast->id,
-            'name'           => $broadcast->name,
-            'timezone'       => $broadcast->timezone,
-            'notification'   => $broadcast->notification,
-            'date'           => $broadcast->date,
-            'time'           => $broadcast->time,
-            'send_from'      => $broadcast->send_from,
-            'send_to'        => $broadcast->send_to,
-            'status'         => $broadcast->status,
-            'created_at'     => $broadcast->created_at->toAtomString(),
+            'id'           => $broadcast->id,
+            'name'         => $broadcast->name,
+            'timezone'     => $broadcast->timezone,
+            'notification' => $broadcast->notification,
+            'date'         => $broadcast->date,
+            'time'         => $broadcast->time,
+            'send_from'    => $broadcast->send_from,
+            'send_to'      => $broadcast->send_to,
+            'status'       => $broadcast->status,
+            'created_at'   => $broadcast->created_at->toAtomString(),
+            'completed_at' => $broadcast->completed_at ? $broadcast->completed_at->toAtomString() : null,
         ];
     }
 

@@ -17,6 +17,7 @@ class BroadcastController extends APIController
 
     /**
      * BroadcastController constructor.
+     *
      * @param BroadcastService $broadcasts
      */
     public function __construct(BroadcastService $broadcasts)
@@ -26,6 +27,7 @@ class BroadcastController extends APIController
 
     /**
      * Retrieve the list of broadcasts.
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function index()
@@ -37,8 +39,10 @@ class BroadcastController extends APIController
 
     /**
      * Return the details of a broadcast.
+     *
      * @param         $id
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function show($id, Request $request)
@@ -54,7 +58,9 @@ class BroadcastController extends APIController
 
     /**
      * Create a broadcast.
+     *
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function store(Request $request)
@@ -70,8 +76,10 @@ class BroadcastController extends APIController
 
     /**
      * Update a broadcast.
+     *
      * @param         $id
      * @param Request $request
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
@@ -87,7 +95,9 @@ class BroadcastController extends APIController
 
     /**
      * Delete a broadcast.
+     *
      * @param         $id
+     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function destroy($id)
@@ -105,12 +115,12 @@ class BroadcastController extends APIController
         return [
             'name'                          => 'bail|required|max:255',
             'timezone'                      => 'bail|required|in:same_time,time_travel,limit_time',
-            'notification'                  => 'bail|required|in:regular,silent_push,no_push',
+            'notification'                  => 'bail|required|in:REGULAR,SILENT_PUSH,NO_PUSH',
             'date'                          => 'bail|required|date_format:Y-m-d',
             'time'                          => 'bail|required|date_format:H:i',
             'send_from'                     => 'bail|required_if:timezone,limit_time|integer|between:1,24',
             'send_to'                       => 'bail|required_if:timezone,limit_time|integer|between:1,24',
-            'filter'                        => 'bail|array',
+            'filter'                        => 'bail|required|array',
             'filter.enabled'                => 'bail|required',
             'filter.join_type'              => 'bail|required_if:filter.enabled,true|in:and,or',
             'filter.groups'                 => 'bail|array',

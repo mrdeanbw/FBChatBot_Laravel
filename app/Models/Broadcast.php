@@ -11,20 +11,19 @@
  * @property string         $time
  * @property int            $send_to
  * @property int            $send_from
- * @property \Carbon\Carbon $created_at
  * @property AudienceFilter $filter
  * @property \Carbon\Carbon $next_send_at
  * @property double         $next_utc_offset
  * @property string         $bot_id
+ * @property \Carbon\Carbon $completed_at
+ * @property Bot            $bot
  */
 class Broadcast extends BaseModel
 {
 
     use HasEmbeddedArrayModels;
 
-    protected $dates = ['next_send_at'];
+    protected $dates = ['next_send_at', 'completed_at'];
 
-    public $arrayModels = [
-        'filter' => AudienceFilter::class,
-    ];
+    public $arrayModels = ['filter' => AudienceFilter::class];
 }

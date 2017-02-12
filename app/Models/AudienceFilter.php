@@ -3,10 +3,10 @@
 class AudienceFilter extends ArrayModel
 {
 
-    public $join_type;
     /** @type  AudienceFilterGroup[] */
     public $groups = [];
     public $enabled;
+    public $join_type = 'and';
 
     /**
      * AudienceFilter constructor.

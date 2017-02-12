@@ -16,23 +16,27 @@ interface BaseRepositoryInterface
     /**
      * @param array $filterBy
      * @param array $orderBy
+     * @param array $columns
+     *
      * @return Collection
      */
-    public function getAll(array $filterBy, array $orderBy);
+    public function getAll(array $filterBy = [], array $orderBy = [], array $columns = ['*']);
 
     /**
      * @param array $filterBy
      * @param array $orderBy
+     * @param array $columns
+     *
      * @return BaseModel
      */
-    public function getOne(array $filterBy, array $orderBy);
+    public function getOne(array $filterBy = [], array $orderBy = [], array $columns = ['*']);
 
     /**
      * @param array $filterBy
      * @param array $orderBy
      * @return int
      */
-    public function count(array $filterBy, array $orderBy);
+    public function count(array $filterBy = [], array $orderBy = []);
 
     /**
      * Get a paginated ordered list of all subscribers matching given criteria.

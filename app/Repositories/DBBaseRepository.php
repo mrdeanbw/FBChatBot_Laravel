@@ -1,9 +1,9 @@
 <?php namespace App\Repositories;
 
-use App\Models\BaseModel;
 use Carbon\Carbon;
+use App\Models\BaseModel;
 use MongoDB\BSON\ObjectID;
-use MongoDB\BSON\UTCDatetime;
+use MongoDB\BSON\UTCDateTime;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Jenssegers\Mongodb\Eloquent\Builder;
@@ -15,23 +15,25 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     /**
      * @param array $filterBy
      * @param array $orderBy
+     * @param array $columns
      *
      * @return Collection
      */
-    public function getAll(array $filterBy = [], array $orderBy = [])
+    public function getAll(array $filterBy = [], array $orderBy = [], array $columns = ['*'])
     {
-        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->get();
+        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->get($columns);
     }
 
     /**
      * @param array $filterBy
      * @param array $orderBy
+     * @param array $columns
      *
      * @return BaseModel|null
      */
-    public function getOne(array $filterBy = [], array $orderBy = [])
+    public function getOne(array $filterBy = [], array $orderBy = [], array $columns = ['*'])
     {
-        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->first();
+        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->first($columns);
     }
 
     /**
@@ -111,8 +113,13 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     {
         $now = new UTCDateTime(round(microtime(true) * 1000));
 
+        $data = array_map(function ($item) {
+            return $this->normalizeCarbonDates($item);
+        }, $data);
+
         foreach (array_keys($data) as $i) {
-            $data[$i]['created_at'] = $data[$i]['updated_at'] = $now;
+            $data[$i]['created_at'] = array_get($data[$i], 'created_at', $now);
+            $data[$i]['updated_at'] = array_get($data[$i], 'updated_at', $now);
         }
 
         /** @type string|BaseModel $model */
@@ -139,17 +146,9 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
             return $class::where('_id', $model->_id)->update($data);
         }
 
-        $update = [];
+        $data = $this->normalizeCarbonDates($data);
 
-        foreach ($data as $key => $value) {
-            if ($model->{$key} && is_a($model->{$key}, Carbon::class)) {
-                $update[$key] = mongo_date($value);
-            } else {
-                $update[$key] = $value;
-            }
-        }
-
-        return $class::where('_id', $model->_id)->update($update);
+        return $class::where('_id', $model->_id)->update($data);
     }
 
     /**
@@ -223,5 +222,21 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
         $this->applyOrderBy($query, $orderBy);
 
         return $query;
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return array
+     */
+    private function normalizeCarbonDates(array $data)
+    {
+        foreach ($data as $key => &$value) {
+            if (is_a($value, Carbon::class)) {
+                $value = mongo_date($value);
+            }
+        }
+
+        return $data;
     }
 }

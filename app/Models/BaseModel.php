@@ -7,6 +7,8 @@ use Jenssegers\Mongodb\Eloquent\Model;
  *
  * @property string                 $id
  * @property \MongoDB\BSON\ObjectID $_id
+ * @property \Carbon\Carbon         $created_at
+ * @property \Carbon\Carbon         $updated_at
  */
 abstract class BaseModel extends Model
 {

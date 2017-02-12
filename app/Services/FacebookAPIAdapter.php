@@ -53,9 +53,9 @@ class FacebookAPIAdapter
         /** @type Bot $bot */
         $this->loadModelsIfNotLoaded($broadcast, ['bot', 'template']);
 
-        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forBroadcast($broadcast);
+        $mapper = (new FacebookMessageMapper($broadcast->bot))->forSubscriber($subscriber)->forBroadcast($broadcast);
 
-        return $this->sendMessages($mapper, $broadcast->template->messages, $subscriber, $bot, $broadcast->notification);
+        return $this->sendMessages($mapper, $broadcast->template->messages, $subscriber, $broadcast->bot, $broadcast->notification);
     }
 
     /**

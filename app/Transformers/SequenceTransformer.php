@@ -10,8 +10,10 @@ class SequenceTransformer extends BaseTransformer
     public function transform(Sequence $sequence)
     {
         return [
-            'id'     => $sequence->id,
-            'name'   => $sequence->name,
+            'id'               => $sequence->id,
+            'name'             => $sequence->name,
+            'message_count'    => count($sequence->messages),
+            'subscriber_count' => $sequence->subscriber_count,
         ];
     }
 

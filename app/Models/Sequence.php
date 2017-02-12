@@ -5,17 +5,13 @@
  * @property SequenceMessage[] $messages
  * @property AudienceFilter    $filter
  * @property string            $bot_id
+ * @property int               $subscriber_count
  */
 class Sequence extends BaseModel
 {
 
     use HasEmbeddedArrayModels;
 
-    public $multiArrayModels = [
-        'messages' => SequenceMessage::class
-    ];
-
-    public $arrayModels = [
-        'filter' => AudienceFilter::class,
-    ];
+    public $arrayModels = ['filter' => AudienceFilter::class];
+    public $multiArrayModels = ['messages' => SequenceMessage::class];
 }

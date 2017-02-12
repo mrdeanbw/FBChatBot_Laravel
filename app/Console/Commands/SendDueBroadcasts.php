@@ -2,6 +2,7 @@
 
 use App\Models\Broadcast;
 use App\Jobs\SendBroadcast;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use App\Services\BroadcastService;
@@ -107,6 +108,7 @@ class SendDueBroadcasts extends Command
 
         if (is_null($data['next_send_at'])) {
             $data['status'] = 'completed';
+            $data['completed_at'] = Carbon::now();
         }
 
         $this->broadcastRepo->update($broadcast, $data);
