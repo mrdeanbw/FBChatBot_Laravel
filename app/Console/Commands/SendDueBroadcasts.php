@@ -1,8 +1,8 @@
 <?php namespace App\Console\Commands;
 
+use Carbon\Carbon;
 use App\Models\Broadcast;
 use App\Jobs\SendBroadcast;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use App\Services\BroadcastService;
@@ -40,7 +40,7 @@ class SendDueBroadcasts extends Command
 
 
     /**
-     * Broadcast constructor.
+     * SendDueBroadcasts constructor.
      *
      * @param BroadcastRepositoryInterface  $broadcastRepo
      * @param BroadcastService              $broadcasts
@@ -68,6 +68,8 @@ class SendDueBroadcasts extends Command
         foreach ($broadcasts as $broadcast) {
             $this->processBroadcast($broadcast);
         }
+
+        $this->info("Done");
     }
 
     /**
@@ -109,6 +111,8 @@ class SendDueBroadcasts extends Command
         if (is_null($data['next_send_at'])) {
             $data['status'] = 'completed';
             $data['completed_at'] = Carbon::now();
+        } else {
+            $data['status'] = 'pending';
         }
 
         $this->broadcastRepo->update($broadcast, $data);

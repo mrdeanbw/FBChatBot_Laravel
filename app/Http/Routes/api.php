@@ -1,4 +1,5 @@
 <?php
+
 use Dingo\Api\Routing\Router;
 
 /** @type Router $api */

@@ -1,11 +1,9 @@
 <?php namespace App\Services;
 
-use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Text;
 use App\Models\Sequence;
-use App\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
 use App\Models\AudienceFilter;
 use App\Models\SequenceMessage;
@@ -13,6 +11,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 
 class SequenceService
 {
@@ -114,6 +113,7 @@ class SequenceService
      */
     public function findMessageOrFail($id, Sequence $sequence)
     {
+        $id = is_a($id, ObjectID::class) ? $id : new ObjectID($id);
         if ($message = $this->sequenceRepo->findSequenceMessageById($id, $sequence)) {
             return $message;
         }
@@ -158,10 +158,7 @@ class SequenceService
 
         $sequence->filter = new AudienceFilter($input['filter'], true);
 
-        /** @type SequenceMessage $message */
-        list($message, $index) = $this->getFirstSendableMessage($sequence);
-
-        if ($message) {
+        if ($message = $this->getFirstSendableMessage($sequence)) {
             $this->scheduleFirstMessageForNewSubscribers($sequence, $message);
         }
 
@@ -174,6 +171,7 @@ class SequenceService
         ];
 
         if ($message) {
+            $index = $this->getMessageIndexInSequence($sequence, $message);
             $data["messages.{$index}.queued"] = $message->queued + $newSubscribers;
         }
 
@@ -323,26 +321,6 @@ class SequenceService
     }
 
     /**
-     * Schedule the next sequence message to be sent to a subscriber.
-     * Schedule message data = send date of previous message + time period to be waited before sending this message
-     *
-     * @param SequenceMessage $message
-     * @param Subscriber      $subscriber
-     * @param                 $previousMessagesWasSentAt (or subscribed at for first message).
-     *
-     * @return SequenceMessageSchedule
-     */
-    public function scheduleMessage(SequenceMessage $message, Subscriber $subscriber, Carbon $previousMessagesWasSentAt)
-    {
-        $data = [
-            'status'  => 'pending',
-            'send_at' => $previousMessagesWasSentAt->copy()->addDays($message->days)
-        ];
-
-        return $this->sequenceRepo->createMessageSchedule($data, $message, $subscriber);
-    }
-
-    /**
      * @param Bot $bot
      *
      * @return array
@@ -475,7 +453,7 @@ class SequenceService
      *
      * @return Carbon
      */
-    private function applyConditions(Carbon $dateTime, SequenceMessage $message)
+    public function applyConditions(Carbon $dateTime, SequenceMessage $message)
     {
         $dateTime->addDays($message->conditions['wait_for']['days']);
         $dateTime->addHours($message->conditions['wait_for']['hours']);
@@ -487,17 +465,57 @@ class SequenceService
     /**
      * @param Sequence $sequence
      *
-     * @return array|null [SequenceMessage, int]
+     * @return SequenceMessage
      */
     private function getFirstSendableMessage(Sequence $sequence)
     {
-        foreach ($sequence->messages as $i => $temp) {
+        foreach ($sequence->messages as $temp) {
             if (is_null($temp->deleted_at)) {
-                return [$temp, $i];
+                return $temp;
             }
         }
 
         return null;
     }
 
+    /**
+     * Schedule the next non deleted sequence message.
+     *
+     * @param Sequence        $sequence
+     * @param SequenceMessage $current
+     *
+     * @return SequenceMessage|null
+     */
+    public function getNextSendableMessage(Sequence $sequence, SequenceMessage $current)
+    {
+        $currentPassed = false;
+
+        foreach ($sequence->messages as $temp) {
+            if ($currentPassed && is_null($temp->deleted_at)) {
+                return $temp;
+            }
+            if ($temp->id == $current->id) {
+                $currentPassed = true;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     *
+     * @return int|null
+     */
+    public function getMessageIndexInSequence(Sequence $sequence, SequenceMessage $message)
+    {
+        foreach ($sequence->messages as $i => $temp) {
+            if ($temp->id == $message->id) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
 }
