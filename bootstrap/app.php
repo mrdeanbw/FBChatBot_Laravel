@@ -28,8 +28,14 @@ $app->withFacades(true, [
 ]);
 $app->bind('redirect', 'Laravel\Lumen\Http\Redirector');
 
+/**
+ * Register service prviders
+ */ 
 $app->register(Jenssegers\Mongodb\MongodbServiceProvider::class);
 $app->register(Jenssegers\Mongodb\MongodbQueueServiceProvider::class);
+$app->register(Modules\Monitor\MonitorServiceProvider::class);
+
+
 $app->withEloquent();
 
 $app->configure('app');
@@ -141,13 +147,14 @@ $app->configureMonologUsing(function ($monolog) {
 |
 */
 $app->group(['namespace' => 'App\Http\Controllers'], function ($app) {
-    require __DIR__ . '/../app/Http/routes.php';
+    //require __DIR__ . '/../app/Http/routes.php';
+    require __DIR__ . '/../app/Http/Routes/api.php';
+    require __DIR__ . '/../app/Http/Routes/web.php';
 });
 
+require __DIR__ . '/../app/Http/Routes/modules.php';
 
-$app->group(['namespace' => '\Rap2hpoutre\LaravelLogViewer'], function () use ($app) {
-    $app->get('logs', 'LogViewerController@index');
-});
+
 
 
 return $app;
