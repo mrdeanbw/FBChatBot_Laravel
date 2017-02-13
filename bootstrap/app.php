@@ -30,7 +30,7 @@ $app->bind('redirect', 'Laravel\Lumen\Http\Redirector');
 
 /**
  * Register service prviders
- */ 
+ */
 $app->register(Jenssegers\Mongodb\MongodbServiceProvider::class);
 $app->register(Jenssegers\Mongodb\MongodbQueueServiceProvider::class);
 $app->register(Modules\Monitor\MonitorServiceProvider::class);
@@ -129,7 +129,8 @@ use Monolog\Handler\RotatingFileHandler;
 $app->configureMonologUsing(function ($monolog) {
     $maxFiles = 7;
 
-    $rotatingLogHandler = (new RotatingFileHandler(storage_path('logs/lumen.log'), $maxFiles))->setFormatter(new LineFormatter(null, null, true, true));
+    $rotatingLogHandler = (new RotatingFileHandler(storage_path('logs/lumen.log'), $maxFiles))->setFormatter(new LineFormatter(null, null, true,
+        true));
 
     $monolog->setHandlers([$rotatingLogHandler]);
 
@@ -147,14 +148,11 @@ $app->configureMonologUsing(function ($monolog) {
 |
 */
 $app->group(['namespace' => 'App\Http\Controllers'], function ($app) {
-    //require __DIR__ . '/../app/Http/routes.php';
     require __DIR__ . '/../app/Http/Routes/api.php';
     require __DIR__ . '/../app/Http/Routes/web.php';
 });
 
 require __DIR__ . '/../app/Http/Routes/modules.php';
-
-
 
 
 return $app;
