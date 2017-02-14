@@ -33,13 +33,25 @@ class TemplateService
 
 
     /**
-     * @param Bot $page
+     * @param Bot     $bot
+     * @param Bot|int $page
+     * @param array   $filter
+     * @param array   $orderBy
+     * @param int     $perPage
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Pagination\Paginator
      */
-    public function explicitTemplates(Bot $page)
+    public function paginateExplicit(Bot $bot, $page = 1, $filter = [], $orderBy = [], $perPage = 20)
     {
-        return $this->templateRepo->explicitTemplatesForBot($page);
+        $filterBy = [['operator' => '=', 'key' => 'explicit', 'value' => true]];
+
+        if ($name = array_get($filter, 'name')) {
+            $filterBy[] = ['operator' => 'prefix', 'key' => 'name', 'value' => $name];
+        }
+
+        $orderBy = $orderBy ?: ['_id' => 'asc'];
+
+        return $this->templateRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
 
     /**

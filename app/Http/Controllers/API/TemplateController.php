@@ -28,13 +28,21 @@ class TemplateController extends APIController
     /**
      * Return a list of message trees.
      *
+     * @param Request $request
+     *
      * @return \Dingo\Api\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $templates = $this->templates->explicitTemplates($this->bot());
+        $paginator = $this->templates->paginateExplicit(
+            $this->bot(),
+            $request->get('page'),
+            ['name' => $request->get('name')]
+        );
 
-        return $this->collectionResponse($templates);
+
+        return $this->paginatorResponse($paginator);
+
     }
 
     /**
@@ -94,18 +102,10 @@ class TemplateController extends APIController
      */
     protected function validationRules($id, Bot $bot)
     {
+        $nameUniqueRule = "ci_unique:templates,name,_id,{$id},bot_id,oi:{$bot->id}";
+
         $rules = [
-            'name'       => [
-                'bail',
-                'required',
-                'max:255',
-                Rule::unique('templates')->where(function ($query) use ($id, $bot) {
-                    if ($id) {
-                        $query->where('_id', '!=', $id);
-                    }
-                    $query->where('bot_id', $bot->_id);
-                })
-            ],
+            'name'       => "bail|required|max:255|{$nameUniqueRule}",
             'messages'   => 'bail|required|array|max:10',
             'messages.*' => 'bail|required|message',
         ];
