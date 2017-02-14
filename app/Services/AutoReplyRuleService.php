@@ -45,24 +45,17 @@ class AutoReplyRuleService
     /**
      * @param Bot   $bot
      * @param int   $page
-     * @param array $filterBy
+     * @param array $filter
      * @param array $orderBy
      * @param int   $perPage
      *
      * @return Paginator
      */
-    public function paginate(Bot $bot, $page = 1, $filterBy = [], $orderBy = [], $perPage = 20)
+    public function paginate(Bot $bot, $page = 1, $filter = [], $orderBy = [], $perPage = 20)
     {
-        if ($keyword = array_get($filterBy, 'keyword')) {
-            $filterBy = [
-                [
-                    'operator' => 'contains',
-                    'key'      => 'keyword',
-                    'value'    => $keyword
-                ]
-            ];
-        } else {
-            $filterBy = [];
+        $filterBy = [];
+        if ($keyword = array_get($filter, 'keyword')) {
+            $filterBy[] = ['operator' => 'prefix', 'key' => 'keyword', 'value' => $keyword];
         }
 
         $orderBy = $orderBy ?: ['_id' => 'asc'];

@@ -107,19 +107,11 @@ class AutoReplyRuleController extends APIController
      */
     private function validationRules(Bot $bot, $ruleId = null)
     {
+        $keywordUniqueRule = "ci_unique:auto_reply_rules,keyword,_id,{$ruleId},bot_id,oi:{$bot->id}";
+
         return [
             'mode'        => 'bail|required|in:is,contains,begins_with',
-            'keyword'     => [
-                'bail',
-                'required',
-                'max:255',
-                Rule::unique('auto_reply_rules')->where(function ($query) use ($ruleId, $bot) {
-                    if ($ruleId) {
-                        $query->where('_id', '!=', $ruleId);
-                    }
-                    $query->where('bot_id', $bot->_id);
-                })
-            ],
+            'keyword'     => "bail|required|max:255|{$keywordUniqueRule}",
             'action'      => 'bail|required|in:send',
             'template'    => 'bail|required|array',
             'template.id' => [
