@@ -30,7 +30,7 @@ class MonitorService
 
 			$serversData[] = [
 				'host'   => $data['host'],
-				'load'   => array_map($data['load'],function($num){ return round($num,2); }),
+				'load'   => array_map(function($num){ return round($num,2); },$data['load']),
 				'memory' => [
 					'total'   => round($data['memory']['total']),
 					'free'    => round($data['memory']['free']),
