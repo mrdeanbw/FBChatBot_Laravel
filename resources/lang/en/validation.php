@@ -91,4 +91,8 @@ return [
         'template.messages'   => "Messages",
         'template.messages.*' => "Message",
     ],
+
+
+    'ci_unique' => 'The :attribute has already been taken.',
 ];
+
