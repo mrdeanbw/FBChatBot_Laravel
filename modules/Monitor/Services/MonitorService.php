@@ -32,9 +32,9 @@ class MonitorService
 				'host'   => $data['host'],
 				'load'   => $data['load'],
 				'memory' => [
-					'total'   => round($data['memory']['total'] / 1024 / 1024),
-					'free'    => round($data['memory']['free'] / 1024 / 1024),
-					'taken'   => round($data['memory']['taken'] / 1024 / 1024),
+					'total'   => round($data['memory']['total']),
+					'free'    => round($data['memory']['free']),
+					'taken'   => round($data['memory']['taken']),
 					'percent' => round( $data['memory']['taken'] / $data['memory']['total'] * 100 ,1)
 				]
 			];
