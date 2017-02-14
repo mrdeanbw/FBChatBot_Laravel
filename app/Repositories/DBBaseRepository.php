@@ -172,11 +172,11 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
         switch ($filter['operator']) {
             case 'prefix':
-                $query->where($filter['key'], 'regexp', "/^{$filter['value']}.*?/");
+                $query->where($filter['key'], 'regexp', "/^{$filter['value']}.*?/i");
                 break;
 
             case 'contains':
-                $query->where($filter['key'], 'regexp', "/.*?{$filter['value']}.*?/");
+                $query->where($filter['key'], 'regexp', "/.*?{$filter['value']}.*?/i");
                 break;
 
             case 'date':
