@@ -42,7 +42,6 @@ class TemplateController extends APIController
 
 
         return $this->paginatorResponse($paginator);
-
     }
 
     /**

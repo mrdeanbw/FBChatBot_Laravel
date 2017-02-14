@@ -62,16 +62,27 @@ class SequenceService
         $this->sequenceScheduleRepo = $sequenceScheduleRepo;
     }
 
+
     /**
-     * Return all sequences for page.
+     * @param Bot     $bot
+     * @param Bot|int $page
+     * @param array   $filter
+     * @param array   $orderBy
+     * @param int     $perPage
      *
-     * @param Bot $bot
-     *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Pagination\Paginator
      */
-    public function all(Bot $bot)
+    public function paginate(Bot $bot, $page = 1, $filter = [], $orderBy = [], $perPage = 20)
     {
-        return $this->sequenceRepo->getAllForBot($bot);
+        $filterBy = [];
+
+        if ($name = array_get($filter, 'name')) {
+            $filterBy[] = ['operator' => 'prefix', 'key' => 'name', 'value' => $name];
+        }
+
+        $orderBy = $orderBy ?: ['_id' => 'desc'];
+
+        return $this->sequenceRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
 
     /**
@@ -158,21 +169,26 @@ class SequenceService
 
         $sequence->filter = new AudienceFilter($input['filter'], true);
 
-        if ($message = $this->getFirstSendableMessage($sequence)) {
-            $this->scheduleFirstMessageForNewSubscribers($sequence, $message);
-        }
-
-        $newSubscribers = $this->subscriberRepo->subscribeToSequenceIfNotUnsubscribed($sequence);
-
         $data = [
-            'name'             => $input['name'],
-            'filter'           => $sequence->filter,
-            'subscriber_count' => $sequence->subscriber_count + $newSubscribers,
+            'name'   => $input['name'],
+            'filter' => $sequence->filter,
         ];
 
-        if ($message) {
-            $index = $this->getMessageIndexInSequence($sequence, $message);
-            $data["messages.{$index}.queued"] = $message->queued + $newSubscribers;
+        if ($sequence->filter->enabled) {
+
+            if ($message = $this->getFirstSendableMessage($sequence)) {
+                $this->scheduleFirstMessageForNewSubscribers($sequence, $message);
+            }
+
+            $newSubscribers = $this->subscriberRepo->subscribeToSequenceIfNotUnsubscribed($sequence);
+
+            $data['subscriber_count'] = $sequence->subscriber_count + $newSubscribers;
+
+            if ($message) {
+                $index = $this->getMessageIndexInSequence($sequence, $message);
+                $data["messages.{$index}.queued"] = $message->queued + $newSubscribers;
+            }
+
         }
 
         $this->sequenceRepo->update($sequence, $data);

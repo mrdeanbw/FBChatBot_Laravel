@@ -49,7 +49,7 @@ class TemplateService
             $filterBy[] = ['operator' => 'prefix', 'key' => 'name', 'value' => $name];
         }
 
-        $orderBy = $orderBy ?: ['_id' => 'asc'];
+        $orderBy = $orderBy ?: ['_id' => 'desc'];
 
         return $this->templateRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }

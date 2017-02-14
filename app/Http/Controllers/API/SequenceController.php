@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use App\Services\SequenceService;
-use App\Services\SubscriberService;
 use App\Transformers\BaseTransformer;
 use App\Transformers\SequenceTransformer;
 use App\Services\Validation\FilterAudienceRuleValidator;
@@ -16,33 +15,35 @@ class SequenceController extends APIController
      * @type SequenceService
      */
     private $sequences;
-    /**
-     * @type SubscriberService
-     */
-    private $audience;
 
     /**
      * SequenceController constructor.
      *
-     * @param SequenceService   $sequences
-     * @param SubscriberService $audience
+     * @param SequenceService $sequences
      */
-    public function __construct(SequenceService $sequences, SubscriberService $audience)
+    public function __construct(SequenceService $sequences)
     {
         $this->sequences = $sequences;
-        $this->audience = $audience;
     }
 
     /**
      * List of sequences.
      *
+     * @param Request $request
+     *
      * @return \Dingo\Api\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $sequences = $this->sequences->all($this->bot());
+        $paginator = $this->sequences->paginate(
+            $this->bot(),
+            $request->get('page'),
+            ['name' => $request->get('name')],
+            [],
+            8
+        );
 
-        return $this->collectionResponse($sequences);
+        return $this->paginatorResponse($paginator);
     }
 
     /**
@@ -69,11 +70,15 @@ class SequenceController extends APIController
      */
     public function store(Request $request)
     {
+        $bot = $this->bot();
+
+        $nameUniqueRule = "ci_unique:sequences,name,_id,,bot_id,oi:{$bot->id}";
+
         $this->validate($request, [
-            'name' => 'required|max:255'
+            'name' => "bail|required|max:255|{$nameUniqueRule}"
         ]);
 
-        $sequence = $this->sequences->create($request->all(), $this->bot());
+        $sequence = $this->sequences->create($request->all(), $bot);
 
         return $this->itemResponse($sequence);
     }
@@ -90,8 +95,10 @@ class SequenceController extends APIController
     {
         $bot = $this->bot();
 
+        $nameUniqueRule = "ci_unique:sequences,name,_id,{$id},bot_id,oi:{$bot->id}";
+
         $rules = [
-            'name'                          => 'required|max:255',
+            'name'                          => "bail|required|max:255|{$nameUniqueRule}",
             'filter'                        => 'bail|required|array',
             'filter.enabled'                => 'bail|required',
             'filter.join_type'              => 'bail|required_if:filter.enabled,true|in:and,or',
