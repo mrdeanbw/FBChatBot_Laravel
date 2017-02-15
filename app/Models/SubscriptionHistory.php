@@ -9,4 +9,9 @@ class SubscriptionHistory extends ArrayModel
     /** @type Carbon */
     public $action_at;
 
+    public function __construct(array $data, $strict = false)
+    {
+        $data['action_at'] = carbon_date($data['action_at']);
+        parent::__construct($data, $strict);
+    }
 }

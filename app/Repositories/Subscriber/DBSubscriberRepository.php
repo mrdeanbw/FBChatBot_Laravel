@@ -47,11 +47,11 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
         $history = null;
 
         if ($model->active && ! $data['active']) {
-            $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => mongo_date()]);
+            $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => Carbon::now()]);
         }
 
         if (! $model->active && $data['active']) {
-            $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => mongo_date()]);
+            $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => Carbon::now()]);
         }
 
         if ($history) {

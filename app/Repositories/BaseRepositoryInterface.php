@@ -51,7 +51,7 @@ interface BaseRepositoryInterface
     /**
      * Find resource by ID.
      * @param string $id
-     * @return BaseModel|null
+     * @return array|BaseModel|null
      */
     public function findById($id);
 

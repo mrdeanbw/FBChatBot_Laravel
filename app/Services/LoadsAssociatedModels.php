@@ -35,6 +35,10 @@ trait LoadsAssociatedModels
             case 'template':
                 return $this->getRepo('template')->findById($model->template_id);
 
+            case 'sequences':
+                $filter = [['operator' => 'in', 'key' => '_id', 'value' => $model->sequences]];
+                return $this->getRepo('sequence')->getAll($filter);
+
             default:
                 return null;
         }

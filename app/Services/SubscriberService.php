@@ -17,15 +17,14 @@ class SubscriberService
     /**
      * @type array
      */
-    protected $filterFieldsMap
-        = [
-            'first_name'          => 'first_name',
-            'last_name'           => 'last_name',
-            'active'              => 'active',
-            'gender'              => 'gender',
-            'last_contacted_at'   => 'last_contacted_at',
-            'first_subscribed_at' => 'created_at',
-        ];
+    protected $filterFieldsMap = [
+        'first_name'          => 'first_name',
+        'last_name'           => 'last_name',
+        'active'              => 'active',
+        'gender'              => 'gender',
+        'created_at'          => 'created_at',
+        'last_interaction_at' => 'last_interaction_at',
+    ];
 
     /**
      * @type FacebookUser
@@ -177,57 +176,6 @@ class SubscriberService
     }
 
     /**
-     * There are different "matching" techniques: exact matching, prefix, or date string (today, yesterday.. etc).
-     * This method loops all over the filterBy array, make sure that the field is filterable, and return an array of filtering conditions.
-     * A filtering condition has 3 parts:
-     * 1. Type: [a]exact: exact match. [b]prefix: prefix match. [c]date: date lower & upper boundaries.
-     * 2. Attribute: name of the attribute.
-     * 3. Value: value to be matched against.
-     *
-     * @param array $filterBy
-     *
-     * @return array Array of the filtering conditions.
-     */
-    private function normalizeFilterBy(array $filterBy)
-    {
-        $ret = [];
-
-        $filter = new AudienceFilter($this->normalizeFilter(array_get($filterBy, 'filter', [])));
-
-        if ($filter) {
-            $ret[] = [
-                'operator' => 'subscriber',
-                'filter'   => $filter
-            ];
-        }
-
-        foreach ($filterBy as $key => $value) {
-
-            if (! $this->fieldIsFilterable($key) || ($value !== '0' && ! $value)) {
-                continue;
-            }
-
-            $operator = '=';
-
-            $key = $this->filterFieldsMap[$key];
-
-            if (in_array($key, ['first_name', 'last_name'])) {
-                $operator = 'prefix';
-            }
-
-            if (in_array($key, ['created_at', 'last_contacted_at'])) {
-                $operator = 'date';
-            }
-
-            $ret[] = compact('operator', 'key', 'value');
-        }
-
-        $this->addActiveFilter($ret);
-
-        return $ret;
-    }
-
-    /**
      * Return a list of filtered and sorted subscribers.
      * Subscribers may be filtered by simple attribute matching,
      * or by more complicated Filter Groups and Filter Rules (using logical and/or).
@@ -251,6 +199,54 @@ class SubscriberService
         );
     }
 
+    /**
+     * There are different "matching" techniques: exact matching, prefix, or date string (today, yesterday.. etc).
+     * This method loops all over the filterBy array, make sure that the field is filterable, and return an array of filtering conditions.
+     * A filtering condition has 3 parts:
+     * 1. Type: [a]exact: exact match. [b]prefix: prefix match. [c]date: date lower & upper boundaries.
+     * 2. Attribute: name of the attribute.
+     * 3. Value: value to be matched against.
+     *
+     * @param array $filterBy
+     *
+     * @return array Array of the filtering conditions.
+     */
+    private function normalizeFilterBy(array $filterBy)
+    {
+        $ret = [];
+
+        if ($filter = array_get($filterBy, 'filter', [])) {
+            $ret[] = [
+                'operator' => 'subscriber',
+                'filter'   => new AudienceFilter($this->normalizeFilter($filter))
+            ];
+        }
+
+        foreach ($filterBy as $key => $value) {
+
+            if (! $this->fieldIsFilterable($key) || ($value !== '0' && ! $value)) {
+                continue;
+            }
+
+            $operator = '=';
+
+            $key = $this->filterFieldsMap[$key];
+
+            if (in_array($key, ['first_name', 'last_name'])) {
+                $operator = 'prefix';
+            }
+
+            if (in_array($key, ['created_at', 'last_interaction_at'])) {
+                $operator = 'date';
+            }
+
+            $ret[] = compact('operator', 'key', 'value');
+        }
+
+        $this->addActiveFilter($ret);
+
+        return $ret;
+    }
 
     /**
      * Normalize the filter groups by removing empty rules and empty groups.

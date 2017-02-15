@@ -6,24 +6,28 @@ use MongoDB\BSON\UTCDatetime;
 if (! function_exists('config_path')) {
     /**
      * Get the configuration path.
+     *
      * @param  string $path
+     *
      * @return string
      */
     function config_path($path = '')
     {
-        return app()->basePath() . '/config' . ($path? '/' . $path : $path);
+        return app()->basePath() . '/config' . ($path ? '/' . $path : $path);
     }
 }
 
 if (! function_exists('public_path')) {
     /**
      * Get the public path.
+     *
      * @param  string $path
+     *
      * @return string
      */
     function public_path($path = '')
     {
-        return app()->basePath() . '/public' . ($path? '/' . $path : $path);
+        return app()->basePath() . '/public' . ($path ? '/' . $path : $path);
     }
 }
 
@@ -31,7 +35,9 @@ if (! function_exists('public_path')) {
 if (! function_exists('date_string_boundaries')) {
     /**
      * Return the lower and upper boundary of a date string (today, yesterday,... etc)
+     *
      * @param string $date
+     *
      * @return Carbon[]
      * @throws Exception
      */
@@ -63,7 +69,9 @@ if (! function_exists('date_string_boundaries')) {
 if (! function_exists('date_boundaries')) {
     /**
      * Return the lower and upper boundary of a specific date or of a date string (today, yesterday,... etc)
+     *
      * @param Carbon|string $date
+     *
      * @return Carbon[]
      * @throws \Exception
      */
@@ -81,9 +89,12 @@ if (! function_exists('date_boundaries')) {
 if (! function_exists('stable_usort')) {
     /**
      * Stable sort for PHP (on ties preserve input order)
+     *
      * @see https://github.com/vanderlee/PHP-stable-sort-functions
+     *
      * @param array $array
      * @param       $cmp
+     *
      * @return bool
      */
     function stable_usort(array &$array, $cmp)
@@ -95,7 +106,7 @@ if (! function_exists('stable_usort')) {
         $result = usort($array, function ($a, $b) use ($cmp) {
             $result = call_user_func($cmp, $a[1], $b[1]);
 
-            return $result == 0? $a[0] - $b[0] : $result;
+            return $result == 0 ? $a[0] - $b[0] : $result;
         });
         foreach ($array as &$item) {
             $item = $item[1];
@@ -108,7 +119,9 @@ if (! function_exists('stable_usort')) {
 if (! function_exists('base64_url_decode')) {
     /**
      * A helper function used by function `parse_facebook_signed_request`
+     *
      * @param $input
+     *
      * @return string
      */
     function base64_url_decode($input)
@@ -120,10 +133,13 @@ if (! function_exists('base64_url_decode')) {
 if (! function_exists('parse_Facebook_signed_request')) {
     /**
      * Parses a signed request from Facebook.
+     *
      * @see https://developers.facebook.com/docs/games/gamesonfacebook/login#usingsignedrequest/
      * @see http://stackoverflow.com/a/32654932
+     *
      * @param $signedRequest
      * @param $clientSecret
+     *
      * @return mixed|null
      */
     function parse_Facebook_signed_request($signedRequest, $clientSecret)
@@ -149,6 +165,7 @@ if (! function_exists('notify_frontend')) {
      * @param string $channel
      * @param string $event
      * @param array  $data
+     *
      * @return bool|string
      */
     function notify_frontend($channel, $event, array $data)
@@ -165,6 +182,7 @@ if (! function_exists('to_bytes')) {
     /**
      * http://stackoverflow.com/a/11807179
      * @param $from
+     *
      * @return double
      */
     function to_bytes($from)
@@ -191,6 +209,7 @@ if (! function_exists('mongo_date')) {
 
     /**
      * @param Carbon|UTCDateTime|string|int|null $date
+     *
      * @return UTCDateTime
      */
     function mongo_date($date = null)
@@ -198,7 +217,7 @@ if (! function_exists('mongo_date')) {
         if ($date === null) {
             return new UTCDateTime();
         }
-        
+
         if (is_a($date, UTCDateTime::class)) {
             return $date;
         }
@@ -215,8 +234,12 @@ if (! function_exists('mongo_date')) {
 if (! function_exists('carbon_date')) {
 
     /**
-     * Laravel's Illuminate\Database\Eloquent\Model::asDateTime function
+     *
+     * Jenssegers\Mongodb\Eloquent\Model::asDateTime
+     * Illuminate\Database\Eloquent\Model::asDateTime
+     *
      * @param $date
+     *
      * @return Carbon
      * @throws Exception
      */
@@ -227,6 +250,10 @@ if (! function_exists('carbon_date')) {
         // it already is one, which wouldn't be fulfilled by the DateTime check.
         if ($date instanceof Carbon) {
             return $date;
+        }
+
+        if (is_a($date, UTCDateTime::class)) {
+            return Carbon::createFromTimestamp($date->toDateTime()->getTimestamp());
         }
 
         // If the value is already a DateTime instance, we will just skip the rest of

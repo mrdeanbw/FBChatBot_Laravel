@@ -2,6 +2,7 @@
 
 /**
  * Class Subscriber
+ *
  * @property bool           $active
  * @property string         $facebook_id
  * @property \Carbon\Carbon $last_subscribed_at
@@ -11,19 +12,24 @@
  * @property string         $full_name
  * @property string         $avatar_url
  * @property string         $gender
- * @property \Carbon\Carbon $last_contacted_at
- * @property array          $sequence
+ * @property \Carbon\Carbon $last_interaction_at
+ * @property array          $sequences
  * @property array          $tags
  * @property array          $removed_sequences
+ * @property double         $timezone
+ * @property double         $locale
  */
 class Subscriber extends BaseModel
 {
 
-    public $dates = ['last_contacted_at', 'last_subscribed_at', 'last_unsubscribed_at'];
+    use HasEmbeddedArrayModels;
+
+    protected $multiArrayModels = ['history' => SubscriptionHistory::class];
+
+    public $dates = ['last_interaction_at', 'last_subscribed_at', 'last_unsubscribed_at'];
 
     public function getFullNameAttribute()
     {
         return $this->first_name . ' ' . $this->last_name;
     }
-
 }

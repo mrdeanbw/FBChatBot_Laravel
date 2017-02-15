@@ -47,7 +47,6 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
         return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->count();
     }
 
-
     /**
      * @param int   $page
      * @param array $filterBy
@@ -181,6 +180,10 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
             case 'date':
                 $query->date($filter['key'], $filter['value']);
+                break;
+
+            case 'in':
+                $query->whereIn($filter['key'], $filter['value']);
                 break;
 
             default:

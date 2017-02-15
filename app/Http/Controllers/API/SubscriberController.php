@@ -15,6 +15,7 @@ class SubscriberController extends APIController
 
     /**
      * SubscriberController constructor.
+     *
      * @param SubscriberService $audience
      */
     public function __construct(SubscriberService $audience)
@@ -24,14 +25,18 @@ class SubscriberController extends APIController
 
     /**
      * Return paginated list of subscribers.
+     *
      * @param Request $request
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function index(Request $request)
     {
         // Parse the filter query string to an array.
-        $filter = $request->get('filter', '[]');
-        $filter = json_decode($filter, true);
+        $filter = $request->get('filter', []);
+        if (is_string($filter)) {
+            $filter = json_decode($filter, true);
+        }
 
         $paginator = $this->audience->paginate(
             $this->bot(),
@@ -46,7 +51,9 @@ class SubscriberController extends APIController
 
     /**
      * Return details of a subscriber.
+     *
      * @param $id
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function show($id)
@@ -59,8 +66,10 @@ class SubscriberController extends APIController
 
     /**
      * Update a subscriber.
+     *
      * @param         $id
      * @param Request $request
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function update($id, Request $request)
@@ -76,7 +85,9 @@ class SubscriberController extends APIController
 
     /**
      * Batch update subscribers.
+     *
      * @param Request $request
+     *
      * @return \Dingo\Api\Http\Response
      */
     public function batchUpdate(Request $request)

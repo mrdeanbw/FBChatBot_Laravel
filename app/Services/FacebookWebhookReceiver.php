@@ -208,7 +208,7 @@ class FacebookWebhookReceiver
     private function updateLastContactedAt($subscriber)
     {
         if ($subscriber) {
-            $subscriber->last_contacted_at = Carbon::now();
+            $subscriber->last_interaction_at = Carbon::now();
             $subscriber->save();
         }
     }
