@@ -176,7 +176,7 @@ class SequenceService
 
         if ($sequence->filter->enabled) {
 
-            if ($message = $this->getFirstSendableMessage($sequence)) {
+            if ($message = $this->sequenceRepo->getFirstSendableMessage($sequence)) {
                 $this->scheduleFirstMessageForNewSubscribers($sequence, $message);
             }
 
@@ -185,7 +185,7 @@ class SequenceService
             $data['subscriber_count'] = $sequence->subscriber_count + $newSubscribers;
 
             if ($message) {
-                $index = $this->getMessageIndexInSequence($sequence, $message);
+                $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message);
                 $data["messages.{$index}.queued"] = $message->queued + $newSubscribers;
             }
 
@@ -329,7 +329,7 @@ class SequenceService
                 'message_id'    => $message->id,
                 'subscriber_id' => $subscriber->_id,
                 'status'        => 'pending',
-                'send_at'       => $this->applyConditions(Carbon::now(), $message),
+                'send_at'       => change_date(Carbon::now(), $message->conditions['wait_for']),
             ];
         }
 
@@ -461,77 +461,5 @@ class SequenceService
             'id'   => new ObjectID(),
             'text' => $text
         ]);
-    }
-
-    /**
-     * @param Carbon          $dateTime
-     * @param SequenceMessage $message
-     *
-     * @return Carbon
-     */
-    public function applyConditions(Carbon $dateTime, SequenceMessage $message)
-    {
-        $dateTime->addDays($message->conditions['wait_for']['days']);
-        $dateTime->addHours($message->conditions['wait_for']['hours']);
-        $dateTime->addMinutes($message->conditions['wait_for']['minutes']);
-
-        return $dateTime;
-    }
-
-    /**
-     * @param Sequence $sequence
-     *
-     * @return SequenceMessage
-     */
-    private function getFirstSendableMessage(Sequence $sequence)
-    {
-        foreach ($sequence->messages as $temp) {
-            if (is_null($temp->deleted_at)) {
-                return $temp;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Schedule the next non deleted sequence message.
-     *
-     * @param Sequence        $sequence
-     * @param SequenceMessage $current
-     *
-     * @return SequenceMessage|null
-     */
-    public function getNextSendableMessage(Sequence $sequence, SequenceMessage $current)
-    {
-        $currentPassed = false;
-
-        foreach ($sequence->messages as $temp) {
-            if ($currentPassed && is_null($temp->deleted_at)) {
-                return $temp;
-            }
-            if ($temp->id == $current->id) {
-                $currentPassed = true;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param Sequence        $sequence
-     * @param SequenceMessage $message
-     *
-     * @return int|null
-     */
-    public function getMessageIndexInSequence(Sequence $sequence, SequenceMessage $message)
-    {
-        foreach ($sequence->messages as $i => $temp) {
-            if ($temp->id == $message->id) {
-                return $i;
-            }
-        }
-
-        return null;
     }
 }

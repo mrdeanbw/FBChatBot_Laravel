@@ -1,5 +1,6 @@
 <?php namespace App\Services;
 
+use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Subscriber;
@@ -10,6 +11,7 @@ use App\Repositories\Bot\BotRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 class SubscriberService
 {
@@ -17,14 +19,15 @@ class SubscriberService
     /**
      * @type array
      */
-    protected $filterFieldsMap = [
-        'first_name'          => 'first_name',
-        'last_name'           => 'last_name',
-        'active'              => 'active',
-        'gender'              => 'gender',
-        'created_at'          => 'created_at',
-        'last_interaction_at' => 'last_interaction_at',
-    ];
+    protected $filterFieldsMap
+        = [
+            'first_name'          => 'first_name',
+            'last_name'           => 'last_name',
+            'active'              => 'active',
+            'gender'              => 'gender',
+            'created_at'          => 'created_at',
+            'last_interaction_at' => 'last_interaction_at',
+        ];
 
     /**
      * @type FacebookUser
@@ -46,28 +49,35 @@ class SubscriberService
      * @type BotRepositoryInterface
      */
     private $botRepo;
+    /**
+     * @var SequenceScheduleRepositoryInterface
+     */
+    private $sequenceScheduleRepo;
 
     /**
      * AudienceService constructor.
      *
-     * @param SubscriberRepositoryInterface $subscriberRepo
-     * @param SequenceRepositoryInterface   $sequenceRepo
-     * @param FacebookUser                  $FacebookUsers
-     * @param SequenceService               $sequences
-     * @param BotRepositoryInterface        $botRepo
+     * @param SubscriberRepositoryInterface       $subscriberRepo
+     * @param SequenceRepositoryInterface         $sequenceRepo
+     * @param FacebookUser                        $FacebookUsers
+     * @param SequenceService                     $sequences
+     * @param BotRepositoryInterface              $botRepo
+     * @param SequenceScheduleRepositoryInterface $sequenceScheduleRepo
      */
     public function __construct(
         SubscriberRepositoryInterface $subscriberRepo,
         SequenceRepositoryInterface $sequenceRepo,
         FacebookUser $FacebookUsers,
         SequenceService $sequences,
-        BotRepositoryInterface $botRepo
+        BotRepositoryInterface $botRepo,
+        SequenceScheduleRepositoryInterface $sequenceScheduleRepo
     ) {
         $this->FacebookUsers = $FacebookUsers;
         $this->subscriberRepo = $subscriberRepo;
         $this->sequenceRepo = $sequenceRepo;
         $this->sequences = $sequences;
         $this->botRepo = $botRepo;
+        $this->sequenceScheduleRepo = $sequenceScheduleRepo;
     }
 
     /**
@@ -334,7 +344,6 @@ class SubscriberService
     }
 
     /**
-     * @todo one update query.
      * Update a subscriber.
      *
      * @param array $input
@@ -346,11 +355,25 @@ class SubscriberService
     public function update(array $input, $subscriberId, Bot $bot)
     {
         $subscriber = $this->findForBotOrFail($subscriberId, $bot);
-        $tags = $input['tags'];
-        $this->botRepo->createTagsForBot($bot->_id, $tags);
 
-        $this->subscriberRepo->update($subscriber, compact('tags'));
-        $this->subscribeToBotSequences($subscriber, $bot);
+        $this->botRepo->createTagsForBot($bot->_id, $input['tags']);
+
+        $newSequenceIDs = array_map(function ($sequence) {
+            return new ObjectID($sequence['id']);
+        }, $input['sequences']);
+
+        $sequencesToAdd = array_diff($newSequenceIDs, $subscriber->sequences);
+        $sequencesToRemove = array_diff($subscriber->sequences, $newSequenceIDs);
+
+        $data = [
+            'tags'              => $input['tags'],
+            'sequences'         => $newSequenceIDs,
+            'removed_sequences' => array_merge(array_diff($subscriber->removed_sequences, $sequencesToAdd), $sequencesToRemove),
+        ];
+
+        $this->subscribeToSequences($subscriber, $sequencesToAdd);
+
+        $this->subscriberRepo->update($subscriber, $data);
 
         return $subscriber;
     }
@@ -370,7 +393,7 @@ class SubscriberService
     {
         if ($subscriberIds) {
             $this->botRepo->createTagsForBot($bot->_id, array_merge($input['add_tags'], $input['remove_tags']));
-            $this->subscriberRepo->bulkUpdateForBot($bot, $subscriberIds, $input);
+            $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, $subscriberIds, $input);
         }
     }
 
@@ -452,7 +475,7 @@ class SubscriberService
 
         foreach ($sequences as $sequence) {
 
-            if (in_array($sequence->id, $subscriber->sequence)) {
+            if (in_array($sequence->id, $subscriber->sequences)) {
                 continue;
             }
 
@@ -465,12 +488,46 @@ class SubscriberService
             }
 
             $sequencesToAdd[] = $sequence->id;
-
-            // @todo schedule first message, bulk scheduling as well?
         }
 
         if ($sequencesToAdd) {
-            $this->subscriberRepo->addSequences($subscriber, $sequencesToAdd);
+            $this->subscribeToSequences($subscriber, $sequencesToAdd);
         }
+    }
+
+    /**
+     * @param Subscriber $subscriber
+     * @param array      $sequenceIds
+     */
+    private function subscribeToSequences(Subscriber $subscriber, array $sequenceIds)
+    {
+        $filter = [
+            ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
+            ['operator' => 'in', 'key' => 'bot_id', 'value' => $subscriber->bot_id]
+        ];
+
+        $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'messages.id', 'messages.deleted_at', 'messages.queued']);
+
+        $schedules = [];
+        foreach ($sequences as $sequence) {
+            if ($message = $this->sequenceRepo->getFirstSendableMessage($sequence)) {
+                $schedules[] = [
+                    'sequence_id'   => $sequence->_id,
+                    'message_id'    => $message->id,
+                    'subscriber_id' => $subscriber->_id,
+                    'status'        => 'pending',
+                    'send_at'       => change_date(Carbon::now(), $message->conditions['wait_for']),
+                ];
+            }
+
+            // @todo use $inc to avoid any data inconsistency, and on the columns list remove 'messages.queues'.
+            // @todo bulk increment if possible? like: increment the "queued" attribute of first sendable message (whose deleted_at is null) whose sequence ID is among $sequences.
+            $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message);
+            $this->sequenceRepo->update($sequence, [
+                "messages.{$index}.queued" => $message->queued + 1
+            ]);
+        }
+
+        $this->sequenceScheduleRepo->bulkCreate($schedules);
     }
 }

@@ -101,4 +101,59 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
             return $collection->updateMany([], ['$pull' => ['messages' => ['deleted_at' => ['$ne' => null]]]]);
         });
     }
+
+    /**
+     * @param Sequence $sequence
+     *
+     * @return SequenceMessage|null
+     */
+    public function getFirstSendableMessage(Sequence $sequence)
+    {
+        foreach ($sequence->messages as $temp) {
+            if (is_null($temp->deleted_at)) {
+                return $temp;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Sequence        $sequence
+     * @param SequenceMessage $current
+     *
+     * @return SequenceMessage|null
+     */
+    public function getNextSendableMessage(Sequence $sequence, SequenceMessage $current)
+    {
+        $currentPassed = false;
+
+        foreach ($sequence->messages as $temp) {
+            if ($currentPassed && is_null($temp->deleted_at)) {
+                return $temp;
+            }
+            if ($temp->id == $current->id) {
+                $currentPassed = true;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     *
+     * @return int|null
+     */
+    public function getMessageIndexInSequence(Sequence $sequence, SequenceMessage $message)
+    {
+        foreach ($sequence->messages as $i => $temp) {
+            if ($temp->id == $message->id) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
 }

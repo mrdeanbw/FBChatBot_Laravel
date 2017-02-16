@@ -349,7 +349,7 @@ class WebAppAdapter
      */
     private function carryOutButtonActions(Button $button, Subscriber $subscriber, Bot $bot, array $buttonPath)
     {
-        $this->subscriberRepo->bulkUpdateForBot($bot, [$subscriber->_id], $button->actions);
+        $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, [$subscriber->_id], $button->actions);
         $this->FacebookAdapter->sendFromButton($button, $buttonPath, $subscriber, $bot);
     }
 

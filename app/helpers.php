@@ -283,3 +283,15 @@ if (! function_exists('carbon_date')) {
     }
 }
 
+if (! function_exists('change_date')) {
+
+    function change_date(Carbon $dateTime, $changes)
+    {
+        $dateTime->addDays($changes['days']);
+        $dateTime->addHours($changes['hours']);
+        $dateTime->addMinutes($changes['minutes']);
+
+        return $dateTime;
+    }
+}
+

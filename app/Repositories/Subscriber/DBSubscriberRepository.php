@@ -278,11 +278,51 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     }
 
     /**
+     * @param Subscriber $subscriber
+     * @param array      $input
+     */
+    public function tagSequenceUpdate(Subscriber $subscriber, array $input)
+    {
+        // "MongoDB doesn’t allow multiple operations on the same property in the same update call.
+        // This means that the two operations must happen in two individually atomic operations."
+        // Therefore we can't do both "add_tags" and "remove_tags" in the same query.
+        // The same goes for "subscribe_sequences" and "subscribe_sequences"
+
+        $filter = [
+            '$and' => [
+                ['id' => $subscriber->_id],
+                ['bot_id' => $subscriber->bot_id]
+            ]
+        ];
+
+        $update = $this->normalizeBatchUpdateArray($input);
+
+        // We need 2 queries.
+        if (($input['add_tags'] && $input['remove_tags']) || ($input['add_sequences'] && $input['remove_sequences'])) {
+
+            Subscriber::raw(function ($collection) use ($filter, $update) {
+                $collection->updateOne($filter, ['$push' => $update['$push']]);
+            });
+
+            Subscriber::raw(function ($collection) use ($filter, $update) {
+                $collection->updateOne($filter, ['$pull' => $update['$pull']]);
+            });
+
+            return;
+        }
+
+        // 1 query is sufficient
+        Subscriber::raw(function ($collection) use ($filter, $update) {
+            $collection->updateOne($filter, $update);
+        });
+    }
+
+    /**
      * @param Bot   $bot
      * @param array $subscriberIds
      * @param array $input
      */
-    public function bulkUpdateForBot(Bot $bot, array $subscriberIds, array $input)
+    public function bulkAddRemoveTagsAndSequences(array $subscriberIds, Bot $bot, array $input)
     {
         // "MongoDB doesn’t allow multiple operations on the same property in the same update call.
         // This means that the two operations must happen in two individually atomic operations."

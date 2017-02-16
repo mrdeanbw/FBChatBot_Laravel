@@ -7,33 +7,40 @@ use App\Repositories\AssociatedWithBotRepositoryInterface;
 
 interface SequenceRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
-    
+
     /**
      * Create a message and attach it to sequence.
+     *
      * @param Sequence        $sequence
      * @param SequenceMessage $message
+     *
      * @return SequenceMessage
      */
     public function addMessageToSequence(Sequence $sequence, SequenceMessage $message);
 
     /**
      * Update a sequence message.
+     *
      * @param Sequence        $sequence
      * @param SequenceMessage $message
+     *
      * @return
      */
     public function updateSequenceMessage(Sequence $sequence, SequenceMessage $message);
 
     /**
      * Find a sequence message by ID
+     *
      * @param ObjectID $id
      * @param Sequence $sequence
+     *
      * @return SequenceMessage
      */
     public function findSequenceMessageById(ObjectID $id, Sequence $sequence);
 
     /**
      * Delete a sequence message.
+     *
      * @param Sequence        $sequence
      * @param SequenceMessage $message
      */
@@ -41,6 +48,7 @@ interface SequenceRepositoryInterface extends AssociatedWithBotRepositoryInterfa
 
     /**
      * Delete a sequence message.
+     *
      * @param Sequence        $sequence
      * @param SequenceMessage $message
      */
@@ -48,4 +56,27 @@ interface SequenceRepositoryInterface extends AssociatedWithBotRepositoryInterfa
 
 
     public function completelyDeleteSoftDeletedSequenceMessagesWithNoPeopleQueued();
+
+    /**
+     * @param Sequence $sequence
+     *
+     * @return SequenceMessage|null
+     */
+    public function getFirstSendableMessage(Sequence $sequence);
+
+    /**
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     *
+     * @return mixed
+     */
+    public function getNextSendableMessage(Sequence $sequence, SequenceMessage $message);
+
+    /**
+     * @param Sequence        $sequence
+     * @param SequenceMessage $message
+     *
+     * @return int|null
+     */
+    public function getMessageIndexInSequence(Sequence $sequence, SequenceMessage $message);
 }

@@ -18,6 +18,7 @@
  * @property array          $removed_sequences
  * @property double         $timezone
  * @property double         $locale
+ * @property mixed          $bot_id
  */
 class Subscriber extends BaseModel
 {

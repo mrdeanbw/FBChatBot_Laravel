@@ -1,8 +1,7 @@
 <?php namespace App\Services\Validation;
 
-use App\Services\ImageFileService;
-use Illuminate\Validation\Validator as LaravelValidator;
 use Intervention\Image\ImageManagerStatic;
+use Illuminate\Validation\Validator as LaravelValidator;
 
 class MessageValidator extends LaravelValidator
 {

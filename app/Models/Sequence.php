@@ -13,5 +13,5 @@ class Sequence extends BaseModel
     use HasEmbeddedArrayModels;
 
     public $arrayModels = ['filter' => AudienceFilter::class];
-    public $multiArrayModels = ['messages' => SequenceMessage::class];
+//    public $multiArrayModels = ['messages' => SequenceMessage::class];
 }

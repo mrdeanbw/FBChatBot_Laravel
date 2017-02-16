@@ -52,25 +52,22 @@ class SendScheduledSequenceMessage extends BaseJob
      *
      * @param FacebookAPIAdapter                  $FacebookAdapter
      * @param TemplateRepositoryInterface         $templateRepo
-     * @param SubscriberRepositoryInterface       $subscriberRepo
      * @param SequenceRepositoryInterface         $sequenceRepo
-     * @param SequenceService                     $sequenceService
+     * @param SubscriberRepositoryInterface       $subscriberRepo
      * @param SequenceScheduleRepositoryInterface $sequenceScheduleRepo
      */
     public function handle(
         FacebookAPIAdapter $FacebookAdapter,
         TemplateRepositoryInterface $templateRepo,
-        SubscriberRepositoryInterface $subscriberRepo,
         SequenceRepositoryInterface $sequenceRepo,
-        SequenceService $sequenceService,
+        SubscriberRepositoryInterface $subscriberRepo,
         SequenceScheduleRepositoryInterface $sequenceScheduleRepo
     ) {
         // Initialize
-        $this->FacebookAdapter = $FacebookAdapter;
         $this->templateRepo = $templateRepo;
-        $this->subscriberRepo = $subscriberRepo;
         $this->sequenceRepo = $sequenceRepo;
-        $this->sequenceService = $sequenceService;
+        $this->subscriberRepo = $subscriberRepo;
+        $this->FacebookAdapter = $FacebookAdapter;
         $this->sequenceScheduleRepo = $sequenceScheduleRepo;
 
         $this->setSequence();
@@ -83,8 +80,8 @@ class SendScheduledSequenceMessage extends BaseJob
 
         $nextMessage = $this->scheduleNextMessage($sentAt);
 
-        $sentMessageIndex = $sequenceService->getMessageIndexInSequence($this->sequence, $this->message);
-        $nextMessageIndex = $this->sequenceService->getMessageIndexInSequence($this->sequence, $nextMessage);
+        $sentMessageIndex = $this->sequenceRepo->getMessageIndexInSequence($this->sequence, $this->message);
+        $nextMessageIndex = $this->sequenceRepo->getMessageIndexInSequence($this->sequence, $nextMessage);
 
         // @todo convert to $inc and $dec instead to avoid any possible conflicts. For example, 2 jobs running at the same time.
         $this->sequenceRepo->update($this->sequence, [
@@ -132,12 +129,12 @@ class SendScheduledSequenceMessage extends BaseJob
      */
     private function scheduleNextMessage($sentAt)
     {
-        if ($newMessage = $this->sequenceService->getNextSendableMessage($this->sequence, $this->message)) {
+        if ($newMessage = $this->sequenceRepo->getNextSendableMessage($this->sequence, $this->message)) {
 
             $this->sequenceScheduleRepo->update($this->schedule, [
                 'message_id' => $newMessage->id,
                 'status'     => 'pending',
-                'send_at'    => $this->sequenceService->applyConditions($sentAt ?: Carbon::now(), $newMessage),
+                'send_at'    => change_date($sentAt ?: Carbon::now(), $newMessage->conditions['wait_for'])
             ]);
 
         } else {

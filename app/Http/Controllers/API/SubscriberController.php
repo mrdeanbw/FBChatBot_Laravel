@@ -78,9 +78,9 @@ class SubscriberController extends APIController
             'actions' => 'bail|array|button_actions',
         ]);
 
-        $this->audience->update($request->all(), $id, $this->bot());
+        $subscriber = $this->audience->update($request->all(), $id, $this->bot());
 
-        return $this->response->accepted();
+        return $this->itemResponse($subscriber);
     }
 
     /**
