@@ -1,6 +1,6 @@
 <?php namespace App\Repositories\Sequence;
 
-use App\Models\Subscriber;
+use MongoDB\BSON\ObjectID;
 use Illuminate\Support\Collection;
 use App\Repositories\BaseRepositoryInterface;
 
@@ -15,10 +15,10 @@ interface SequenceScheduleRepositoryInterface extends BaseRepositoryInterface
     public function getDue();
 
     /**
-     * @param Subscriber $subscriber
-     * @param array      $sequenceIds
-     * @param array      $columns
+     * @param ObjectID $subscriberId
+     * @param array    $sequenceIds
+     * @param array    $columns
      * @return Collection
      */
-    public function pendingPerSubscriberInSequences(Subscriber $subscriber, array  $sequenceIds, array $columns = ['*']);
+    public function pendingPerSubscriberInSequences(ObjectID $subscriberId, array  $sequenceIds, array $columns = ['*']);
 }

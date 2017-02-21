@@ -70,17 +70,11 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
     public function LastUnsubscribedAtCountForPage($date, Bot $page);
 
     /**
-     * @param Subscriber $subscriber
-     * @param array      $input
-     */
-    public function tagSequenceUpdate(Subscriber $subscriber, array $input);
-
-    /**
      * @param Bot   $bot
      * @param array $subscriberIds
      * @param array $input
      */
-    public function bulkAddRemoveTagsAndSequences(array $subscriberIds, Bot $bot, array $input);
+    public function bulkAddRemoveTagsAndSequences(Bot $bot, array $subscriberIds, array $input);
 
     /**
      * @param Bot           $bot

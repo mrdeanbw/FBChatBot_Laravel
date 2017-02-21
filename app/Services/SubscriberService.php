@@ -389,21 +389,36 @@ class SubscriberService
     }
 
     /**
-     * @todo handle sequence subscription:
-     *      -> one query per sequence
-     *      -> For every bot sequence get the list of matching subscribers whose ids
-     *         intersect with $subscriberIds, and then subscribe them.
      * Batch update subscribers.
      *
      * @param array $input
-     * @param array $subscriberIds
      * @param Bot   $bot
      */
-    public function batchUpdate(array $input, array $subscriberIds, Bot $bot)
+    public function batchUpdate(array $input, Bot $bot)
     {
+        $subscriberIds = array_map(function ($subscriber) {
+            return new ObjectID($subscriber['id']);
+        }, $input['subscribers']);
+
         if ($subscriberIds) {
-            $this->botRepo->createTagsForBot($bot->_id, array_merge($input['add_tags'], $input['remove_tags']));
-            $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, $subscriberIds, $input);
+            $actions = $input['actions'];
+
+            if ($tags = array_merge(array_get($actions, 'add_tags', []), array_get($actions, 'remove_tags', []))) {
+                $this->botRepo->createTagsForBot($bot->_id, $tags);
+            }
+
+            $actions['add_sequences'] = array_map(function ($sequence) {
+                return new ObjectID($sequence['id']);
+            }, array_get($actions, 'add_sequences', []));
+
+            $actions['remove_sequences'] = array_map(function ($sequence) {
+                return new ObjectID($sequence['id']);
+            }, array_get($actions, 'remove_sequences', []));
+
+            $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, $subscriberIds, $actions);
+
+            $this->bulkSubscribeToSequences($bot->_id, $subscriberIds, $actions['add_sequences']);
+            $this->bulkUnsubscribeFromSequences($bot->_id, $subscriberIds, $actions['remove_sequences']);
         }
     }
 
@@ -511,35 +526,7 @@ class SubscriberService
      */
     private function subscribeToSequences(Subscriber $subscriber, array $sequenceIds)
     {
-        $filter = [
-            ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
-            ['operator' => '=', 'key' => 'bot_id', 'value' => $subscriber->bot_id]
-        ];
-
-        $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
-
-        $schedules = [];
-        foreach ($sequences as $sequence) {
-            if ($message = $this->sequenceRepo->getFirstSendableMessage($sequence)) {
-                $schedules[] = [
-                    'sequence_id'   => $sequence->_id,
-                    'message_id'    => $message->id,
-                    'subscriber_id' => $subscriber->_id,
-                    'status'        => 'pending',
-                    'send_at'       => change_date(Carbon::now(), $message->conditions['wait_for']),
-                ];
-            }
-
-            // @todo use $inc to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
-            // @todo bulk increment if possible? like: increment the "queued" attribute of first sendable message (whose deleted_at is null) whose sequence ID is among $sequences.
-            $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message->id);
-            $this->sequenceRepo->update($sequence, [
-                "messages.{$index}.queued" => $message->queued + 1,
-                'subscriber_count'         => $sequence->subscriber_count + 1
-            ]);
-        }
-
-        $this->sequenceScheduleRepo->bulkCreate($schedules);
+        $this->bulkSubscribeToSequences($subscriber->bot_id, [$subscriber->_id], $sequenceIds);
     }
 
     /**
@@ -548,28 +535,94 @@ class SubscriberService
      */
     private function unsubscribeFromSequences(Subscriber $subscriber, array $sequenceIds)
     {
-        $filter = [
-            ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
-            ['operator' => '=', 'key' => 'bot_id', 'value' => $subscriber->bot_id]
-        ];
+        $this->bulkUnsubscribeFromSequences($subscriber->bot_id, [$subscriber->_id], $sequenceIds);
+    }
 
-        $schedules = $this->sequenceScheduleRepo
-            ->pendingPerSubscriberInSequences($subscriber, $sequenceIds, ['_id', 'message_id', 'sequence_id'])
-            ->keyBy('sequence_id');
 
-        $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
-        foreach ($sequences as $sequence) {
-            $schedule = $schedules->get($sequence->id);
-            $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $schedule->message_id);
+    /**
+     * @todo use $inc to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
+     * @todo bulk increment if possible? like: increment the "queued" attribute of first sendable message (whose deleted_at is null) whose sequence ID is among $sequences.
+     * @todo -> Consider another way: one query per sequence
+     * @todo -> For every bot sequence get the list of matching subscribers whose ids intersect with $subscriberIds, and then subscribe them.
+     * @param ObjectID $botId
+     * @param array    $subscriberIds
+     * @param array    $sequenceIds
+     */
+    private function bulkSubscribeToSequences(ObjectID $botId, array $subscriberIds, array $sequenceIds)
+    {
+        $schedules = [];
 
-            // @todo use $dec to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
-            // @todo bulk decrement if possible.
-            $this->sequenceRepo->update($sequence, [
-                "messages.{$index}.queued" => $sequence->messages[$index]->queued - 1,
-                'subscriber_count'         => $sequence->subscriber_count - 1
-            ]);
+        foreach ($subscriberIds as $subscriberId) {
+
+            $filter = [
+                ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
+                ['operator' => '=', 'key' => 'bot_id', 'value' => $botId]
+            ];
+
+            $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
+
+            foreach ($sequences as $sequence) {
+                if ($message = $this->sequenceRepo->getFirstSendableMessage($sequence)) {
+                    $schedules[] = [
+                        'sequence_id'   => $sequence->_id,
+                        'message_id'    => $message->id,
+                        'subscriber_id' => $subscriberId,
+                        'status'        => 'pending',
+                        'send_at'       => change_date(Carbon::now(), $message->conditions['wait_for']),
+                    ];
+                }
+
+                $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message->id);
+                $this->sequenceRepo->update($sequence, [
+                    "messages.{$index}.queued" => $message->queued + 1,
+                    'subscriber_count'         => $sequence->subscriber_count + 1
+                ]);
+            }
         }
 
-        $this->sequenceScheduleRepo->bulkDelete($schedules->pluck('_id')->toArray());
+        if ($schedules) {
+            $this->sequenceScheduleRepo->bulkCreate($schedules);
+        }
+    }
+
+    /**
+     * // @todo use $dec to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
+     * // @todo bulk decrement if possible.
+     * @param ObjectID $botId
+     * @param array    $subscriberIds
+     * @param array    $sequenceIds
+     */
+    private function bulkUnsubscribeFromSequences(ObjectID $botId, array $subscriberIds, array $sequenceIds)
+    {
+        $delete = [];
+
+        foreach ($subscriberIds as $subscriberId) {
+            $filter = [
+                ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
+                ['operator' => '=', 'key' => 'bot_id', 'value' => $botId]
+            ];
+
+            $schedules = $this->sequenceScheduleRepo
+                ->pendingPerSubscriberInSequences($subscriberId, $sequenceIds, ['_id', 'message_id', 'sequence_id'])
+                ->keyBy('sequence_id');
+
+            $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
+
+            foreach ($sequences as $sequence) {
+                $schedule = $schedules->get($sequence->id);
+                $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $schedule->message_id);
+
+                $this->sequenceRepo->update($sequence, [
+                    'subscriber_count'         => $sequence->subscriber_count - 1,
+                    "messages.{$index}.queued" => $sequence->messages[$index]->queued - 1
+                ]);
+            }
+
+            $delete = array_merge($delete, $schedules->pluck('_id')->toArray());
+        }
+
+        if ($delete) {
+            $this->sequenceScheduleRepo->bulkDelete($delete);
+        }
     }
 }

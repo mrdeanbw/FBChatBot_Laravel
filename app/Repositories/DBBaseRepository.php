@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Jenssegers\Mongodb\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use MongoDB\BSON\UTCDatetime;
 
 abstract class DBBaseRepository implements BaseRepositoryInterface
 {

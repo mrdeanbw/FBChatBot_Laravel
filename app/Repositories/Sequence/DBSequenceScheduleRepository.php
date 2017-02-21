@@ -5,6 +5,7 @@ use App\Models\Subscriber;
 use App\Repositories\DBBaseRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use MongoDB\BSON\ObjectID;
 
 class DBSequenceScheduleRepository extends DBBaseRepository implements SequenceScheduleRepositoryInterface
 {
@@ -28,16 +29,16 @@ class DBSequenceScheduleRepository extends DBBaseRepository implements SequenceS
     }
 
     /**
-     * @param Subscriber $subscriber
-     * @param array      $sequenceIds
-     * @param array      $columns
+     * @param ObjectID $subscriberId
+     * @param array    $sequenceIds
+     * @param array    $columns
      * @return Collection
      */
-    public function pendingPerSubscriberInSequences(Subscriber $subscriber, array $sequenceIds, array $columns = ['*'])
+    public function pendingPerSubscriberInSequences(ObjectID $subscriberId, array $sequenceIds, array $columns = ['*'])
     {
         $filterBy = [
             ['key' => 'sequence_id', 'operator' => 'in', 'value' => $sequenceIds],
-            ['key' => 'subscriber_id', 'operator' => '=', 'value' => $subscriber->_id]
+            ['key' => 'subscriber_id', 'operator' => '=', 'value' => $subscriberId]
         ];
 
         return $this->getAll($filterBy, [], $columns);

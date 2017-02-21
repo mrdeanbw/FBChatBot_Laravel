@@ -43,6 +43,10 @@ class AppServiceProvider extends ServiceProvider
             return MessageValidator::FromInstance($validator)->validateSequences($attribute, $value);
         });
 
+        Validator::extendImplicit('button_actions', function ($attribute, $value, $parameters, $validator) {
+            return MessageValidator::FromInstance($validator)->validateButtonActions($attribute, $value);
+        });
+
         Validator::extend('ci_unique', function ($attribute, $value, $parameters, $validator) {
             if (starts_with($parameters[5], 'oi:')) {
                 $parameters[5] = new ObjectID(substr($parameters[5], 3));

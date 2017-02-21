@@ -302,6 +302,48 @@ class MessageValidator extends LaravelValidator
             return false;
         }
 
+        return true;
+    }
+
+    public function validateButtonActions($attribute, $actions)
+    {
+        if (! is_array($actions)) {
+            $this->setErrorMessage("Actions format is invalid.");
+
+            return false;
+        }
+
+        $addTags = array_get($actions, 'add_tags', []);
+        if (! $this->validateTags($attribute, $addTags)) {
+            return false;
+        }
+
+        $removeTags = array_get($actions, 'remove_tags', []);
+        if (! $this->validateTags($attribute, $removeTags)) {
+            return false;
+        }
+
+        if (array_intersect($addTags, $removeTags)) {
+            $this->setErrorMessage("You cannot add the same tag to 'Add Tags' and 'Remove Tags' actions.");
+
+            return false;
+        }
+
+        $addSequences = array_get($actions, 'add_sequences', []);
+        if (! $this->validateSequences($attribute, $addSequences)) {
+            return false;
+        }
+
+        $removeSequences = array_get($actions, 'remove_sequences', []);
+        if (! $this->validateSequences($attribute, $removeSequences)) {
+            return false;
+        }
+
+        if (array_intersect(array_column($addSequences, 'id'), array_column($removeSequences, 'id'))) {
+            $this->setErrorMessage("You cannot add the same sequence to 'Subscribe to sequences' and 'Unsubscribe from sequences' actions.");
+
+            return false;
+        }
 
         return true;
     }

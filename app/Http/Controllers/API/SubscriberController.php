@@ -93,15 +93,15 @@ class SubscriberController extends APIController
      */
     public function batchUpdate(Request $request)
     {
+        //@todo validate subscriber IDs (exist)
         $this->validate($request, [
-            'actions'        => 'bail|array|button_actions',
-            'subscribers'    => 'bail|array',
-            'subscribers.id' => 'bail|required',
+            'actions'          => 'bail|required|array|button_actions',
+            'subscribers'      => 'bail|required|array',
+            'subscribers.*'    => 'bail|required|array',
+            'subscribers.*.id' => 'bail|required',
         ]);
-
-        $subscribers = array_column($request->get('subscribers', []), 'id');
-
-        $this->audience->batchUpdate($request->all(), $subscribers, $this->bot());
+        
+        $this->audience->batchUpdate($request->all(), $this->bot());
 
         return $this->response->accepted();
     }

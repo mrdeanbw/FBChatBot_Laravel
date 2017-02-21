@@ -280,51 +280,11 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     }
 
     /**
-     * @param Subscriber $subscriber
-     * @param array      $input
-     */
-    public function tagSequenceUpdate(Subscriber $subscriber, array $input)
-    {
-        // "MongoDB doesn’t allow multiple operations on the same property in the same update call.
-        // This means that the two operations must happen in two individually atomic operations."
-        // Therefore we can't do both "add_tags" and "remove_tags" in the same query.
-        // The same goes for "subscribe_sequences" and "subscribe_sequences"
-
-        $filter = [
-            '$and' => [
-                ['id' => $subscriber->_id],
-                ['bot_id' => $subscriber->bot_id]
-            ]
-        ];
-
-        $update = $this->normalizeBatchUpdateArray($input);
-
-        // We need 2 queries.
-        if (($input['add_tags'] && $input['remove_tags']) || ($input['add_sequences'] && $input['remove_sequences'])) {
-
-            Subscriber::raw(function ($collection) use ($filter, $update) {
-                $collection->updateOne($filter, ['$push' => $update['$push']]);
-            });
-
-            Subscriber::raw(function ($collection) use ($filter, $update) {
-                $collection->updateOne($filter, ['$pull' => $update['$pull']]);
-            });
-
-            return;
-        }
-
-        // 1 query is sufficient
-        Subscriber::raw(function ($collection) use ($filter, $update) {
-            $collection->updateOne($filter, $update);
-        });
-    }
-
-    /**
      * @param Bot   $bot
      * @param array $subscriberIds
      * @param array $input
      */
-    public function bulkAddRemoveTagsAndSequences(array $subscriberIds, Bot $bot, array $input)
+    public function bulkAddRemoveTagsAndSequences(Bot $bot, array $subscriberIds, array $input)
     {
         // "MongoDB doesn’t allow multiple operations on the same property in the same update call.
         // This means that the two operations must happen in two individually atomic operations."
@@ -334,7 +294,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
         $filter = [
             '$and' => [
                 ['bot_id' => $bot->_id],
-                ['id' => ['$in' => $subscriberIds]]
+                ['_id' => ['$in' => $subscriberIds]]
             ]
         ];
 
@@ -344,7 +304,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
         if (($input['add_tags'] && $input['remove_tags']) || ($input['add_sequences'] && $input['remove_sequences'])) {
 
             Subscriber::raw(function ($collection) use ($filter, $update) {
-                $collection->updateMany($filter, ['$push' => $update['$push']]);
+                $collection->updateMany($filter, ['$addToSet' => $update['$addToSet']]);
             });
 
             Subscriber::raw(function ($collection) use ($filter, $update) {
@@ -400,19 +360,21 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
         $update = [];
 
         if ($input['add_tags']) {
-            array_set($update, '$push.tags', $input['add_tags']);
+            array_set($update, '$addToSet.tags.$each', $input['add_tags']);
         }
 
         if ($input['remove_tags']) {
-            array_set($update, '$pull.tags', $input['remove_tags']);
+            array_set($update, '$pull.tags.$in', $input['remove_tags']);
         }
 
         if ($input['add_sequences']) {
-            array_set($update, '$push.sequences', $input['add_sequences']);
+            array_set($update, '$addToSet.sequences.$each', $input['add_sequences']);
+            array_set($update, '$pull.removed_sequences.$in', $input['add_sequences']);
         }
 
         if ($input['remove_sequences']) {
-            array_set($update, '$pull.sequences', $input['remove_sequences']);
+            array_set($update, '$pull.sequences.$in', $input['remove_sequences']);
+            array_set($update, '$addToSet.removed_sequences.$each', $input['remove_sequences']);
         }
 
         return $update;
