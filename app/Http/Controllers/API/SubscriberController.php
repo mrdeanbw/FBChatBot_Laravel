@@ -75,7 +75,8 @@ class SubscriberController extends APIController
     public function update($id, Request $request)
     {
         $this->validate($request, [
-            'actions' => 'bail|array|button_actions',
+            'tags'      => 'bail|array|subscriber_tags',
+            'sequences' => 'bail|array|subscriber_sequences',
         ]);
 
         $subscriber = $this->audience->update($request->all(), $id, $this->bot());

@@ -29,7 +29,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function create(array $data)
     {
         if ($data['active']) {
-            $history = ['action' => 'subscribed', 'action_at' => mongo_date()];
+            $history = ['action' => 'subscribed', 'action_at' => carbon_date()];
             $data['history'] = [new SubscriptionHistory($history)];
         }
 
@@ -44,21 +44,23 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      */
     public function update($model, array $data)
     {
-        $history = null;
+        if (array_get($data, 'active', null) !== null) {
+            $history = null;
 
-        if ($model->active && ! $data['active']) {
-            $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => Carbon::now()]);
-        }
+            if ($model->active && ! $data['active']) {
+                $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => Carbon::now()]);
+            }
 
-        if (! $model->active && $data['active']) {
-            $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => Carbon::now()]);
-        }
+            if (! $model->active && $data['active']) {
+                $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => Carbon::now()]);
+            }
 
-        if ($history) {
-            $data = [
-                '$set'  => $data,
-                '$push' => $history
-            ];
+            if ($history) {
+                $data = [
+                    '$set'  => $data,
+                    '$push' => $history
+                ];
+            }
         }
 
         return parent::update($model, $data);
@@ -195,7 +197,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      */
     private function getWhereMethodName($logicalOperator)
     {
-        $methodPrefix = $logicalOperator == 'or' ? 'or' : '';
+        $methodPrefix = $logicalOperator == 'or'? 'or' : '';
 
         return "{$methodPrefix}Where";
     }

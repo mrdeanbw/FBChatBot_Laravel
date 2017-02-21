@@ -141,15 +141,15 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
     }
 
     /**
-     * @param Sequence        $sequence
-     * @param SequenceMessage $message
-     *
+     * @param Sequence $sequence
+     * @param ObjectID $messageId
      * @return int|null
+     *
      */
-    public function getMessageIndexInSequence(Sequence $sequence, SequenceMessage $message)
+    public function getMessageIndexInSequence(Sequence $sequence, ObjectID $messageId)
     {
         foreach ($sequence->messages as $i => $temp) {
-            if ($temp->id == $message->id) {
+            if ($temp->id == $messageId) {
                 return $i;
             }
         }

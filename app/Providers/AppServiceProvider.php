@@ -35,14 +35,23 @@ class AppServiceProvider extends ServiceProvider
             return MessageValidator::FromInstance($validator)->validateMessage($attribute, $value, $parameters);
         });
 
+        Validator::extendImplicit('subscriber_tags', function ($attribute, $value, $parameters, $validator) {
+            return MessageValidator::FromInstance($validator)->validateTags($attribute, $value);
+        });
+
+        Validator::extendImplicit('subscriber_sequences', function ($attribute, $value, $parameters, $validator) {
+            return MessageValidator::FromInstance($validator)->validateSequences($attribute, $value);
+        });
+
         Validator::extend('ci_unique', function ($attribute, $value, $parameters, $validator) {
             if (starts_with($parameters[5], 'oi:')) {
                 $parameters[5] = new ObjectID(substr($parameters[5], 3));
             }
+
             $count = DB::collection($parameters[0])
-                ->where($parameters[1], 'regexp', "/^{$value}$/i")
-                ->where($parameters[2], '!=', $parameters[3])
-                ->where($parameters[4], $parameters[5])->count();
+                       ->where($parameters[1], 'regexp', "/^{$value}$/i")
+                       ->where($parameters[2], '!=', $parameters[3])
+                       ->where($parameters[4], $parameters[5])->count();
 
             return ! $count;
         });

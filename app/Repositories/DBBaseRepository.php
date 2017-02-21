@@ -3,7 +3,6 @@
 use Carbon\Carbon;
 use App\Models\BaseModel;
 use MongoDB\BSON\ObjectID;
-use MongoDB\BSON\UTCDateTime;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Jenssegers\Mongodb\Eloquent\Builder;
@@ -158,6 +157,15 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     public function delete($model)
     {
         $model->delete();
+    }
+
+    /**
+     * @param array $ids
+     */
+    public function bulkDelete(array $ids)
+    {
+        $model = $this->model();
+        $model::whereIn('_id', $ids)->delete();
     }
 
     /**

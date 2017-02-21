@@ -30,7 +30,7 @@ class CreateFailedJobsCollection extends Migration
      */
     public function down()
     {
-        Schema::connection('sqlite')->drop('failed_jobs');
+        Schema::connection('sqlite')->dropIfExists('failed_jobs');
     }
 }
 

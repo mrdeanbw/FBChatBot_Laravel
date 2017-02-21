@@ -13,7 +13,7 @@ if (! function_exists('config_path')) {
      */
     function config_path($path = '')
     {
-        return app()->basePath() . '/config' . ($path ? '/' . $path : $path);
+        return app()->basePath() . '/config' . ($path? '/' . $path : $path);
     }
 }
 
@@ -27,7 +27,7 @@ if (! function_exists('public_path')) {
      */
     function public_path($path = '')
     {
-        return app()->basePath() . '/public' . ($path ? '/' . $path : $path);
+        return app()->basePath() . '/public' . ($path? '/' . $path : $path);
     }
 }
 
@@ -106,7 +106,7 @@ if (! function_exists('stable_usort')) {
         $result = usort($array, function ($a, $b) use ($cmp) {
             $result = call_user_func($cmp, $a[1], $b[1]);
 
-            return $result == 0 ? $a[0] - $b[0] : $result;
+            return $result == 0? $a[0] - $b[0] : $result;
         });
         foreach ($array as &$item) {
             $item = $item[1];
@@ -234,7 +234,6 @@ if (! function_exists('mongo_date')) {
 if (! function_exists('carbon_date')) {
 
     /**
-     *
      * Jenssegers\Mongodb\Eloquent\Model::asDateTime
      * Illuminate\Database\Eloquent\Model::asDateTime
      *
@@ -243,8 +242,12 @@ if (! function_exists('carbon_date')) {
      * @return Carbon
      * @throws Exception
      */
-    function carbon_date($date)
+    function carbon_date($date = null)
     {
+        if ($date === null) {
+            return Carbon::now();
+        }
+        
         // If this value is already a Carbon instance, we shall just return it as is.
         // This prevents us having to re-instantiate a Carbon instance when we know
         // it already is one, which wouldn't be fulfilled by the DateTime check.

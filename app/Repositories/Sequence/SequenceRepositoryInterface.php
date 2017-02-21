@@ -73,10 +73,9 @@ interface SequenceRepositoryInterface extends AssociatedWithBotRepositoryInterfa
     public function getNextSendableMessage(Sequence $sequence, SequenceMessage $message);
 
     /**
-     * @param Sequence        $sequence
-     * @param SequenceMessage $message
-     *
+     * @param Sequence $sequence
+     * @param ObjectID $messageId
      * @return int|null
      */
-    public function getMessageIndexInSequence(Sequence $sequence, SequenceMessage $message);
+    public function getMessageIndexInSequence(Sequence $sequence, ObjectID $messageId);
 }

@@ -11,24 +11,32 @@
 |
 */
 
-use App\Models\Bot;
-use App\Models\Template;
 use Carbon\Carbon;
+use App\Models\Bot;
 
 $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker) {
 
     $gender = $faker->randomElement(['male', 'female']);
     $firstName = $gender == 'male'? $faker->firstNameMale : $faker->firstNameFemale;
 
-    $active = true;
     $lastSubscribed = $faker->dateTimeThisMonth;
     $lastUnsubscribed = $faker->boolean(75)? null : $faker->dateTimeThisMonth;
-
-    if ($lastUnsubscribed) {
-        $active = $lastUnsubscribed->getTimestamp() <= $lastSubscribed->getTimestamp();
+    var_dump($lastUnsubscribed);
+    if ($lastUnsubscribed && $lastUnsubscribed->getTimestamp() <= $lastSubscribed->getTimestamp()) {
+        $temp = $lastSubscribed;
+        $lastSubscribed = $lastUnsubscribed;
+        $lastUnsubscribed = $temp;
     }
 
-    $botId = Bot::firstOrFail()->id;
+    $active = ! $lastUnsubscribed;;
+
+    $history = [['action' => 'subscribed', 'action_at' => mongo_date($lastSubscribed)]];
+
+    if (! $active) {
+        $history[] = ['action' => 'unsubscribed', 'action_at' => mongo_date($lastUnsubscribed)];
+    }
+
+    $bot = Bot::latest()->firstOrFail();
 
     return [
         'first_name'           => $firstName,
@@ -36,16 +44,19 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
         'facebook_id'          => $faker->bankAccountNumber,
         'gender'               => $gender,
         'avatar_url'           => $faker->imageUrl(512, 512),
-        'last_contacted_at'    => $faker->boolean(75)? $faker->dateTimeThisMonth : null,
+        'last_interaction_at'  => $faker->boolean(75)? $faker->dateTimeThisMonth : null,
         'created_at'           => $faker->dateTimeThisMonth,
         'updated_at'           => $faker->dateTimeThisMonth,
+        'locale'               => $faker->locale,
         'active'               => $active,
-        'bot_id'               => $botId,
+        'bot_id'               => $bot->_id,
         'timezone'             => Carbon::now($faker->timezone)->offsetHours,
         'last_subscribed_at'   => $lastSubscribed,
         'last_unsubscribed_at' => $lastUnsubscribed,
         'tags'                 => [],
-        'sequences'            => []
+        'sequences'            => [],
+        'removed_sequences'    => [],
+        'history'              => $history,
     ];
 });
 

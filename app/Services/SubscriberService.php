@@ -1,8 +1,8 @@
 <?php namespace App\Services;
 
-use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use App\Models\Subscriber;
 use App\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
@@ -11,7 +11,7 @@ use App\Repositories\Bot\BotRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
-use MongoDB\BSON\ObjectID;
+use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 
 class SubscriberService
 {
@@ -19,15 +19,14 @@ class SubscriberService
     /**
      * @type array
      */
-    protected $filterFieldsMap
-        = [
-            'first_name'          => 'first_name',
-            'last_name'           => 'last_name',
-            'active'              => 'active',
-            'gender'              => 'gender',
-            'created_at'          => 'created_at',
-            'last_interaction_at' => 'last_interaction_at',
-        ];
+    protected $filterFieldsMap = [
+        'first_name'          => 'first_name',
+        'last_name'           => 'last_name',
+        'active'              => 'active',
+        'gender'              => 'gender',
+        'created_at'          => 'created_at',
+        'last_interaction_at' => 'last_interaction_at',
+    ];
 
     /**
      * @type FacebookUser
@@ -142,7 +141,7 @@ class SubscriberService
             'gender'               => $publicProfile->gender,
             'active'               => $isActive,
             'bot_id'               => $bot->_id,
-            'last_subscribed_at'   => $isActive ? Carbon::now() : null,
+            'last_subscribed_at'   => $isActive? Carbon::now() : null,
             'last_unsubscribed_at' => null,
             'tags'                 => [],
             'sequences'            => [],
@@ -230,6 +229,7 @@ class SubscriberService
                 'operator' => 'subscriber',
                 'filter'   => new AudienceFilter($this->normalizeFilter($filter))
             ];
+            $this->addActiveFilter($ret);
         }
 
         foreach ($filterBy as $key => $value) {
@@ -250,10 +250,12 @@ class SubscriberService
                 $operator = 'date';
             }
 
+            if ($key === 'active') {
+                $value = (bool)$value;
+            }
+
             $ret[] = compact('operator', 'key', 'value');
         }
-
-        $this->addActiveFilter($ret);
 
         return $ret;
     }
@@ -336,7 +338,7 @@ class SubscriberService
         foreach ($orderBy as $attribute => $order) {
             if ($this->fieldIsFilterable($attribute)) {
                 $attribute = $this->filterFieldsMap[$attribute];
-                $ret[$attribute] = strtolower($order) == 'desc' ? 'desc' : 'asc';
+                $ret[$attribute] = strtolower($order) == 'desc'? 'desc' : 'asc';
             }
         }
 
@@ -356,22 +358,30 @@ class SubscriberService
     {
         $subscriber = $this->findForBotOrFail($subscriberId, $bot);
 
-        $this->botRepo->createTagsForBot($bot->_id, $input['tags']);
+        if ($tags = array_get($input, 'tags', [])) {
+            $this->botRepo->createTagsForBot($bot->_id, $tags);
+        }
 
         $newSequenceIDs = array_map(function ($sequence) {
             return new ObjectID($sequence['id']);
-        }, $input['sequences']);
+        }, array_get($input, 'sequences', []));
 
         $sequencesToAdd = array_diff($newSequenceIDs, $subscriber->sequences);
         $sequencesToRemove = array_diff($subscriber->sequences, $newSequenceIDs);
 
         $data = [
-            'tags'              => $input['tags'],
+            'tags'              => $tags,
             'sequences'         => $newSequenceIDs,
             'removed_sequences' => array_merge(array_diff($subscriber->removed_sequences, $sequencesToAdd), $sequencesToRemove),
         ];
 
-        $this->subscribeToSequences($subscriber, $sequencesToAdd);
+        if ($sequencesToAdd) {
+            $this->subscribeToSequences($subscriber, $sequencesToAdd);
+        }
+
+        if ($sequencesToRemove) {
+            $this->unsubscribeFromSequences($subscriber, $sequencesToRemove);
+        }
 
         $this->subscriberRepo->update($subscriber, $data);
 
@@ -503,10 +513,10 @@ class SubscriberService
     {
         $filter = [
             ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
-            ['operator' => 'in', 'key' => 'bot_id', 'value' => $subscriber->bot_id]
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $subscriber->bot_id]
         ];
 
-        $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'messages.id', 'messages.deleted_at', 'messages.queued']);
+        $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
 
         $schedules = [];
         foreach ($sequences as $sequence) {
@@ -520,14 +530,46 @@ class SubscriberService
                 ];
             }
 
-            // @todo use $inc to avoid any data inconsistency, and on the columns list remove 'messages.queues'.
+            // @todo use $inc to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
             // @todo bulk increment if possible? like: increment the "queued" attribute of first sendable message (whose deleted_at is null) whose sequence ID is among $sequences.
-            $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message);
+            $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message->id);
             $this->sequenceRepo->update($sequence, [
-                "messages.{$index}.queued" => $message->queued + 1
+                "messages.{$index}.queued" => $message->queued + 1,
+                'subscriber_count'         => $sequence->subscriber_count + 1
             ]);
         }
 
         $this->sequenceScheduleRepo->bulkCreate($schedules);
+    }
+
+    /**
+     * @param Subscriber $subscriber
+     * @param array      $sequenceIds
+     */
+    private function unsubscribeFromSequences(Subscriber $subscriber, array $sequenceIds)
+    {
+        $filter = [
+            ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $subscriber->bot_id]
+        ];
+
+        $schedules = $this->sequenceScheduleRepo
+            ->pendingPerSubscriberInSequences($subscriber, $sequenceIds, ['_id', 'message_id', 'sequence_id'])
+            ->keyBy('sequence_id');
+
+        $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
+        foreach ($sequences as $sequence) {
+            $schedule = $schedules->get($sequence->id);
+            $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $schedule->message_id);
+
+            // @todo use $dec to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
+            // @todo bulk decrement if possible.
+            $this->sequenceRepo->update($sequence, [
+                "messages.{$index}.queued" => $sequence->messages[$index]->queued - 1,
+                'subscriber_count'         => $sequence->subscriber_count - 1
+            ]);
+        }
+
+        $this->sequenceScheduleRepo->bulkDelete($schedules->pluck('_id')->toArray());
     }
 }

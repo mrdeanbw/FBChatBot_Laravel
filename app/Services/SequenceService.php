@@ -185,7 +185,7 @@ class SequenceService
             $data['subscriber_count'] = $sequence->subscriber_count + $newSubscribers;
 
             if ($message) {
-                $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message);
+                $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message->id);
                 $data["messages.{$index}.queued"] = $message->queued + $newSubscribers;
             }
 

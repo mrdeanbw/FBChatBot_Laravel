@@ -21,10 +21,11 @@ class SubscriberTransformer extends BaseTransformer
             'timezone'             => $subscriber->timezone,
             'locale'               => $subscriber->locale,
             'tags'                 => $subscriber->tags,
+            'active'               => $subscriber->active,
             'created_at'           => $subscriber->created_at->toAtomString(),
-            'last_interaction_at'  => $subscriber->last_interaction_at ? $subscriber->last_interaction_at->toAtomString() : null,
-            'last_subscribed_at'   => $subscriber->last_subscribed_at ? $subscriber->last_subscribed_at->toAtomString() : null,
-            'last_unsubscribed_at' => $subscriber->last_unsubscribed_at ? $subscriber->last_unsubscribed_at->toAtomString() : null,
+            'last_interaction_at'  => $subscriber->last_interaction_at? $subscriber->last_interaction_at->toAtomString() : null,
+            'last_subscribed_at'   => $subscriber->last_subscribed_at? $subscriber->last_subscribed_at->toAtomString() : null,
+            'last_unsubscribed_at' => $subscriber->last_unsubscribed_at? $subscriber->last_unsubscribed_at->toAtomString() : null,
         ];
     }
 
@@ -35,7 +36,7 @@ class SubscriberTransformer extends BaseTransformer
      */
     public function includeHistory(Subscriber $subscriber)
     {
-        return $this->collection($subscriber->history, new SubscriptionHistoryTransformer(), false);
+        return $this->collection(array_reverse($subscriber->history), new SubscriptionHistoryTransformer(), false);
     }
 
     /**

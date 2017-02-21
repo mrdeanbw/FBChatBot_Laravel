@@ -271,12 +271,12 @@ class MessageValidator extends LaravelValidator
         }
 
         $addTags = array_get($button, 'actions.add_tags', []);
-        if (! $this->_validateTags($attribute, $addTags)) {
+        if (! $this->validateTags($attribute, $addTags)) {
             return false;
         }
 
         $removeTags = array_get($button, 'actions.remove_tags', []);
-        if (! $this->_validateTags($attribute, $removeTags)) {
+        if (! $this->validateTags($attribute, $removeTags)) {
             return false;
         }
 
@@ -287,12 +287,12 @@ class MessageValidator extends LaravelValidator
         }
 
         $addSequences = array_get($button, 'actions.add_sequences', []);
-        if (! $this->_validateSequences($attribute, $addSequences)) {
+        if (! $this->validateSequences($attribute, $addSequences)) {
             return false;
         }
 
         $removeSequences = array_get($button, 'actions.remove_sequences', []);
-        if (! $this->_validateSequences($attribute, $removeSequences)) {
+        if (! $this->validateSequences($attribute, $removeSequences)) {
             return false;
         }
 
@@ -306,7 +306,7 @@ class MessageValidator extends LaravelValidator
         return true;
     }
 
-    protected function _validateTags($attribute, $tags)
+    public function validateTags($attribute, $tags)
     {
         if (! $this->validateArray($attribute, $tags)) {
             $this->setErrorMessage("Your button tags format is invalid.");
@@ -326,7 +326,7 @@ class MessageValidator extends LaravelValidator
     }
 
 
-    private function _validateSequences($attribute, $sequences)
+    public function validateSequences($attribute, $sequences)
     {
         if (! $this->validateArray($attribute, $sequences)) {
             $this->setErrorMessage("Your sequences format is invalid.");

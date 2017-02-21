@@ -60,10 +60,10 @@ class FacebookWebhookReceiver
      */
     private function handleEvent($event)
     {
-        $page = $this->adapter->bot($event['recipient']['id']);
+        $bot = $this->adapter->bot($event['recipient']['id']);
 
         // If the page is not in our system, then do nothing.
-        if (! $page) {
+        if (! $bot) {
             return;
         }
 
@@ -73,7 +73,7 @@ class FacebookWebhookReceiver
         }
 
         // Get the subscriber who sent the message.
-        $subscriber = $this->adapter->subscriber($event['sender']['id'], $page);
+        $subscriber = $this->adapter->subscriber($event['sender']['id'], $bot);
 
         // If it is a delivery notification, then mark messages as delivered.
         if (array_get($event, 'delivery')) {
@@ -97,14 +97,14 @@ class FacebookWebhookReceiver
         if ($text = array_get($event, 'message.text')) {
 
             // Find a matching auto reply rule.
-            $rule = $this->adapter->matchingAutoReplyRule($text, $page);
+            $rule = $this->adapter->matchingAutoReplyRule($text, $bot);
 
             // If found
             if ($rule) {
 
                 // If the auto reply rule is a subscription message, subscribe the user.
                 if ($this->adapter->isSubscriptionMessage($rule)) {
-                    $subscriber = $this->adapter->subscribe($page, $event['sender']['id']);
+                    $subscriber = $this->adapter->subscribe($bot, $event['sender']['id']);
                     $this->updateLastContactedAt($subscriber);
 
                     return;
@@ -113,7 +113,7 @@ class FacebookWebhookReceiver
                 // If the auto reply rule is a unsubscription message, send the "do you want to unsubscribe?" message .
                 if ($this->adapter->isUnsubscriptionMessage($rule)) {
                     $this->updateLastContactedAt($subscriber);
-                    $this->adapter->initiateUnsubscripingProcess($page, $subscriber, $event['sender']['id']);
+                    $this->adapter->initiateUnsubscripingProcess($bot, $subscriber, $event['sender']['id']);
 
                     return;
                 }
@@ -122,7 +122,7 @@ class FacebookWebhookReceiver
                 // But before then, if the current message sender is not a subscriber,
                 // Subscribe them silently.
                 if (! $subscriber) {
-                    $subscriber = $this->adapter->subscribeSilently($page, $event['sender']['id']);
+                    $subscriber = $this->adapter->subscribeSilently($bot, $event['sender']['id']);
                 }
                 $this->updateLastContactedAt($subscriber);
                 $this->adapter->sendAutoReply($rule, $subscriber);
@@ -134,17 +134,17 @@ class FacebookWebhookReceiver
             // But before then, if the current message sender is not a subscriber,
             // or if inactive subscriber, subscribe them silently.
             if (! $subscriber || ! $subscriber->active) {
-                $subscriber = $this->adapter->subscribeSilently($page, $event['sender']['id']);
+                $subscriber = $this->adapter->subscribeSilently($bot, $event['sender']['id']);
             }
             $this->updateLastContactedAt($subscriber);
-            $this->adapter->sendDefaultReply($page, $subscriber);
+            $this->adapter->sendDefaultReply($bot, $subscriber);
 
             return;
         }
 
         // Handle postbacks (button clicks).
         if (array_get($event, 'postback')) {
-            $this->handlePostbackEvent($page, $subscriber, $event);
+            $this->handlePostbackEvent($bot, $subscriber, $event);
 
             return;
         }
@@ -152,7 +152,7 @@ class FacebookWebhookReceiver
         // Handle optin (send to messenger plugin)
         if (array_get($event, 'optin')) {
             $payload = array_get($event, 'optin.ref');
-            $this->adapter->subscribePageUser($payload, $page, $event['sender']['id']);
+            $this->adapter->subscribeBotUser($payload, $bot, $event['sender']['id']);
 
             return;
         }

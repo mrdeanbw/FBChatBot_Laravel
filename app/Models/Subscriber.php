@@ -19,6 +19,7 @@
  * @property double         $timezone
  * @property double         $locale
  * @property mixed          $bot_id
+ * @property array          $history
  */
 class Subscriber extends BaseModel
 {

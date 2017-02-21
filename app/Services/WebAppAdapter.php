@@ -513,13 +513,13 @@ class WebAppAdapter
      * Get a subscriber by Facebook ID.
      *
      * @param      $senderId
-     * @param Bot  $page
+     * @param Bot  $bot
      *
      * @return Subscriber|null
      */
-    public function subscriber($senderId, Bot $page)
+    public function subscriber($senderId, Bot $bot)
     {
-        return $this->subscribers->findByFacebookId($senderId, $page);
+        return $this->subscribers->findByFacebookId($senderId, $bot);
     }
 
     /**
@@ -661,7 +661,7 @@ class WebAppAdapter
      *
      * @return bool
      */
-    public function subscribePageUser($payload, Bot $bot, $senderId)
+    public function subscribeBotUser($payload, Bot $bot, $senderId)
     {
         // The page admin payload has a special prefix, followed by his internal artificial ID.
         $prefix = 'SUBSCRIBE_OWNER_';

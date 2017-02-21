@@ -89,4 +89,9 @@ interface BaseRepositoryInterface
      * @param BaseModel $model
      */
     public function delete($model);
+
+    /**
+     * @param $ids
+     */
+    public function bulkDelete(array $ids);
 }
