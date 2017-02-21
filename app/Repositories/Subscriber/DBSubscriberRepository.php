@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use App\Models\AudienceFilterRule;
 use App\Models\AudienceFilterGroup;
 use App\Models\SubscriptionHistory;
+use Illuminate\Support\Facades\Log;
 use Jenssegers\Mongodb\Eloquent\Builder;
 use App\Repositories\DBAssociatedWithBotRepository;
 
@@ -29,7 +30,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function create(array $data)
     {
         if ($data['active']) {
-            $history = ['action' => 'subscribed', 'action_at' => carbon_date()];
+            $history = ['action' => 'subscribed', 'action_at' => mongo_date()];
             $data['history'] = [new SubscriptionHistory($history)];
         }
 
@@ -48,11 +49,11 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
             $history = null;
 
             if ($model->active && ! $data['active']) {
-                $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => Carbon::now()]);
+                $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => mongo_date()]);
             }
 
             if (! $model->active && $data['active']) {
-                $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => Carbon::now()]);
+                $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => mongo_date()]);
             }
 
             if ($history) {
@@ -479,7 +480,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     {
         $filterBy = [
             ['operator' => 'subscriber', 'filter' => $filter],
-            ['operator' => '=', 'key' => '_id', $subscriber->_id]
+            ['operator' => '=', 'key' => 'value', $subscriber->_id]
         ];
 
         return $this->count($filterBy) === 1;
