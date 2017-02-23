@@ -10,7 +10,6 @@ use Illuminate\Support\Collection;
 use App\Models\AudienceFilterRule;
 use App\Models\AudienceFilterGroup;
 use App\Models\SubscriptionHistory;
-use Illuminate\Support\Facades\Log;
 use Jenssegers\Mongodb\Eloquent\Builder;
 use App\Repositories\DBAssociatedWithBotRepository;
 
@@ -59,11 +58,11 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
             if ($history) {
                 $data = [
                     '$set'  => $data,
-                    '$push' => $history
+                    '$push' => ['history' => $history]
                 ];
             }
         }
-
+        
         return parent::update($model, $data);
     }
 
@@ -480,7 +479,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     {
         $filterBy = [
             ['operator' => 'subscriber', 'filter' => $filter],
-            ['operator' => '=', 'key' => 'value', $subscriber->_id]
+            ['operator' => '=', 'key' => '_id', 'value' => $subscriber->_id]
         ];
 
         return $this->count($filterBy) === 1;

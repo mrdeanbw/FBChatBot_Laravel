@@ -3,11 +3,11 @@
 use Carbon\Carbon;
 use App\Models\BaseModel;
 use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\UTCDatetime;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Jenssegers\Mongodb\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use MongoDB\BSON\UTCDatetime;
 
 abstract class DBBaseRepository implements BaseRepositoryInterface
 {
@@ -139,11 +139,20 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     {
         $class = $this->model();
 
-        $model->fill($data);
-
         if (starts_with(key($data), '$')) {
-            return $class::where('_id', $model->_id)->update($data);
+
+            if (! array_get($data, '$set.updated_at')) {
+                array_set($data, '$set.updated_at', Carbon::now());
+            }
+
+            if ($set = array_get($data, '$set', [])) {
+                $data['$set'] = $this->normalizeCarbonDates($data['$set']);
+            }
+
+            return $class::where('_id', $model->_id)->getQuery()->update($data);
         }
+
+        $model->fill($data);
 
         $data = $this->normalizeCarbonDates($data);
 
@@ -177,7 +186,6 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
      */
     protected function applyQueryFilter($query, array $filter)
     {
-
         switch ($filter['operator']) {
             case 'prefix':
                 $query->where($filter['key'], 'regexp', "/^{$filter['value']}.*?/i");
