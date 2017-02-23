@@ -1,10 +1,10 @@
 <?php namespace App\Services;
 
-use App\Models\Button;
 use Exception;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Page;
+use App\Models\Button;
 use App\Models\Message;
 use App\Models\Template;
 use App\Models\Broadcast;
@@ -102,9 +102,9 @@ class FacebookAPIAdapter
         /** @type Template $template */
         $this->loadModelsIfNotLoaded($context, ['template']);
 
-        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forTemplate($context->tmeplate);
+        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forTemplate($context->template);
 
-        return $this->sendMessages($mapper, $context->tmeplate->messages, $subscriber, $bot);
+        return $this->sendMessages($mapper, $context->template->messages, $subscriber, $bot);
     }
 
     /**
