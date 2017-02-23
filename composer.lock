@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "a6be28ebb7f9e0ee6bed5ed268624e6d",
+    "content-hash": "726ee16cffa9f1206102fb7219313844",
     "packages": [
         {
             "name": "dingo/api",
@@ -2068,16 +2068,16 @@
         },
         {
             "name": "jenssegers/mongodb",
-            "version": "v3.2.0",
+            "version": "v3.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jenssegers/laravel-mongodb.git",
-                "reference": "84b8b706b3891bb636f09555d01f5bfaf9e775ea"
+                "reference": "e3bea54120cfb45ca6dadffad11ecaed6952e063"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jenssegers/laravel-mongodb/zipball/84b8b706b3891bb636f09555d01f5bfaf9e775ea",
-                "reference": "84b8b706b3891bb636f09555d01f5bfaf9e775ea",
+                "url": "https://api.github.com/repos/jenssegers/laravel-mongodb/zipball/e3bea54120cfb45ca6dadffad11ecaed6952e063",
+                "reference": "e3bea54120cfb45ca6dadffad11ecaed6952e063",
                 "shasum": ""
             },
             "require": {
@@ -2125,7 +2125,7 @@
                 "mongo",
                 "mongodb"
             ],
-            "time": "2017-02-18T13:54:43+00:00"
+            "time": "2017-02-14T14:12:04+00:00"
         },
         {
             "name": "laravel/cashier",
@@ -4115,16 +4115,16 @@
     "packages-dev": [
         {
             "name": "barryvdh/laravel-ide-helper",
-            "version": "v2.3.1",
+            "version": "v2.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/barryvdh/laravel-ide-helper.git",
-                "reference": "25c8de637ddf79567d721c1856616be01db7b960"
+                "reference": "e82de98cef0d6597b1b686be0b5813a3a4bb53c5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/barryvdh/laravel-ide-helper/zipball/25c8de637ddf79567d721c1856616be01db7b960",
-                "reference": "25c8de637ddf79567d721c1856616be01db7b960",
+                "url": "https://api.github.com/repos/barryvdh/laravel-ide-helper/zipball/e82de98cef0d6597b1b686be0b5813a3a4bb53c5",
+                "reference": "e82de98cef0d6597b1b686be0b5813a3a4bb53c5",
                 "shasum": ""
             },
             "require": {
@@ -4177,7 +4177,7 @@
                 "phpstorm",
                 "sublime"
             ],
-            "time": "2017-02-20T12:54:53+00:00"
+            "time": "2017-02-22T12:27:33+00:00"
         },
         {
             "name": "barryvdh/reflection-docblock",
