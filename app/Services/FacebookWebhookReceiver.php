@@ -29,6 +29,14 @@ class FacebookWebhookReceiver
     }
 
     /**
+     * @param mixed $data
+     */
+    public function setData($data)
+    {
+        $this->data = $data;
+    }
+
+    /**
      * Handles incoming facebook callback
      */
     public function handle()
@@ -61,7 +69,7 @@ class FacebookWebhookReceiver
     private function handleEvent($event)
     {
         $bot = $this->adapter->bot($event['recipient']['id']);
-
+        
         // If the page is not in our system, then do nothing.
         if (! $bot) {
             return;
@@ -98,21 +106,22 @@ class FacebookWebhookReceiver
 
             // Find a matching auto reply rule.
             $rule = $this->adapter->matchingAutoReplyRule($text, $bot);
-
+            
             // If found
             if ($rule) {
 
                 // If the auto reply rule is a subscription message, subscribe the user.
                 if ($this->adapter->isSubscriptionMessage($rule)) {
+                    // @todo one query (if creating or updating subscriber).
                     $subscriber = $this->adapter->subscribe($bot, $event['sender']['id']);
-                    $this->updateLastContactedAt($subscriber);
+                    $this->adapter->storeIncomingInteraction($subscriber);
 
                     return;
                 }
 
                 // If the auto reply rule is a unsubscription message, send the "do you want to unsubscribe?" message .
                 if ($this->adapter->isUnsubscriptionMessage($rule)) {
-                    $this->updateLastContactedAt($subscriber);
+                    $this->adapter->storeIncomingInteraction($subscriber);
                     $this->adapter->initiateUnsubscripingProcess($bot, $subscriber, $event['sender']['id']);
 
                     return;
@@ -124,7 +133,7 @@ class FacebookWebhookReceiver
                 if (! $subscriber) {
                     $subscriber = $this->adapter->subscribeSilently($bot, $event['sender']['id']);
                 }
-                $this->updateLastContactedAt($subscriber);
+                $this->adapter->storeIncomingInteraction($subscriber);
                 $this->adapter->sendAutoReply($rule, $subscriber);
 
                 return;
@@ -136,7 +145,7 @@ class FacebookWebhookReceiver
             if (! $subscriber || ! $subscriber->active) {
                 $subscriber = $this->adapter->subscribeSilently($bot, $event['sender']['id']);
             }
-            $this->updateLastContactedAt($subscriber);
+            $this->adapter->storeIncomingInteraction($subscriber);
             $this->adapter->sendDefaultReply($bot, $subscriber);
 
             return;
@@ -193,25 +202,5 @@ class FacebookWebhookReceiver
             Log::debug("Unknown postback payload: " . $event['postback']['payload']);
         }
     }
-
-    /**
-     * @param mixed $data
-     */
-    public function setData($data)
-    {
-        $this->data = $data;
-    }
-
-    /**
-     * @param Subscriber $subscriber
-     */
-    private function updateLastContactedAt($subscriber)
-    {
-        if ($subscriber) {
-            $subscriber->last_interaction_at = Carbon::now();
-            $subscriber->save();
-        }
-    }
-
 }
 

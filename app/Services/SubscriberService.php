@@ -104,17 +104,6 @@ class SubscriberService
     }
 
     /**
-     * @param      $id
-     * @param Bot  $page
-     *
-     * @return Subscriber|null
-     */
-    public function findByFacebookId($id, Bot $page)
-    {
-        return $this->subscriberRepo->findByFacebookIdForBot($id, $page);
-    }
-
-    /**
      * Get or create a new subscriber to a given page.
      *
      * @param      $id
@@ -125,7 +114,7 @@ class SubscriberService
      */
     public function getByFacebookIdOrCreate($id, Bot $bot, $isActive = false)
     {
-        if ($subscriber = $this->findByFacebookId($id, $bot)) {
+        if ($subscriber = $this->subscriberRepo->findByFacebookIdForBot($id, $bot)) {
             return $subscriber;
         }
 
@@ -167,7 +156,7 @@ class SubscriberService
      */
     public function resubscribe($id, Bot $bot)
     {
-        $subscriber = $this->findByFacebookId($id, $bot);
+        $subscriber = $this->subscriberRepo->findByFacebookIdForBot($id, $bot);
         $this->subscriberRepo->resubscribe($subscriber);
         $this->subscribeToBotSequences($subscriber, $bot);
     }

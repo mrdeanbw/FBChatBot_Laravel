@@ -127,17 +127,6 @@ class AutoReplyRuleService
     }
 
     /**
-     * @param string $text
-     * @param Bot    $page
-     *
-     * @return AutoReplyRule
-     */
-    public function getMatchingRule($text, Bot $page)
-    {
-        return $this->autoReplyRuleRepo->getMatchingRuleForPage($text, $page);
-    }
-
-    /**
      * Create the default (subscription/unsubscription) auto reply rules.
      *
      * @param Bot $bot

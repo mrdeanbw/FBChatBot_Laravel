@@ -1,19 +1,19 @@
 <?php namespace App\Services;
 
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Button;
 use App\Models\MainMenu;
 use App\Models\Template;
-use App\Models\Broadcast;
 use App\Models\Subscriber;
 use App\Models\AutoReplyRule;
 use App\Services\Facebook\Sender;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
+use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use App\Repositories\MessageHistory\MessageHistoryRepositoryInterface;
+use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 
 class WebAppAdapter
 {
@@ -79,6 +79,10 @@ class WebAppAdapter
      * @type SubscriberRepositoryInterface
      */
     private $subscriberRepo;
+    /**
+     * @type AutoReplyRuleRepositoryInterface
+     */
+    private $autoReplyRuleRepo;
 
     /**
      * WebAppAdapter constructor.
@@ -98,6 +102,7 @@ class WebAppAdapter
      * @param UserRepositoryInterface           $userRepo
      * @param BotRepositoryInterface            $botRepo
      * @param TemplateRepositoryInterface       $templateRepo
+     * @param AutoReplyRuleRepositoryInterface  $autoReplyRuleRepo
      */
     public function __construct(
         SubscriberService $subscribers,
@@ -114,7 +119,8 @@ class WebAppAdapter
         TemplateService $templates,
         UserRepositoryInterface $userRepo,
         BotRepositoryInterface $botRepo,
-        TemplateRepositoryInterface $templateRepo
+        TemplateRepositoryInterface $templateRepo,
+        AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
     ) {
         $this->subscribers = $subscribers;
         $this->welcomeMessage = $welcomeMessage;
@@ -131,6 +137,7 @@ class WebAppAdapter
         $this->botRepo = $botRepo;
         $this->templateRepo = $templateRepo;
         $this->subscriberRepo = $subscriberRepo;
+        $this->autoReplyRuleRepo = $autoReplyRuleRepo;
     }
 
     /**
@@ -148,6 +155,7 @@ class WebAppAdapter
 
         // If already subscribed
         if ($subscriber && $subscriber->active) {
+
             if (! $silentMode) {
                 $message = [
                     'message' => [
@@ -162,7 +170,7 @@ class WebAppAdapter
 
         // If first time, then create subscriber.
         if (! $subscriber) {
-            $subscriber = $this->persistSubscriber($bot, $senderId, true);
+            $subscriber = $this->subscribers->getByFacebookIdOrCreate($senderId, $bot, true);
         }
 
         // If not first time (unsubscribed before), resubscribe him.
@@ -304,7 +312,7 @@ class WebAppAdapter
     public function handleButtonClick($bot, $subscriber, $payload)
     {
         $payload = explode('|', $payload);
-        $broadcastId = isset($payload[1]) ? $payload[1] : null;
+        $broadcastId = isset($payload[1])? $payload[1] : null;
 
         $payload = explode(':', $payload[0]);
 
@@ -378,7 +386,7 @@ class WebAppAdapter
             return null;
         }
 
-        return is_object($ret) && is_a($ret, Button::class) ? $ret : null;
+        return is_object($ret) && is_a($ret, Button::class)? $ret : null;
     }
 
     /**
@@ -519,20 +527,20 @@ class WebAppAdapter
      */
     public function subscriber($senderId, Bot $bot)
     {
-        return $this->subscribers->findByFacebookId($senderId, $bot);
+        return $this->subscriberRepo->findByFacebookIdForBot($senderId, $bot);
     }
 
     /**
      * Get matching AI Rules.
      *
      * @param      $message
-     * @param Bot  $page
+     * @param Bot  $bot
      *
      * @return AutoReplyRule
      */
-    public function matchingAutoReplyRule($message, Bot $page)
+    public function matchingAutoReplyRule($message, Bot $bot)
     {
-        return $this->AIResponses->getMatchingRule($message, $page);
+        return $this->autoReplyRuleRepo->getMatchingRuleForBot($message, $bot);
     }
 
     /**
@@ -691,15 +699,14 @@ class WebAppAdapter
     }
 
     /**
-     * @param Bot  $page
-     * @param      $senderId
-     * @param      $isActive
-     *
-     * @return Subscriber|null
+     * @todo Use Repository.
+     * @param Subscriber $subscriber
      */
-    public function persistSubscriber(Bot $page, $senderId, $isActive)
+    public function storeIncomingInteraction($subscriber)
     {
-        return $this->subscribers->getByFacebookIdOrCreate($senderId, $page, $isActive);
+        if ($subscriber) {
+            $subscriber->last_interaction_at = Carbon::now();
+            $subscriber->save();
+        }
     }
-
 }

@@ -255,7 +255,7 @@ if (! function_exists('carbon_date')) {
             return $date;
         }
 
-        if (is_a($date, UTCDateTime::class)) {
+        if (is_a($date, UTCDatetime::class)) {
             return Carbon::createFromTimestamp($date->toDateTime()->getTimestamp());
         }
 
