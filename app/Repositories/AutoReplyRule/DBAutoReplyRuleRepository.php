@@ -19,7 +19,7 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
      * @param Bot    $bot
      * @return AutoReplyRule|null
      */
-    public function getMatchingRuleForPage($keyword, Bot $bot)
+    public function getMatchingRuleForBot($keyword, Bot $bot)
     {
 
         /** @type Builder $query */
@@ -33,7 +33,7 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
                 $subQuery->Where('mode', 'begins_with')->where('keyword', 'regexp', "/{$keyword}.*/i");
             });
 
-            $query->where(function (Builder $subQuery) use ($keyword) {
+            $query->orWhere(function (Builder $subQuery) use ($keyword) {
                 $subQuery->where('mode', 'contains')->where('keyword', 'regexp', "/.*{$keyword}.*/i");
             });
 

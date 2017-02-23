@@ -12,5 +12,5 @@ interface AutoReplyRuleRepositoryInterface extends AssociatedWithBotRepositoryIn
      * @param Bot    $bot
      * @return AutoReplyRule|null
      */
-    public function getMatchingRuleForPage($keyword, Bot $bot);
+    public function getMatchingRuleForBot($keyword, Bot $bot);
 }
