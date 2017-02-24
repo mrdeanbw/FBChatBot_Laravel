@@ -1,10 +1,12 @@
 <?php namespace App\Models;
 
 /**
- * @property bool   $readonly
- * @property string $mode
- * @property string $keyword
- * @property string $action
+ * @property bool     $readonly
+ * @property string   $mode
+ * @property string   $keyword
+ * @property string   $action
+ * @property Template $template
+ * @property int      mode_priority
  */
 class AutoReplyRule extends BaseModel
 {
@@ -17,6 +19,10 @@ class AutoReplyRule extends BaseModel
         });
     }
 
+    /**
+     * @param $mode
+     * @return int
+     */
     private static function getModePriority($mode)
     {
         switch ($mode) {

@@ -86,7 +86,7 @@ class FacebookWebhookReceiver
         // If it is a delivery notification, then mark messages as delivered.
         if (array_get($event, 'delivery')) {
             if ($subscriber) {
-                $this->adapter->markMessageBlocksAsDelivered($subscriber, $event['delivery']['watermark']);
+                $this->adapter->markMessagesAsDelivered($subscriber, $event['delivery']['watermark']);
             }
 
             return;
@@ -95,7 +95,7 @@ class FacebookWebhookReceiver
         // If it is a read notification, then mark messages as read.
         if (array_get($event, 'read')) {
             if ($subscriber) {
-                $this->adapter->markMessageBlocksAsRead($subscriber, $event['read']['watermark']);
+                $this->adapter->markMessagesAsRead($subscriber, $event['read']['watermark']);
             }
 
             return;

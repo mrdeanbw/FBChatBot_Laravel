@@ -97,6 +97,9 @@ $api->version('v1', $options, function (Router $api) {
         // Stats & Metrics
         $api->get('/bots/{botId}/stats', 'StatsController@index');
 
+        // Message Revisions
+        $api->get('/bots/{botId}/message/{messageId}/revisions', 'MessageRevisionController@show');
+
         // Bugs & features
         $api->get('/bugtracker', 'BugController@getAllBugs');
         $api->put('/bugtracker/single', 'BugController@getSingleBug');
