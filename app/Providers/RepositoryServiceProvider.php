@@ -25,7 +25,7 @@ class RepositoryServiceProvider extends ServiceProvider
             Repositories\CommentRepository\CommentRepositoryInterface::class       => Repositories\CommentRepository\DBCommentRepository::class,
             Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface::class     => Repositories\AutoReplyRule\DBAutoReplyRuleRepository::class,
             Repositories\MessagePreview\MessagePreviewRepositoryInterface::class   => Repositories\MessagePreview\DBMessagePreviewRepository::class,
-            Repositories\SentMessage\SentMessageRepositoryInterface::class         => Repositories\SentMessage\DBSentSentMessageRepository::class,
+            Repositories\SentMessage\SentMessageRepositoryInterface::class         => Repositories\SentMessage\DBSentMessageRepository::class,
             Repositories\MessageRevision\MessageRevisionRepositoryInterface::class => Repositories\MessageRevision\DBMessageRevisionRepository::class,
         ];
 

@@ -7,7 +7,7 @@ use App\Models\SentMessage;
 use MongoDB\BSON\UTCDatetime;
 use App\Repositories\DBAssociatedWithBotRepository;
 
-class DBSentSentMessageRepository extends DBAssociatedWithBotRepository implements SentMessageRepositoryInterface
+class DBSentMessageRepository extends DBAssociatedWithBotRepository implements SentMessageRepositoryInterface
 {
 
     /**
