@@ -7,12 +7,12 @@ use App\Models\MainMenu;
 use App\Models\Template;
 use App\Models\Subscriber;
 use App\Models\AutoReplyRule;
-use App\Services\Facebook\Sender;
+use App\Services\Facebook\Sender as FacebookSender;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
-use App\Repositories\MessageHistory\MessageHistoryRepositoryInterface;
+use App\Repositories\SentMessage\SentMessageRepositoryInterface;
 use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 
 class WebAppAdapter
@@ -20,7 +20,7 @@ class WebAppAdapter
 
     const UNSUBSCRIBE_PAYLOAD = "UNSUBSCRIBE";
     /**
-     * @type Sender
+     * @type FacebookSender
      */
     protected $FacebookSender;
     /**
@@ -28,45 +28,21 @@ class WebAppAdapter
      */
     private $subscribers;
     /**
-     * @type WelcomeMessageService
-     */
-    private $welcomeMessage;
-    /**
      * @type FacebookAPIAdapter
      */
     private $FacebookAdapter;
     /**
      * @type MessageService
      */
-    private $messageBlocks;
+    private $messages;
     /**
-     * @type DefaultReplyService
+     * @type SentMessageRepositoryInterface
      */
-    private $defaultReplies;
-    /**
-     * @type AutoReplyRuleService
-     */
-    private $AIResponses;
-    /**
-     * @type MessageHistoryRepositoryInterface
-     */
-    private $messageInstanceRepo;
-    /**
-     * @type BotService
-     */
-    private $bots;
-    /**
-     * @type BroadcastService
-     */
-    private $broadcasts;
+    private $sentMessageRepo;
     /**
      * @type UserRepositoryInterface
      */
     private $userRepo;
-    /**
-     * @type TemplateService
-     */
-    private $templates;
     /**
      * @type BotRepositoryInterface
      */
@@ -87,56 +63,38 @@ class WebAppAdapter
     /**
      * WebAppAdapter constructor.
      *
-     * @param SubscriberService                 $subscribers
-     * @param WelcomeMessageService             $welcomeMessage
-     * @param FacebookAPIAdapter                $FacebookAdapter
-     * @param Sender                            $FacebookSender
-     * @param SubscriberRepositoryInterface     $subscriberRepo
-     * @param MessageService                    $messageBlocks
-     * @param DefaultReplyService               $defaultReplies
-     * @param AutoReplyRuleService              $AIResponses
-     * @param MessageHistoryRepositoryInterface $messageInstanceRepo
-     * @param BotService                        $pages
-     * @param BroadcastService                  $broadcasts
-     * @param TemplateService                   $templates
-     * @param UserRepositoryInterface           $userRepo
-     * @param BotRepositoryInterface            $botRepo
-     * @param TemplateRepositoryInterface       $templateRepo
-     * @param AutoReplyRuleRepositoryInterface  $autoReplyRuleRepo
+     * @param MessageService                   $messages
+     * @param FacebookSender                   $FacebookSender
+     * @param SubscriberService                $subscribers
+     * @param BotRepositoryInterface           $botRepo
+     * @param UserRepositoryInterface          $userRepo
+     * @param FacebookAPIAdapter               $FacebookAdapter
+     * @param TemplateRepositoryInterface      $templateRepo
+     * @param SubscriberRepositoryInterface    $subscriberRepo
+     * @param SentMessageRepositoryInterface   $sentMessageRepo
+     * @param AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
      */
     public function __construct(
+        MessageService $messages,
+        FacebookSender $FacebookSender,
         SubscriberService $subscribers,
-        WelcomeMessageService $welcomeMessage,
-        FacebookAPIAdapter $FacebookAdapter,
-        Sender $FacebookSender,
-        SubscriberRepositoryInterface $subscriberRepo,
-        MessageService $messageBlocks,
-        DefaultReplyService $defaultReplies,
-        AutoReplyRuleService $AIResponses,
-        MessageHistoryRepositoryInterface $messageInstanceRepo,
-        BotService $pages,
-        BroadcastService $broadcasts,
-        TemplateService $templates,
-        UserRepositoryInterface $userRepo,
         BotRepositoryInterface $botRepo,
+        UserRepositoryInterface $userRepo,
+        FacebookAPIAdapter $FacebookAdapter,
         TemplateRepositoryInterface $templateRepo,
+        SubscriberRepositoryInterface $subscriberRepo,
+        SentMessageRepositoryInterface $sentMessageRepo,
         AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
     ) {
-        $this->subscribers = $subscribers;
-        $this->welcomeMessage = $welcomeMessage;
-        $this->FacebookAdapter = $FacebookAdapter;
-        $this->messageBlocks = $messageBlocks;
-        $this->defaultReplies = $defaultReplies;
-        $this->AIResponses = $AIResponses;
-        $this->FacebookSender = $FacebookSender;
-        $this->messageInstanceRepo = $messageInstanceRepo;
-        $this->bots = $pages;
-        $this->broadcasts = $broadcasts;
-        $this->userRepo = $userRepo;
-        $this->templates = $templates;
         $this->botRepo = $botRepo;
+        $this->messages = $messages;
+        $this->userRepo = $userRepo;
+        $this->subscribers = $subscribers;
         $this->templateRepo = $templateRepo;
         $this->subscriberRepo = $subscriberRepo;
+        $this->FacebookSender = $FacebookSender;
+        $this->FacebookAdapter = $FacebookAdapter;
+        $this->sentMessageRepo = $sentMessageRepo;
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
     }
 
@@ -415,7 +373,7 @@ class WebAppAdapter
             return false;
         }
 
-        $block = $this->messageBlocks->findMessageBlockForPage($id, $page);
+        $block = $this->messages->findMessageBlockForPage($id, $page);
 
         // Make sure that the message block is button
         if (! $block || $block->type != 'button') {
@@ -471,7 +429,7 @@ class WebAppAdapter
         // If the subscriber hash is that placeholder hash for main menu
         // then the message block is a main menu button, validate this assumption and
         if ($subscriberHash == FacebookAPIAdapter::NO_HASH_PLACEHOLDER) {
-            $mainMenuButton = $this->messageBlocks->findMessageBlock($blockId);
+            $mainMenuButton = $this->messages->findMessageBlock($blockId);
             if (! $mainMenuButton || $mainMenuButton->type != 'button' || $mainMenuButton->context_type != MainMenu::class) {
                 return false;
             }
@@ -489,7 +447,7 @@ class WebAppAdapter
             return false;
         }
 
-        if (! ($messageInstance = $this->messageInstanceRepo->findById($blockId))) {
+        if (! ($messageInstance = $this->sentMessageRepo->findById($blockId))) {
             // Invalid message block hash
             return false;
         }
@@ -514,7 +472,7 @@ class WebAppAdapter
      */
     public function bot($facebookId)
     {
-        return $this->bots->findByFacebookId($facebookId);
+        return $this->botRepo->findByFacebookId($facebookId);
     }
 
     /**
@@ -551,8 +509,7 @@ class WebAppAdapter
      */
     public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber)
     {
-        // @todo dispatch a new job for this.
-        $this->FacebookAdapter->sendMessages($rule->template, $subscriber);
+        $this->FacebookAdapter->sendTemplate($rule->template, $subscriber);
     }
 
     /**
@@ -561,11 +518,10 @@ class WebAppAdapter
      * @param Subscriber $subscriber
      * @param int        $timestamp
      */
-    public function markMessageBlocksAsDelivered(Subscriber $subscriber, $timestamp)
+    public function markMessagesAsDelivered(Subscriber $subscriber, $timestamp)
     {
-        //        $timestamp = $this->normalizeTimestamp($timestamp);
-
-        //        $this->messageInstanceRepo->markAsDelivered($subscriber, $timestamp);
+        $timestamp = mongo_date($timestamp);
+        $this->sentMessageRepo->markAsDelivered($subscriber, $timestamp);
         //        $this->updateBroadcastDeliveredStats($subscriber, $timestamp);
     }
 
@@ -575,15 +531,16 @@ class WebAppAdapter
      * @param Subscriber $subscriber
      * @param            $timestamp
      */
-    public function markMessageBlocksAsRead(Subscriber $subscriber, $timestamp)
+    public function markMessagesAsRead(Subscriber $subscriber, $timestamp)
     {
         // if a message is read, then it is definitely delivered.
         // this is to handle Facebook sometimes not sending the delivery callback.
-        //        $this->markMessageBlocksAsDelivered($subscriber, $timestamp);
+        // @todo one query if possible? i.e., update read at and delivered in the same query.
+        $this->markMessagesAsDelivered($subscriber, $timestamp);
 
-        //        $timestamp = $this->normalizeTimestamp($timestamp);
+        $timestamp = mongo_date($timestamp);
 
-        //        $this->messageInstanceRepo->markAsRead($subscriber, $timestamp);
+        $this->sentMessageRepo->markAsRead($subscriber, $timestamp);
         //        $this->updateBroadcastReadStats($subscriber, $timestamp);
     }
 
@@ -595,8 +552,8 @@ class WebAppAdapter
      */
     private function incrementMessageInstanceClicks(MessageInstance $instance, $incrementBy = 1)
     {
-        $this->messageInstanceRepo->update($instance, ['clicks' => $instance->clicks + $incrementBy]);
-        $this->messageInstanceRepo->createMessageInstanceClick($instance);
+        $this->sentMessageRepo->update($instance, ['clicks' => $instance->clicks + $incrementBy]);
+        $this->sentMessageRepo->createMessageInstanceClick($instance);
         $this->incrementBroadcastClicks($instance, $incrementBy);
     }
 

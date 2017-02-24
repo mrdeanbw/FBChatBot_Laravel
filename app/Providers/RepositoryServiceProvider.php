@@ -22,10 +22,11 @@ class RepositoryServiceProvider extends ServiceProvider
             Repositories\Broadcast\BroadcastRepositoryInterface::class           => Repositories\Broadcast\DBBroadcastRepository::class,
             Repositories\Subscriber\SubscriberRepositoryInterface::class         => Repositories\Subscriber\DBSubscriberRepository::class,
             Repositories\Sequence\SequenceScheduleRepositoryInterface::class     => Repositories\Sequence\DBSequenceScheduleRepository::class,
-            Repositories\CommentRepository\CommentRepositoryInterface::class     => Repositories\CommentRepository\DBCommentRepository::class,
-            Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface::class   => Repositories\AutoReplyRule\DBAutoReplyRuleRepository::class,
-            Repositories\MessagePreview\MessagePreviewRepositoryInterface::class => Repositories\MessagePreview\DBMessagePreviewRepository::class,
-            Repositories\MessageHistory\MessageHistoryRepositoryInterface::class => Repositories\MessageHistory\DBMessageHistoryRepository::class,
+            Repositories\CommentRepository\CommentRepositoryInterface::class       => Repositories\CommentRepository\DBCommentRepository::class,
+            Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface::class     => Repositories\AutoReplyRule\DBAutoReplyRuleRepository::class,
+            Repositories\MessagePreview\MessagePreviewRepositoryInterface::class   => Repositories\MessagePreview\DBMessagePreviewRepository::class,
+            Repositories\SentMessage\SentMessageRepositoryInterface::class         => Repositories\SentMessage\DBSentSentMessageRepository::class,
+            Repositories\MessageRevision\MessageRevisionRepositoryInterface::class => Repositories\MessageRevision\DBMessageRevisionRepository::class,
         ];
 
         foreach ($interfaceToConcreteMap as $interface => $concrete) {

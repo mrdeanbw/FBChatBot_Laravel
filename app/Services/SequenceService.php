@@ -348,35 +348,35 @@ class SequenceService
 
         $arr = [
             [
-                'id'          => new ObjectID(),
+                'id'          => new ObjectID(null),
                 'live'        => false,
                 'name'        => 'Introduction content + Unsubscribe instructions',
                 'conditions'  => ['wait_for' => ['days' => 1, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[0]['_id'],
             ],
             [
-                'id'          => new ObjectID(),
+                'id'          => new ObjectID(null),
                 'live'        => false,
                 'name'        => '1st Educational message',
                 'conditions'  => ['wait_for' => ['days' => 1, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[1]['_id'],
             ],
             [
-                'id'          => new ObjectID(),
+                'id'          => new ObjectID(null),
                 'live'        => false,
                 'name'        => '2nd Educational message',
                 'conditions'  => ['wait_for' => ['days' => 2, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[2]['_id'],
             ],
             [
-                'id'          => new ObjectID(),
+                'id'          => new ObjectID(null),
                 'live'        => false,
                 'name'        => '3rd Educational message + Soft sell',
                 'conditions'  => ['wait_for' => ['days' => 3, 'hours' => 0, 'minutes' => 0]],
                 'template_id' => $templates[3]['_id'],
             ],
             [
-                'id'          => new ObjectID(),
+                'id'          => new ObjectID(null),
                 'live'        => false,
                 'name'        => '4th Educational message',
                 'conditions'  => ['wait_for' => ['days' => 4, 'hours' => 0, 'minutes' => 0]],
@@ -400,7 +400,7 @@ class SequenceService
 
         return [
             [
-                '_id'      => new ObjectID(),
+                '_id'      => new ObjectID(null),
                 'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
@@ -410,7 +410,7 @@ class SequenceService
             ],
 
             [
-                '_id'      => new ObjectID(),
+                '_id'      => new ObjectID(null),
                 'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
@@ -420,7 +420,7 @@ class SequenceService
 
 
             [
-                '_id'      => new ObjectID(),
+                '_id'      => new ObjectID(null),
                 'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
@@ -430,7 +430,7 @@ class SequenceService
 
 
             [
-                '_id'      => new ObjectID(),
+                '_id'      => new ObjectID(null),
                 'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
@@ -440,7 +440,7 @@ class SequenceService
 
 
             [
-                '_id'      => new ObjectID(),
+                '_id'      => new ObjectID(null),
                 'bot_id'   => $bot->_id,
                 'explicit' => false,
                 'messages' => [
@@ -458,7 +458,7 @@ class SequenceService
     private function textMessage($text)
     {
         return new Text([
-            'id'   => new ObjectID(),
+            'id'   => new ObjectID(null),
             'text' => $text
         ]);
     }

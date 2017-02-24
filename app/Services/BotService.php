@@ -160,7 +160,7 @@ class BotService
      */
     protected function createBot(Page $page, User $user)
     {
-        $id = new ObjectID();
+        $id = new ObjectID(null);
         $data = [
             '_id'             => $id,
             'page'            => $page,

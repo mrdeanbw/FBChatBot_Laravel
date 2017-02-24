@@ -51,4 +51,19 @@ abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements
 
         return $this->paginate($page, $filterBy, $orderBy, $perPage);
     }
+
+    /**
+     * @param array    $models
+     * @param ObjectID $botId
+     * @return bool
+     */
+    public function bulkCreateForBot(array $models, ObjectID $botId)
+    {
+        foreach ($models as $model) {
+            $model['bot_id'] = $botId;
+        }
+
+        return $this->bulkCreate($models);
+    }
+
 }

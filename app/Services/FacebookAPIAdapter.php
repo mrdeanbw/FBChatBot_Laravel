@@ -11,7 +11,7 @@ use App\Models\Broadcast;
 use App\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
 use App\Services\Facebook\Sender;
-use App\Repositories\MessageHistory\MessageHistoryRepositoryInterface;
+use App\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class FacebookAPIAdapter
 {
@@ -26,20 +26,20 @@ class FacebookAPIAdapter
      */
     private $FacebookSender;
     /**
-     * @type MessageHistoryRepositoryInterface
+     * @type SentMessageRepositoryInterface
      */
-    private $messageHistoryRepo;
+    private $sentMessageRepo;
 
     /**
      * FacebookAPIAdapter constructor.
      *
-     * @param Sender                            $FacebookSender
-     * @param MessageHistoryRepositoryInterface $messageHistoryRepo
+     * @param Sender                         $FacebookSender
+     * @param SentMessageRepositoryInterface $sentMessageRepo
      */
-    public function __construct(Sender $FacebookSender, MessageHistoryRepositoryInterface $messageHistoryRepo)
+    public function __construct(Sender $FacebookSender, SentMessageRepositoryInterface $sentMessageRepo)
     {
         $this->FacebookSender = $FacebookSender;
-        $this->messageHistoryRepo = $messageHistoryRepo;
+        $this->sentMessageRepo = $sentMessageRepo;
     }
 
     /**
@@ -123,13 +123,13 @@ class FacebookAPIAdapter
 
         foreach ($messages as $message) {
 
-            $data = $this->buildMessageHistoryInstance($subscriber, $bot, $message);
+            $data = $this->buildSentMessageInstance($subscriber, $bot, $message);
 
             $mappedMessage = $mapper->toFacebookMessage($message);
 
             $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot->page, $notificationType);
 
-            $ret[] = $this->messageHistoryRepo->create(
+            $ret[] = $this->sentMessageRepo->create(
                 array_merge($data, ['facebook_id' => $facebookMessageId])
             );
         }
@@ -189,10 +189,10 @@ class FacebookAPIAdapter
      * @param            $message
      * @return array
      */
-    private function buildMessageHistoryInstance(Subscriber $subscriber, Bot $bot, Message $message)
+    private function buildSentMessageInstance(Subscriber $subscriber, Bot $bot, Message $message)
     {
         $data = [
-            '_id'           => new ObjectID(),
+            '_id'           => new ObjectID(null),
             'bot_id'        => $bot->_id,
             'subscriber_id' => $subscriber->_id,
             'message_id'    => $message->id,

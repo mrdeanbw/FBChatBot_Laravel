@@ -4,6 +4,7 @@ use App\Models\Bot;
 use App\Models\BaseModel;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use MongoDB\BSON\ObjectID;
 
 interface AssociatedWithBotRepositoryInterface extends BaseRepositoryInterface
 {
@@ -32,4 +33,12 @@ interface AssociatedWithBotRepositoryInterface extends BaseRepositoryInterface
      * @return Paginator
      */
     public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage);
+
+
+    /**
+     * @param array    $models
+     * @param ObjectID $botId
+     * @return mixed
+     */
+    public function bulkCreateForBot(array $models, ObjectID $botId);
 }

@@ -2,6 +2,7 @@
 
 /**
  * @property Template $template
+ * @property array    stats
  */
 class Button extends Message
 {
@@ -18,11 +19,7 @@ class Button extends Message
         'add_sequences'    => [],
         'remove_sequences' => [],
     ];
-    public $clicks = [
-        'total'  => 0,
-        'unique' => []
-    ];
-
+    
     /**
      * Button constructor.
      * @param array $data
