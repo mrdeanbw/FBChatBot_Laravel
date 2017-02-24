@@ -89,7 +89,7 @@ class MainMenuService
     private function copyrightedButton()
     {
         return new Button([
-            'id'       => new ObjectID(),
+            'id'       => new ObjectID(null),
             'title'    => 'Powered By Mr. Reply',
             'readonly' => true,
             'url'      => 'https://www.mrreply.com',
@@ -144,7 +144,7 @@ class MainMenuService
             return new Button($button);
         }, $input['buttons']);
 
-        $buttons = $this->messages->makeMessages($buttons, $bot->main_menu->buttons, $bot->_id);
+        $buttons = $this->messages->correspondInputMessagesToOriginal($buttons, $bot->main_menu->buttons, $bot->_id);
         if (! $buttons) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }

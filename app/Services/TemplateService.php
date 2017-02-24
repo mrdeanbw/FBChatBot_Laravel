@@ -186,7 +186,7 @@ class TemplateService
     {
         $messages = $this->messages->normalizeMessages($messages);
 
-        return $this->messages->makeMessages($messages, $original, $botId, $allowReadOnly);
+        return $this->messages->correspondInputMessagesToOriginal($messages, $original, $botId, $allowReadOnly);
     }
 
 }
