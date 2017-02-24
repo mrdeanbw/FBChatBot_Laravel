@@ -89,7 +89,7 @@ class BotTransformer extends BaseTransformer
 
         foreach ($bot->users as $user) {
             if ($user['user_id'] == $bot->current_user->_id) {
-                return $user['subscriber_id']->__toString();
+                return $user['subscriber_id']? $user['subscriber_id']->__toString() : null;
             }
         }
 

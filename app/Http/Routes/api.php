@@ -101,20 +101,20 @@ $api->version('v1', $options, function (Router $api) {
         $api->get('/bots/{botId}/message/{messageId}/revisions', 'MessageRevisionController@show');
 
         // Bugs & features
-        $api->get('/bugtracker', 'BugController@getAllBugs');
-        $api->put('/bugtracker/single', 'BugController@getSingleBug');
-
-        $api->put('/bugtracker/createBug', 'BugController@createBug');
-        $api->put('/bugtracker/updateBug', 'BugController@updateBug');
-        $api->delete('/bugtracker/deleteBug', 'BugController@deleteBug');
-
-        $api->put('/bugtracker/createComment', 'BugController@createComment');
-        $api->put('/bugtracker/updateComment', 'BugController@updateComment');
-        $api->delete('/bugtracker/destroyComment', 'BugController@destroyComment');
+        //        $api->get('/bugtracker', 'BugController@getAllBugs');
+        //        $api->put('/bugtracker/single', 'BugController@getSingleBug');
+        //
+        //        $api->put('/bugtracker/createBug', 'BugController@createBug');
+        //        $api->put('/bugtracker/updateBug', 'BugController@updateBug');
+        //        $api->delete('/bugtracker/deleteBug', 'BugController@deleteBug');
+        //
+        //        $api->put('/bugtracker/createComment', 'BugController@createComment');
+        //        $api->put('/bugtracker/updateComment', 'BugController@updateComment');
+        //        $api->delete('/bugtracker/destroyComment', 'BugController@destroyComment');
 
         // Referral system
-        $api->put('/referral/code', 'UserController@getReferralCode');
-        $api->put('/referral/connect', 'UserController@makeReferral');
+        //        $api->put('/referral/code', 'UserController@getReferralCode');
+        //        $api->put('/referral/connect', 'UserController@makeReferral');
     });
 
 });
