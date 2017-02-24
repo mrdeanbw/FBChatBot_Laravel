@@ -1,6 +1,7 @@
 <?php namespace App\Transformers;
 
 use App\Models\Button;
+use App\Models\MessageRevision;
 use App\Services\LoadsAssociatedModels;
 
 class ButtonTransformer extends BaseTransformer
@@ -8,6 +9,10 @@ class ButtonTransformer extends BaseTransformer
 
     use LoadsAssociatedModels;
 
+    /**
+     * @param Button|MessageRevision $button
+     * @return array
+     */
     public function transform(Button $button)
     {
         return [

@@ -14,6 +14,6 @@ class MainMenuTransformer extends BaseTransformer
 
     public function includeButtons(MainMenu $mainMenu)
     {
-        return $this->collection($mainMenu->buttons, new ButtonTransformer(), false);
+        return $this->collection($mainMenu->buttons, new MessageTransformer(), false);
     }
 }

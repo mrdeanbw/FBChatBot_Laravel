@@ -1,13 +1,16 @@
 <?php namespace App\Transformers;
 
 use App\Models\Card;
+use App\Models\MessageRevision;
 
 class CardTransformer extends BaseTransformer
 {
 
-    public $defaultIncludes = ['buttons'];
-
-    public function transform(Card $card)
+    /**
+     * @param Card|MessageRevision $card
+     * @return array
+     */
+    public function transform($card)
     {
         return [
             'id'        => $card->id->__toString(),
@@ -17,7 +20,7 @@ class CardTransformer extends BaseTransformer
             'subtitle'  => $card->subtitle,
             'image_url' => $card->image_url,
             'readonly'  => $card->readonly,
-            'buttons'  => $this->transformInclude($card->buttons, new ButtonTransformer())
+            'buttons'   => $this->transformInclude($card->buttons, new MessageTransformer())
         ];
     }
 }
