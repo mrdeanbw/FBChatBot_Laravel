@@ -31,6 +31,7 @@
           <p>
             CPU Load : <b>{{ implode(',',$server['load']) }}</b>
           </p>
+          <p>Used Disk Space: <b>{{ $server['diskspace'] }}</b></p>
           <p>
             Memory : 
               <b>{{ $server['memory']['taken'] }}</b> MB / 
