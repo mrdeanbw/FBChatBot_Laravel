@@ -125,10 +125,10 @@ class FacebookAPIAdapter
 
             $data = $this->buildSentMessageInstance($subscriber, $bot, $message);
 
-            $mappedMessage = $mapper->toFacebookMessage($message);
-
+            $mappedMessage = $mapper->sentMessageInstanceId($data['_id'])->toFacebookMessage($message);
+            
             $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot->page, $notificationType);
-
+            
             $ret[] = $this->sentMessageRepo->create(
                 array_merge($data, ['facebook_id' => $facebookMessageId])
             );

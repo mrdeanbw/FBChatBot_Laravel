@@ -35,6 +35,10 @@ class FacebookMessageMapper
      */
     protected $broadcast;
     /**
+     * @type ObjectID
+     */
+    protected $sentMessageId;
+    /**
      * @type array
      */
     protected $buttonPath = [];
@@ -91,6 +95,17 @@ class FacebookMessageMapper
     public function setButtonPath(array $buttonPath)
     {
         $this->buttonPath = $buttonPath;
+
+        return $this;
+    }
+
+    /**
+     * @param ObjectID $id
+     * @return FacebookMessageMapper
+     */
+    public function sentMessageInstanceId(ObjectID $id)
+    {
+        $this->sentMessageId = $id;
 
         return $this;
     }
@@ -331,6 +346,7 @@ class FacebookMessageMapper
     protected function getAbstractCardPayload(ObjectID $id, ObjectID $cardContainerId)
     {
         $payload = $this->bot->id;
+        $payload .= ':';
         $payload .= $this->subscriber->id;
         $payload .= ':';
         $payload .= $this->template? $this->template->id : implode(':', $this->buttonPath);
@@ -351,6 +367,9 @@ class FacebookMessageMapper
     protected function getCardPayload(ObjectID $id, ObjectID $cardContainerId)
     {
         $payload = $this->getAbstractCardPayload($id, $cardContainerId);
+
+        $payload .= '|' . $this->sentMessageId;
+
         if ($this->broadcast) {
             $payload .= '|' . $this->broadcast->id;
         }
@@ -367,6 +386,7 @@ class FacebookMessageMapper
     protected function getTextButtonPayload(ObjectID $id, ObjectID $textId)
     {
         $payload = $this->bot->id;
+        $payload .= ':';
         $payload .= $this->subscriber->id;
         $payload .= ':';
         $payload .= $this->template? $this->template->id : implode(':', $this->buttonPath);
@@ -374,6 +394,8 @@ class FacebookMessageMapper
         $payload .= ':' . $textId;
         $payload .= ':' . 'buttons';
         $payload .= ':' . $id;
+
+        $payload .= '|' . $this->sentMessageId;
 
         if ($this->broadcast) {
             $payload .= '|' . $this->broadcast->id;
@@ -394,6 +416,8 @@ class FacebookMessageMapper
         $payload = $this->getAbstractCardPayload($cardId, $cardContainerId);
         $payload .= ':' . 'buttons';
         $payload .= ':' . $id;
+
+        $payload .= '|' . $this->sentMessageId;
 
         if ($this->broadcast) {
             $payload .= '|' . $this->broadcast->id;
@@ -420,6 +444,6 @@ class FacebookMessageMapper
      */
     protected function getPayloadedUrl($payload)
     {
-        return url(config('app.url') . "ba/{$this->bot->id}/{$payload}");
+        return url(config('app.url') . "ba/{$payload}");
     }
 }
