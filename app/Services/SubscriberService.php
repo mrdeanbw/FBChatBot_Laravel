@@ -450,7 +450,7 @@ class SubscriberService
      */
     public function newSubscriptions(Bot $page, $date)
     {
-        return $this->subscriberRepo->LastSubscribedAtCountForPage($date, $page);
+        return $this->subscriberRepo->LastSubscribedAtCountForBot($date, $page);
     }
 
     /**
@@ -463,7 +463,7 @@ class SubscriberService
      */
     public function newUnsubscriptions(Bot $page, $date)
     {
-        return $this->subscriberRepo->LastUnsubscribedAtCountForPage($date, $page);
+        return $this->subscriberRepo->LastUnsubscribedAtCountForBot($date, $page);
     }
 
     /**

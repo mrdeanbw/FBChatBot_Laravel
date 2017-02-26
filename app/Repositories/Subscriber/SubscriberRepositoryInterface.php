@@ -57,7 +57,7 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      *
      * @return int
      */
-    public function LastSubscribedAtCountForPage($date, Bot $bot);
+    public function LastSubscribedAtCountForBot($date, Bot $bot);
 
     /**
      * Count the number of subscribers who last unsubscribed on a given date, or in a given time period.
@@ -67,7 +67,7 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      *
      * @return int
      */
-    public function LastUnsubscribedAtCountForPage($date, Bot $page);
+    public function LastUnsubscribedAtCountForBot($date, Bot $page);
 
     /**
      * @param Bot   $bot

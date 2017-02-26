@@ -1,5 +1,6 @@
 <?php namespace App\Repositories\SentMessage;
 
+use App\Models\Bot;
 use App\Models\SentMessage;
 use Carbon\Carbon;
 use App\Models\Subscriber;
@@ -136,4 +137,28 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @return int
      */
     public function perSubscriberCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+
+    /**
+     * @param Bot         $bot
+     * @param Carbon|null $startDateTime
+     * @param Carbon|null $endDateTime
+     * @return int
+     */
+    public function totalSentForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null);
+
+    /**
+     * @param Bot    $bot
+     * @param Carbon|null $startDateTime
+     * @param Carbon|null $endDateTime
+     * @return int
+     */
+    public function totalMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null);
+
+    /**
+     * @param Bot    $bot
+     * @param Carbon|null $startDateTime
+     * @param Carbon|null $endDateTime
+     * @return int
+     */
+    public function perSubscriberMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null);
 }

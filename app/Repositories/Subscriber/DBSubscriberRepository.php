@@ -328,7 +328,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      *
      * @return int
      */
-    public function LastSubscribedAtCountForPage($date, Bot $bot)
+    public function LastSubscribedAtCountForBot($date, Bot $bot)
     {
         $filter = [['operator' => 'date', 'key' => 'last_subscribed_at', 'value' => $date]];
 
@@ -343,7 +343,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      *
      * @return int
      */
-    public function LastUnsubscribedAtCountForPage($date, Bot $page)
+    public function LastUnsubscribedAtCountForBot($date, Bot $page)
     {
         $filter = [['operator' => 'date', 'key' => 'last_unsubscribed_at', 'value' => $date]];
 
@@ -444,7 +444,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function subscriptionCountForBot(Bot $bot, $date)
     {
         $filter = [
-            ['operator' => 'date', 'key' => 'history.action', 'value' => 'subscribed'],
+            ['operator' => '=', 'key' => 'history.action', 'value' => 'subscribed'],
             ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
         ];
 
@@ -460,7 +460,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function unsubscriptionCountForBot(Bot $bot, $date)
     {
         $filter = [
-            ['operator' => 'date', 'key' => 'history.action', 'value' => 'unsubscribed'],
+            ['operator' => '=', 'key' => 'history.action', 'value' => 'unsubscribed'],
             ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
         ];
 

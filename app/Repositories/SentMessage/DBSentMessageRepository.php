@@ -1,5 +1,6 @@
 <?php namespace App\Repositories\SentMessage;
 
+use App\Models\Bot;
 use Carbon\Carbon;
 use App\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
@@ -37,9 +38,13 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function markAsRead(Subscriber $subscriber, UTCDatetime $dateTime)
     {
-        // @todo If delivered at is null, set to $dateTime
         SentMessage::where('subscriber_id', $subscriber->_id)->whereNull('read_at')->where('sent_at', '<=', $dateTime)->update([
             'read_at' => $dateTime
+        ]);
+
+        //If delivered at is null, set to $dateTime
+        SentMessage::where('subscriber_id', $subscriber->_id)->whereNotNull('read_at')->whereNull('delivered_at')->update([
+            'delivered_at' => $dateTime
         ]);
     }
 
@@ -228,7 +233,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
         ];
 
         $ret = SentMessage::raw()->aggregate($filter)->toArray();
-        
+
         return count($ret)? $ret[0]->count : 0;
     }
 
@@ -284,7 +289,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         $filter = [
             ['$match' => $matchFilters],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => '$cards.' . $cardId . '.buttons.' . $buttonId]]]
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.' . $cardId . '.buttons.' . $buttonId]]]]
         ];
 
         $ret = SentMessage::raw()->aggregate($filter)->toArray();
@@ -345,13 +350,12 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         $filter = [
             ['$match' => $matchFilters],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => '$cards.' . $cardId]]]
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.' . $cardId]]]]
         ];
 
         $ret = SentMessage::raw()->aggregate($filter)->toArray();
 
         return count($ret)? $ret[0]->count : 0;
-
     }
 
     /**
@@ -382,5 +386,48 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
         $result = SentMessage::raw()->aggregate($aggregate)->toArray();
 
         return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @todo implement function
+     * @param Bot    $bot
+     * @param Carbon $startDateTime
+     * @param Carbon $endDateTime
+     * @return int
+     */
+    public function totalMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    {
+    }
+
+    /**
+     * @todo implement function
+     * @param Bot         $bot
+     * @param Carbon|null $startDateTime
+     * @param Carbon|null $endDateTime
+     * @return int
+     */
+    public function perSubscriberMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    {
+    }
+
+    /**
+     * @param Bot         $bot
+     * @param Carbon|null $startDateTime
+     * @param Carbon|null $endDateTime
+     * @return int
+     */
+    public function totalSentForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    {
+        $filters = [['key' => 'bot_id', 'operator' => '=', 'value' => $bot->_id]];
+
+        if ($startDateTime) {
+            $filters[] = ['key' => 'sent_at', 'operator' => '>=', 'value' => $startDateTime];
+        }
+
+        if ($endDateTime) {
+            $filters[] = ['key' => 'sent_at', 'operator' => '<', 'value' => $endDateTime];
+        }
+
+        return $this->count($filters);
     }
 }

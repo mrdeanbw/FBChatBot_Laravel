@@ -2,8 +2,8 @@
 
 use App\Models\Bot;
 use App\Services\SubscriberService;
-use Symfony\Component\HttpFoundation\Request;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use App\Repositories\SentMessage\SentMessageRepositoryInterface;
+use Illuminate\Http\Request;
 
 class StatsController extends APIController
 {
@@ -20,15 +20,21 @@ class StatsController extends APIController
         'click_count',
         'message_count'
     ];
+    /**
+     * @type SentMessageRepositoryInterface
+     */
+    private $sentMessageRepo;
 
     /**
      * StatsController constructor.
      *
-     * @param SubscriberService $audience
+     * @param SubscriberService              $audience
+     * @param SentMessageRepositoryInterface $sentMessageRepo
      */
-    public function __construct(SubscriberService $audience)
+    public function __construct(SubscriberService $audience, SentMessageRepositoryInterface $sentMessageRepo)
     {
         $this->subscribers = $audience;
+        $this->sentMessageRepo = $sentMessageRepo;
     }
 
     /**
@@ -72,11 +78,11 @@ class StatsController extends APIController
 
     /**
      * Return the day-by-day number of new and total subscription actions in a given period of time
-     * @param Bot    $page
+     * @param Bot    $bot
      * @param string $dateString
      * @return array
      */
-    private function subscriptionTimeline(Bot $page, $dateString)
+    private function subscriptionTimeline(Bot $bot, $dateString)
     {
         $boundaries = date_boundaries($dateString);
 
@@ -88,15 +94,15 @@ class StatsController extends APIController
          */
         for ($date = $boundaries[0]; $date->lt($boundaries[1]); $date->addDay()) {
             $dates[$date->format('Y-m-d')] = [
-                'plus'  => $this->subscribers->newSubscriptions($page, $date),
-                'total' => $this->subscribers->totalSubscriptions($page, $date),
+                'plus'  => $this->subscribers->newSubscriptions($bot, $date),
+                'total' => $this->subscribers->totalSubscriptions($bot, $date),
             ];
         }
 
         /**
          * Total number of subscription actions in the given time period.
          */
-        $total = $this->subscribers->totalSubscriptions($page, $dateString);
+        $total = $this->subscribers->totalSubscriptions($bot, $dateString);
 
         return compact('total', 'dates');
     }
@@ -113,15 +119,19 @@ class StatsController extends APIController
 
     /**
      * Total number of clicks on relevant message blocks in a specific time period.
-     * @param Bot  $page
+     * @param Bot  $bot
      * @param      $dateString
      * @return array
      */
-    private function clickCount(Bot $page, $dateString)
+    private function clickCount(Bot $bot, $dateString)
     {
+        $dateBoundaries = date_boundaries($dateString);
+
         return [
-            'total'  => $page->messageClicks()->date('message_instance_clicks.created_at', $dateString)->count(),
-            'unique' => $page->messageClicks()->date('message_instance_clicks.created_at', $dateString)->groupBy('subscriber_id', 'message_block_id')->count(),
+            'total'          => 0,
+            'per_subscriber' => 0
+            //            'total'          => $this->sentMessageRepo->totalMessageClicksForBot($bot, $dateBoundaries[0], $dateBoundaries[1]),
+            //            'per_subscriber' => $this->sentMessageRepo->perSubscriberMessageClicksForBot($bot, $dateBoundaries[0], $dateBoundaries[1]),
         ];
     }
 
@@ -133,7 +143,9 @@ class StatsController extends APIController
      */
     private function messageCount(Bot $page, $dateString)
     {
-        return $page->messageInstances()->date('created_at', $dateString)->count();
+        $dateBoundaries = date_boundaries($dateString);
+
+        return $this->sentMessageRepo->totalSentForBot($page, $dateBoundaries[0], $dateBoundaries[1]);
     }
 
     /**
