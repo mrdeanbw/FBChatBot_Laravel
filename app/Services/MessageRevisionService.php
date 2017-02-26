@@ -129,8 +129,8 @@ class MessageRevisionService
 
         $card->stats = [
             'clicked' => [
-                'total'          => $this->sentMessageRepo->totalTextMessageButtonClicks($card->id, $parent->created_at, $end),
-                'per_subscriber' => $this->sentMessageRepo->perSubscriberTextMessageButtonClicks($card->id, $parent->created_at, $end),
+                'total'          => $this->sentMessageRepo->totalCardClicks($card->id, $parent->created_at, $end),
+                'per_subscriber' => $this->sentMessageRepo->perSubscriberCardClicks($card->id, $parent->created_at, $end),
             ]
         ];
 

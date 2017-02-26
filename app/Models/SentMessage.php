@@ -1,5 +1,12 @@
 <?php namespace App\Models;
 
+use MongoDB\BSON\ObjectID;
+
+/**
+ * @property ObjectID $bot_id
+ * @property ObjectID $subscriber_id
+ * @property ObjectID $message_id
+ */
 class SentMessage extends BaseModel
 {
 

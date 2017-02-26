@@ -177,7 +177,7 @@ class MessageValidator extends LaravelValidator
 
         $url = array_get($card, 'url');
 
-        if ($url && ! $this->validateUrl($attribute, $url) && ! $this->validateUrl($attribute, "https://{$url}")) {
+        if ($url && ! $this->validateUrl($attribute, $url) && ! $this->validateUrl($attribute, "http://{$url}")) {
             $this->setErrorMessage("Your card url is invalid.");
 
             return false;
@@ -264,7 +264,7 @@ class MessageValidator extends LaravelValidator
             return false;
         }
 
-        if ($url && ! $this->validateUrl($attribute, $url) && ! $this->validateUrl($attribute, "https://{$url}")) {
+        if ($url && ! $this->validateUrl($attribute, $url) && ! $this->validateUrl($attribute, "http://{$url}")) {
             $this->setErrorMessage("Your button url is invalid.");
 
             return false;

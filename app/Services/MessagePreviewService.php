@@ -119,6 +119,18 @@ class MessagePreviewService
         return array_map(function ($message) {
             unset($message['id']);
 
+            if (in_array($message['type'], ['text', 'card'])) {
+                $message['buttons'] = $this->removeMessageIds($message['buttons']);
+            }
+
+            if ($message['type'] == 'card_container') {
+                $message['cards'] = $this->removeMessageIds($message['cards']);
+            }
+
+            if ($message['type'] == 'button') {
+                $message['messages'] = $this->removeMessageIds($message['messages']);
+            }
+
             return $message;
         }, $messages);
     }

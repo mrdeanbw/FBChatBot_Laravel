@@ -198,7 +198,7 @@ class FacebookWebhookReceiver
         $this->adapter->subscribeSilently($page, $event['sender']['id']);
 
         // payload is a hashed button.
-        if (! $this->adapter->handleButtonClick($page, $subscriber, $event['postback']['payload'])) {
+        if (! $this->adapter->handlePostbackButtonClick($page, $subscriber, $event['postback']['payload'])) {
             Log::debug("Unknown postback payload: " . $event['postback']['payload']);
         }
     }

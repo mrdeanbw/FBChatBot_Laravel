@@ -48,20 +48,4 @@ class DBTemplateRepository extends DBAssociatedWithBotRepository implements Temp
 
         return $this->getOne($filter);
     }
-
-    /**
-     * @param Template   $templateId
-     * @param Subscriber $subscriber
-     * @param array      $buttonPath
-     * @param int        $incrementBy
-     */
-    public function recordButtonClick(Template $templateId, Subscriber $subscriber, array $buttonPath, $incrementBy = 1)
-    {
-        $key = 'messages.' . implode('.', $buttonPath) . '.clicks';
-
-        Template::where('_id', $templateId)->update([
-            '$inc'      => ["{$key}.total" => $incrementBy],
-            '$addToSet' => ["{$key}.unique" => $subscriber->id]
-        ]);
-    }
 }

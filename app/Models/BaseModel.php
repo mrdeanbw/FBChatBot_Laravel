@@ -13,7 +13,7 @@ use Jenssegers\Mongodb\Eloquent\Model;
 abstract class BaseModel extends Model
 {
 
-    protected $guarded = ['_id', 'id'];
+    protected static $unguarded = true;
 
     /**
      * @param $query
