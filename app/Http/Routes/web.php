@@ -8,5 +8,5 @@ $app->group(['prefix' => 'callback'], function () use ($app) {
 });
 
 $app->get('/mb/{botId}/{buttonId}', 'ClickHandlingController@mainMenuButton');
-$app->get('/ba/{messageBlockHash}/{subscriberHash}', 'ClickHandlingController@handle');
+$app->get('/ba/{payload}', 'ClickHandlingController@handle');
 

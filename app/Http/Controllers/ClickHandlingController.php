@@ -20,18 +20,17 @@ class ClickHandlingController extends Controller
     }
 
     /**
-     * @param string $messageBlockHash
-     * @param string $subscriberHash
+     * @param $payload
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Laravel\Lumen\Http\Redirector|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function handle($messageBlockHash, $subscriberHash)
+    public function handle($payload)
     {
-        $redirectTo = $this->adapter->getMessageBlockRedirectURL($messageBlockHash, $subscriberHash);
-        if (! $redirectTo) {
-            return response("", 200);
+        if ($redirectTo = $this->adapter->handleUrlMessageClick(urldecode($payload))) {
+            return redirect($redirectTo);
         }
-
-        return redirect($redirectTo);
+        // @todo redirect to a frontend page that displays a user friendly error.
+        // like "Button / Card cannot be found (it has been deleted or sth)."
+        return response("Oops", 200);
     }
 
     /**

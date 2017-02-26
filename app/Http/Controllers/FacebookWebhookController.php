@@ -43,6 +43,7 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * // @todo handle properly
      * Handle when a Facebook user de-authorizes our app.
      * @param Request    $request
      * @param BotService $pages
@@ -50,28 +51,28 @@ class FacebookWebhookController extends Controller
      */
     public function deauthorize(Request $request, BotService $pages)
     {
-        $signedRequest = $request->get('signed_request', '');
-        $FacebookAppSecret = config('services.facebook.client_secret');
-
-        $parsedRequest = parse_Facebook_signed_request($signedRequest, $FacebookAppSecret);
-        $id = array_get($parsedRequest, 'user_id');
-        if (! $id) {
-            return response('');
-        }
-
-        $user = User::whereFacebookId($id)->first();
-        if (! $user) {
-            return response('');
-        }
-
-        DB::transaction(function () use ($user, $pages) {
-            foreach ($user->pages as $page) {
-                if (! $page->users()->where('id', '!=', $user->id)->count()) {
-                    $pages->disableBot($page);
-                }
-            }
-            $user->delete();
-        });
+//        $signedRequest = $request->get('signed_request', '');
+//        $FacebookAppSecret = config('services.facebook.client_secret');
+//
+//        $parsedRequest = parse_Facebook_signed_request($signedRequest, $FacebookAppSecret);
+//        $id = array_get($parsedRequest, 'user_id');
+//        if (! $id) {
+//            return response('');
+//        }
+//
+//        $user = User::whereFacebookId($id)->first();
+//        if (! $user) {
+//            return response('');
+//        }
+//
+//        DB::transaction(function () use ($user, $pages) {
+//            foreach ($user->pages as $page) {
+//                if (! $page->users()->where('id', '!=', $user->id)->count()) {
+//                    $pages->disableBot($page);
+//                }
+//            }
+//            $user->delete();
+//        });
 
         return response('');
     }
