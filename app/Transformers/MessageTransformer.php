@@ -42,6 +42,17 @@ class MessageTransformer extends BaseTransformer
             $ret['stats'] = $message->stats;
         }
 
+        if (is_a($message, MessageRevision::class)) {
+            $objectId = $message->_id;
+            $ret['created_at'] = $message->created_at->toAtomString();
+        } else {
+            $objectId = $message->id;
+        }
+
+        $ret['id'] = $objectId->__toString();
+        $ret['type'] = $message->type;
+        $ret['readonly'] = $message->readonly;
+
         return $ret;
     }
 

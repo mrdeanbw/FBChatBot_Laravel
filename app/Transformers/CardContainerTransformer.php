@@ -13,9 +13,6 @@ class CardContainerTransformer extends BaseTransformer
     public function transform($cardContainer)
     {
         return [
-            'id'       => $cardContainer->id->__toString(),
-            'type'     => $cardContainer->type,
-            'readonly' => $cardContainer->readonly,
             'cards'    => $this->transformInclude($cardContainer->cards, new MessageTransformer())
         ];
     }

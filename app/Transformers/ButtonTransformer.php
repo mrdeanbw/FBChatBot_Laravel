@@ -16,10 +16,7 @@ class ButtonTransformer extends BaseTransformer
     public function transform(Button $button)
     {
         return [
-            'id'       => $button->id->__toString(),
-            'type'     => $button->type,
             'title'    => $button->title,
-            'readonly' => $button->readonly,
             'url'      => $button->url,
             'actions'  => $button->actions,
             'template' => $this->getTransformedTemplate($button),

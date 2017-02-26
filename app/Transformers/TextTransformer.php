@@ -13,11 +13,8 @@ class TextTransformer extends BaseTransformer
     public function transform($text)
     {
         return [
-            'id'       => $text->id->__toString(),
-            'type'     => $text->type,
-            'text'     => $text->text,
-            'readonly' => $text->readonly,
-            'buttons'  => $this->transformInclude($text->buttons, new MessageTransformer())
+            'text'    => $text->text,
+            'buttons' => $this->transformInclude($text->buttons, new MessageTransformer())
         ];
     }
 

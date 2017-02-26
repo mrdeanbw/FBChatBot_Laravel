@@ -13,13 +13,10 @@ class CardTransformer extends BaseTransformer
     public function transform($card)
     {
         return [
-            'id'        => $card->id->__toString(),
             'url'       => $card->url,
-            'type'      => $card->type,
             'title'     => $card->title,
             'subtitle'  => $card->subtitle,
             'image_url' => $card->image_url,
-            'readonly'  => $card->readonly,
             'buttons'   => $this->transformInclude($card->buttons, new MessageTransformer())
         ];
     }
