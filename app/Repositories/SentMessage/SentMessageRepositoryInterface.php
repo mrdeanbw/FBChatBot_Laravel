@@ -1,5 +1,6 @@
 <?php namespace App\Repositories\SentMessage;
 
+use App\Models\SentMessage;
 use Carbon\Carbon;
 use App\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
@@ -13,7 +14,6 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * Mark all messages sent to a subscriber before a specific date as delivered.
      * @param Subscriber  $subscriber
      * @param UTCDatetime $dateTime
-     * @return
      */
     public function markAsDelivered(Subscriber $subscriber, UTCDatetime $dateTime);
 
@@ -110,4 +110,30 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @return int
      */
     public function perSubscriberCardButtonClicks(ObjectID $buttonId, ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+
+    /**
+     * @param SentMessage $sentMessage
+     * @param string      $cardOrButtonPath
+     * @param UTCDatetime $dateTime
+     */
+    public function recordClick(SentMessage $sentMessage, $cardOrButtonPath, UTCDatetime $dateTime);
+
+
+    /**
+     * @param ObjectID    $cardId
+     * @param ObjectID    $cardContainerId
+     * @param Carbon|null $startDateTime
+     * @param Carbon|null $endDateTime
+     * @return int
+     */
+    public function totalCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+
+    /**
+     * @param ObjectID    $cardId
+     * @param ObjectID    $cardContainerId
+     * @param Carbon|null $startDateTime
+     * @param Carbon|null $endDateTime
+     * @return int
+     */
+    public function perSubscriberCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
 }
