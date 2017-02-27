@@ -34,7 +34,7 @@ class MainMenuService
     /**
      * MainMenuService constructor.
      *
-*@param MessageService           $messages
+     * @param MessageService     $messages
      * @param MessengerThread    $facebookThread
      * @param FacebookAPIAdapter $FacebookAdapter
      * @param DBBotRepository    $botRepo
@@ -141,7 +141,7 @@ class MainMenuService
     private function normalizeButtons(array $input, Bot $bot)
     {
         $buttons = array_map(function (array $button) {
-            return new Button($button);
+            return new Button($button, true);
         }, $input['buttons']);
 
         $buttons = $this->messages->correspondInputMessagesToOriginal($buttons, $bot->main_menu->buttons, $bot->_id);
