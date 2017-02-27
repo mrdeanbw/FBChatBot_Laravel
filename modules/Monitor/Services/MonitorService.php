@@ -14,10 +14,13 @@ class MonitorService
 
 	public function getServersInfo()
 	{
-		$servers = explode(',',env('MONITOR_SERVERS'));
+		$servers = array_filter(explode(',',env('MONITOR_SERVERS')));
+        if (!$servers){
+            return [];
+        }
+        
 		$monitorKey = env('MONITOR_KEY');
 
-		//print_r($servers);exit;
 		$serversData = [];
 
 		foreach($servers as $ip):
@@ -49,8 +52,11 @@ class MonitorService
 
 	public function getLogsInfo()
 	{
-		$logDir = app()->basePath().'/storage/logs/';
+        $logData = [];
+
+        $logDir = app()->basePath().'/storage/logs/';
 		$files = scandir($logDir);
+
 		foreach($files as $file){
 			$ext = pathinfo($file, PATHINFO_EXTENSION);
 			if($ext == 'log'){
@@ -60,9 +66,12 @@ class MonitorService
 				];
 			}
 		}
-		
+
+        usort($logData, function($a, $b){
+           return $a['name'] < $b['name'];
+        });
+
 		return $logData;
-		
 	}
 
 	private function human_filesize($bytes, $decimals = 2) {
