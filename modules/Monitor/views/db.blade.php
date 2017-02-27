@@ -13,15 +13,14 @@
 	<div class="well">
 		<h3>Top 10 slowest queries</h3>
 		<ul class="list-group">
-		@foreach($slow as $query)
+		@foreach($slow as $squery)
 			<li class="list-group-item">
-				<span class="badge">{{carbon_date($query['ts'])->diffForHumans()}}</span>
-				<span class="badge">{{ $query['millis'] }} ms</span>
+				<span class="badge">{{carbon_date($squery['ts'])->diffForHumans()}}</span>
+				<span class="badge">{{ $squery['millis'] }} ms</span>
 				<a href="javascript:;" data-toggle="modal" data-target="#q{{ $loop->index}}">					
-					[{{ $query['op'] }}][{{ $query['ns'] }}]
+					[{{ $squery['op'] }}][{{ $squery['ns'] }}]
 				</a>
-
-				
+			
 				<!-- Modal -->
 				<div class="modal fade" id="q{{ $loop->index}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
 				  <div class="modal-dialog modal-lg" role="document">
@@ -31,7 +30,7 @@
 				        <h4 class="modal-title" id="myModalLabel">Query Info</h4>
 				      </div>
 				      <div class="modal-body">
-				        <pre>{{ print_r($query,1) }}</pre>
+				        <pre>{{ print_r($squery,1) }}</pre>
 				      </div>
 				      <div class="modal-footer">
 				        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -48,12 +47,12 @@
 	<div class="well">
 		<h3>Lastest 15 queries made</h3>
 		<ul class="list-group">
-		@foreach($latest as $query)
+		@foreach($latest as $lquery)
 			<li class="list-group-item">
-				<span class="badge">{{carbon_date($query['ts'])->diffForHumans()}}</span>
-				<span class="badge">{{ $query['millis'] }} ms</span>
+				<span class="badge">{{carbon_date($lquery['ts'])->diffForHumans()}}</span>
+				<span class="badge">{{ $lquery['millis'] }} ms</span>
 				<a href="javascript:;" data-toggle="modal" data-target="#q{{ $loop->index}}">					
-					[{{ $query['op'] }}][{{ $query['ns'] }}]
+					[{{ $lquery['op'] }}][{{ $lquery['ns'] }}]
 				</a>
 				<!-- Modal -->
 				<div class="modal fade" id="q{{ $loop->index}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -64,7 +63,7 @@
 				        <h4 class="modal-title" id="myModalLabel">Query Info</h4>
 				      </div>
 				      <div class="modal-body">
-				        <pre>{{ print_r($query,1) }}</pre>
+				        <pre>{{ print_r($lquery,1) }}</pre>
 				      </div>
 				      <div class="modal-footer">
 				        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
