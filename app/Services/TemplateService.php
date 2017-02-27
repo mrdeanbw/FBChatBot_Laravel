@@ -49,7 +49,7 @@ class TemplateService
             $filterBy[] = ['operator' => 'prefix', 'key' => 'name', 'value' => $name];
         }
 
-        $orderBy = $orderBy ?: ['_id' => 'desc'];
+        $orderBy = $orderBy?: ['_id' => 'desc'];
 
         return $this->templateRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
@@ -187,6 +187,17 @@ class TemplateService
         $messages = $this->messages->normalizeMessages($messages);
 
         return $this->messages->correspondInputMessagesToOriginal($messages, $original, $botId, $allowReadOnly);
+    }
+
+    /**
+     * @param mixed $versioning
+     * @return TemplateService
+     */
+    public function setVersioning($versioning)
+    {
+        $this->messages->setVersioning($versioning);
+
+        return $this;
     }
 
 }

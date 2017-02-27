@@ -39,6 +39,8 @@ class MessageService
      */
     private $messageRevisionRepo;
 
+    private $versioning = true;
+
     /**
      * MessageBlockService constructor.
      *
@@ -81,16 +83,16 @@ class MessageService
 
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
 
-        if ($this->messageRevisions) {
+        if ($this->versioning && $this->messageRevisions) {
             foreach ($this->messageRevisions as &$version) {
                 $version['bot_id'] = $botId;
                 $version['message_id'] = $version['id'];
                 unset($version['id']);
             }
             $this->messageRevisionRepo->bulkCreate($this->messageRevisions);
-            $this->messageRevisions = [];
         }
 
+        $this->messageRevisions = [];
 
         return $ret;
     }
@@ -158,7 +160,7 @@ class MessageService
 
             $normalized[] = $inputMessage;
 
-            if ($versioningEnabled && ($isNew || $this->messagesAreDifferent($inputMessage, $originalMessage))) {
+            if ($this->versioning && $versioningEnabled && ($isNew || $this->messagesAreDifferent($inputMessage, $originalMessage))) {
                 $this->messageRevisions[] = get_object_vars($inputMessage);
             }
         }
@@ -255,5 +257,16 @@ class MessageService
         }
 
         return false;
+    }
+
+    /**
+     * @param boolean $versioning
+     * @return MessageService
+     */
+    public function setVersioning($versioning)
+    {
+        $this->versioning = $versioning;
+
+        return $this;
     }
 }
