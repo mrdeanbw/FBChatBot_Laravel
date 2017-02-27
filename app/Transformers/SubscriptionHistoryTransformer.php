@@ -9,7 +9,7 @@ class SubscriptionHistoryTransformer extends BaseTransformer
     {
         return [
             'action'    => $record->action,
-            'action_at' => $record->action_at->toAtomString()
+            'action_at' => carbon_date($record->action_at)->toAtomString()
         ];
     }
 }

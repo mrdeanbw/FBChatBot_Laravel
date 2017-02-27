@@ -19,7 +19,7 @@ abstract class BaseTransformer extends TransformerAbstract
         }
 
         $this->loadModelsIfNotLoaded($model, ['template']);
-        
+
         if ($model->template->explicit) {
             return $this->item($model->template, new TemplateTransformer(), false);
         }
