@@ -3,15 +3,7 @@ namespace Modules\Monitor\Repositories;
 use DB;
 class DBRepository
 {
-	protected $collection;
 
-	/**
-	 * Constructor
-	 */
-	public function __construct()
-	{
-		$this->collection = DB::collection('system.profile');
-	}
 
 	/**
 	 * retrive the slow queries info 
@@ -20,7 +12,11 @@ class DBRepository
 	 */
 	public function getSlowQueries($num = 10)
 	{
-		return $this->collection->orderBy('millis','desc')->take($num)->get();
+		return DB::collection('system.profile')
+					->where('millis','>',100)
+					->orderBy('millis','desc')
+					->take($num)
+					->get();
 	} 
 
 	/**
@@ -30,7 +26,13 @@ class DBRepository
 	 */
 	public function getLatestQueries($num = 15)
 	{
-		return $this->collection->orderBy('ts','desc')->take($num)->get();
+		$db = DB::getMongoDB();
+		return DB::collection('system.profile')
+					->where('op','!=','command')
+					->where('ns','!=',$db.'.system.profile')
+					->orderBy('ts','desc')
+					->take($num)
+					->get();
 	}
 
 	/**
