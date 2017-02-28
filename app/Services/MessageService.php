@@ -82,7 +82,6 @@ class MessageService
         $this->messageRevisions = [];
 
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
-
         if ($this->versioning && $this->messageRevisions) {
             foreach ($this->messageRevisions as &$version) {
                 $version['bot_id'] = $botId;
@@ -111,6 +110,7 @@ class MessageService
             if ($isNew = empty($inputMessage->id)) {
                 $inputMessage->id = new ObjectID(null);
             } else {
+                //@todo handle exception (invalid message Id).
                 $inputMessage->id = new ObjectID($inputMessage->id);
             }
 
@@ -119,7 +119,7 @@ class MessageService
             // If the message id is not in the original messages,
             // it means the user entered an invalid id (manually)
             // just skip it for now.
-            if (! $isNew && ! ($originalMessage = $original->pull($inputMessage->id->__toString()))) {
+            if (! $isNew && ! ($originalMessage = $original->pull((string)$inputMessage->id))) {
                 continue;
             }
 

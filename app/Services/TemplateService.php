@@ -6,6 +6,7 @@ use App\Models\Template;
 use Dingo\Api\Exception\ValidationHttpException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Template\TemplateRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 class TemplateService
 {
@@ -90,7 +91,7 @@ class TemplateService
      *
      * @return Template
      */
-    public function createImplicit(array $messages, $botId, $allowReadOnly = false)
+    public function createImplicit(array $messages, ObjectID $botId, $allowReadOnly = false)
     {
         $input['name'] = null;
         $input['explicit'] = false;
@@ -107,7 +108,7 @@ class TemplateService
      *
      * @return \App\Models\BaseModel|Template
      */
-    private function create(array $input, $botId, $allowReadOnly = false)
+    private function create(array $input, ObjectID $botId, $allowReadOnly = false)
     {
         $messages = $this->normalizeMessages($input['messages'], [], $botId, $allowReadOnly);
         if ($input['messages'] && ! $messages) {
