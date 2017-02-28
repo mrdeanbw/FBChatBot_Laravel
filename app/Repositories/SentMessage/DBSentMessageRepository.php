@@ -256,6 +256,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $matchFilters['$and'][] = ["buttons.{$buttonId}" => ['$lt' => mongo_date($endDateTime)]];
         }
 
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ["buttons.{$buttonId}.0" => ['$exists' => true]];
+        }
+
         $aggregate = [
             ['$match' => $matchFilters],
             ['$group' => ['_id' => '$subscriber_id']],
@@ -318,6 +322,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $matchFilters['$and'][] = ["cards.{$cardId}.buttons.{$buttonId}" => ['$lt' => mongo_date($endDateTime)]];
         }
 
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ["cards.{$cardId}.buttons.{$buttonId}.0" => ['$exists' => true]];
+        }
+
         $aggregate = [
             ['$match' => $matchFilters],
             ['$group' => ['_id' => '$subscriber_id']],
@@ -375,6 +383,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $matchFilters['$and'][] = ["cards.{$cardId}" => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ["cards.{$cardId}.0" => ['$exists' => true]];
         }
 
         $aggregate = [
