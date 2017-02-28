@@ -1,5 +1,8 @@
 <?php namespace App\Models;
 
+/**
+ * @property array $stats
+ */
 class Card extends Message
 {
     public $type = 'card';

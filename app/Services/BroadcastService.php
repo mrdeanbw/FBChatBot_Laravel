@@ -10,6 +10,8 @@ use App\Repositories\Broadcast\BroadcastRepositoryInterface;
 class BroadcastService
 {
 
+    use LoadsAssociatedModels;
+
     /**
      * @type TemplateService
      */
@@ -22,18 +24,24 @@ class BroadcastService
      * @type BroadcastRepositoryInterface
      */
     private $broadcastRepo;
+    /**
+     * @type SentMessageService
+     */
+    private $sentMessages;
 
     /**
      * BroadcastService constructor.
      *
      * @param TemplateService              $templates
      * @param TimezoneService              $timezones
+     * @param SentMessageService           $sentMessages
      * @param BroadcastRepositoryInterface $broadcastRepo
      */
-    public function __construct(TemplateService $templates, TimezoneService $timezones, BroadcastRepositoryInterface $broadcastRepo)
+    public function __construct(TemplateService $templates, TimezoneService $timezones, SentMessageService $sentMessages, BroadcastRepositoryInterface $broadcastRepo)
     {
         $this->timezones = $timezones;
         $this->templates = $templates;
+        $this->sentMessages = $sentMessages;
         $this->broadcastRepo = $broadcastRepo;
     }
 
@@ -104,11 +112,17 @@ class BroadcastService
      */
     public function create(array $input, Bot $bot)
     {
-        $template = $this->templates->createImplicit($input['template']['messages'], $bot);
+        $template = $this->templates->setVersioning(false)->createImplicit($input['template']['messages'], $bot);
 
         $data = array_merge($this->cleanInput($input, $bot), [
             'bot_id'      => $bot->_id,
-            'template_id' => $template->_id
+            'template_id' => $template->_id,
+            'stats'       => [
+                'clicked' => [
+                    'total'          => 0,
+                    'per_subscriber' => 0
+                ],
+            ]
         ]);
 
         /** @type Broadcast $broadcast */
@@ -134,7 +148,7 @@ class BroadcastService
         $data = $this->cleanInput($input, $bot);
         $this->broadcastRepo->update($broadcast, $data);
 
-        $broadcast->template = $this->templates->updateImplicit($broadcast->template_id, $input['template'], $bot);
+        $broadcast->template = $this->templates->setVersioning(false)->updateImplicit($broadcast->template_id, $input['template'], $bot);
 
         return $broadcast;
     }
@@ -267,7 +281,7 @@ class BroadcastService
      */
     private function getPrettyTimezoneOffset($timezoneOffset)
     {
-        return ($timezoneOffset >= 0 ? '+' : '-') . date("H:i", abs($timezoneOffset) * 3600);
+        return ($timezoneOffset >= 0? '+' : '-') . date("H:i", abs($timezoneOffset) * 3600);
     }
 
     /**
@@ -311,5 +325,25 @@ class BroadcastService
 
         // Otherwise, it falls between lower and upper bound. Don't change it.
         return $dateTime;
+    }
+
+    /**
+     * @param     $broadcastId
+     * @param Bot $bot
+     * @return Broadcast
+     */
+    public function broadcastWithDetailedStats($broadcastId, Bot $bot)
+    {
+        $broadcast = $this->findByIdOrFail($broadcastId, $bot);
+        if ($broadcast->status == 'pending') {
+            return $broadcast;
+        }
+
+        $this->loadModelsIfNotLoaded($broadcast, ['template']);
+        foreach ($broadcast->template->messages as $message) {
+            $this->sentMessages->setMessageStat($message, $message->id);
+        }
+
+        return $broadcast;
     }
 }

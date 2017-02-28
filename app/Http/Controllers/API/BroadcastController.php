@@ -41,17 +41,12 @@ class BroadcastController extends APIController
      * Return the details of a broadcast.
      *
      * @param         $id
-     * @param Request $request
      *
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function show($id, Request $request)
+    public function show($id)
     {
-        if ($request->get('status')) {
-            $broadcast = $this->broadcasts->findByIdAndStatusOrFail($id, 'completed', $this->bot());
-        } else {
-            $broadcast = $this->broadcasts->findById($id, $this->bot());
-        }
+        $broadcast = $this->broadcasts->broadcastWithDetailedStats($id, $this->bot());
 
         return $this->itemResponse($broadcast);
     }

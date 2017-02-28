@@ -17,6 +17,7 @@
  * @property string         $bot_id
  * @property \Carbon\Carbon $completed_at
  * @property Bot            $bot
+ * @property array          $stats
  */
 class Broadcast extends BaseModel
 {
