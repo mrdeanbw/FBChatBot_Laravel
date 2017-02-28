@@ -112,7 +112,7 @@ class BroadcastService
      */
     public function create(array $input, Bot $bot)
     {
-        $template = $this->templates->setVersioning(false)->createImplicit($input['template']['messages'], $bot);
+        $template = $this->templates->setVersioning(false)->createImplicit($input['template']['messages'], $bot->_id);
 
         $data = array_merge($this->cleanInput($input, $bot), [
             'bot_id'      => $bot->_id,
@@ -122,7 +122,8 @@ class BroadcastService
                     'total'          => 0,
                     'per_subscriber' => 0
                 ],
-            ]
+            ],
+            'subscriber_clicks' => []
         ]);
 
         /** @type Broadcast $broadcast */

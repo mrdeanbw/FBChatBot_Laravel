@@ -1,19 +1,18 @@
 <?php namespace App\Services;
 
 use App\Models\Card;
-use App\Models\SentMessage;
-use App\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Button;
-use App\Models\MainMenu;
 use App\Models\Template;
 use App\Models\Subscriber;
+use App\Models\SentMessage;
 use App\Models\AutoReplyRule;
 use App\Services\Facebook\Sender as FacebookSender;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
+use App\Repositories\Broadcast\BroadcastRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use App\Repositories\SentMessage\SentMessageRepositoryInterface;
 use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
@@ -329,7 +328,7 @@ class WebAppAdapter
         $this->sentMessageRepo->recordClick($sentMessage, $cardOrButtonPath, mongo_date());
 
         if ($broadcastId) {
-            //$this->broadcastRepo->recordClick($bot, $broadcastId, $subscriber);
+            $this->broadcastRepo->recordClick($bot, new ObjectID($broadcastId), $subscriber->_id);
         }
 
         if ($message->type == 'button') {
@@ -440,15 +439,6 @@ class WebAppAdapter
         }
 
         return is_object($ret)? $ret : null;
-    }
-
-    /**
-     * Increase the number of clicks for a given message instance
-     *
-     * @param array $payload
-     */
-    private function incrementButtonClicks(array $payload)
-    {
     }
 
     /**
@@ -566,7 +556,6 @@ class WebAppAdapter
     {
         $timestamp = mongo_date($timestamp);
         $this->sentMessageRepo->markAsDelivered($subscriber, $timestamp);
-        //        $this->updateBroadcastDeliveredStats($subscriber, $timestamp);
     }
 
     /**
@@ -581,20 +570,6 @@ class WebAppAdapter
         // this is to handle Facebook sometimes not sending the delivery callback.
         $timestamp = mongo_date($timestamp);
         $this->sentMessageRepo->markAsRead($subscriber, $timestamp);
-        //        $this->updateBroadcastReadStats($subscriber, $timestamp);
-    }
-
-    /**
-     * Increase the number of clicks for a given message instance
-     *
-     * @param MessageInstance $instance
-     * @param int             $incrementBy
-     */
-    private function incrementMessageInstanceClicks(MessageInstance $instance, $incrementBy = 1)
-    {
-        $this->sentMessageRepo->update($instance, ['clicks' => $instance->clicks + $incrementBy]);
-        $this->sentMessageRepo->createMessageInstanceClick($instance);
-        $this->incrementBroadcastClicks($instance, $incrementBy);
     }
 
     /**
@@ -619,42 +594,6 @@ class WebAppAdapter
     public function isSubscriptionMessage(AutoReplyRule $rule)
     {
         return $rule->action == 'subscribe';
-    }
-
-    /**
-     * Convert the timestamp sent by Facebook (in milliseconds) to date-time string.
-     *
-     * @param int $timestamp
-     *
-     * @return string
-     */
-    private function normalizeTimestamp($timestamp)
-    {
-        $timestamp = Carbon::createFromTimestamp((int)($timestamp / 1000))->toDateTimeString();
-
-        return $timestamp;
-    }
-
-    /**
-     * Mark the broadcast as delivered to subscriber
-     *
-     * @param Subscriber $subscriber
-     * @param            $dateTime
-     */
-    private function updateBroadcastDeliveredStats(Subscriber $subscriber, $dateTime)
-    {
-        $this->broadcasts->updateBroadcastSubscriberDeliveredAt($subscriber, $dateTime);
-    }
-
-    /**
-     * Mark the broadcast as read by subscriber
-     *
-     * @param Subscriber $subscriber
-     * @param            $dateTime
-     */
-    private function updateBroadcastReadStats(Subscriber $subscriber, $dateTime)
-    {
-        $this->broadcasts->updateBroadcastSubscriberReadAt($subscriber, $dateTime);
     }
 
     /**
@@ -696,6 +635,7 @@ class WebAppAdapter
     }
 
     /**
+     * @todo store all incoming interaction
      * @todo Use Repository.
      * @param Subscriber $subscriber
      */
