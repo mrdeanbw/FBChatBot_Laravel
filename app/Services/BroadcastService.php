@@ -4,8 +4,8 @@ use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Broadcast;
 use App\Models\AudienceFilter;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Broadcast\BroadcastRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class BroadcastService
 {
@@ -79,7 +79,7 @@ class BroadcastService
         if ($broadcast = $this->findById($id, $bot)) {
             return $broadcast;
         }
-        throw new ModelNotFoundException;
+        throw new NotFoundHttpException;
     }
 
     /**
@@ -99,7 +99,7 @@ class BroadcastService
             return $broadcast;
         }
 
-        throw new ModelNotFoundException;
+        throw new NotFoundHttpException;
     }
 
     /**

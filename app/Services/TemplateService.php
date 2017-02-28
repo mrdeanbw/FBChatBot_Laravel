@@ -3,10 +3,10 @@
 use App\Models\Bot;
 use App\Models\Message;
 use App\Models\Template;
-use Dingo\Api\Exception\ValidationHttpException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Repositories\Template\TemplateRepositoryInterface;
 use MongoDB\BSON\ObjectID;
+use Dingo\Api\Exception\ValidationHttpException;
+use App\Repositories\Template\TemplateRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class TemplateService
 {
@@ -66,7 +66,7 @@ class TemplateService
         if ($template = $this->templateRepo->findExplicitByIdForBot($id, $page)) {
             return $template;
         }
-        throw new ModelNotFoundException;
+        throw new NotFoundHttpException;
     }
 
     /**

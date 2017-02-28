@@ -3,9 +3,9 @@
 use App\Models\Bot;
 use App\Models\AutoReplyRule;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AutoReplyRuleService
 {
@@ -36,7 +36,7 @@ class AutoReplyRuleService
         $rule = $this->autoReplyRuleRepo->findByIdForBot($ruleId, $bot);
 
         if (! $rule) {
-            throw new ModelNotFoundException;
+            throw new NotFoundHttpException;
         }
 
         return $rule;

@@ -8,10 +8,10 @@ use App\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
 use App\Services\Facebook\FacebookUser;
 use App\Repositories\Bot\BotRepositoryInterface;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class SubscriberService
 {
@@ -100,7 +100,7 @@ class SubscriberService
         if ($subscriber = $this->subscriberRepo->findByIdForBot($id, $bot)) {
             return $subscriber;
         }
-        throw new ModelNotFoundException;
+        throw new NotFoundHttpException;
     }
 
     /**

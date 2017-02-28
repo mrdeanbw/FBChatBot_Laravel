@@ -7,10 +7,10 @@ use App\Models\Sequence;
 use MongoDB\BSON\ObjectID;
 use App\Models\AudienceFilter;
 use App\Models\SequenceMessage;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Repositories\Sequence\SequenceRepositoryInterface;
 use App\Repositories\Template\TemplateRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 
 class SequenceService
@@ -111,7 +111,7 @@ class SequenceService
         if ($sequence = $this->findByIdForBot($id, $page)) {
             return $sequence;
         }
-        throw new ModelNotFoundException;
+        throw new NotFoundHttpException;
     }
 
     /**
@@ -129,7 +129,7 @@ class SequenceService
             return $message;
         }
 
-        throw new ModelNotFoundException;
+        throw new NotFoundHttpException;
     }
 
     /**

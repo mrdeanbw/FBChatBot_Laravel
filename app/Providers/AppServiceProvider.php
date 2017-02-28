@@ -1,18 +1,17 @@
 <?php namespace App\Providers;
 
 use DB;
-use MongoDB\BSON\ObjectID;
 use Validator;
+use MongoDB\BSON\ObjectID;
 use Illuminate\Support\ServiceProvider;
 use App\Services\Validation\MessageValidator;
 
 class AppServiceProvider extends ServiceProvider
 {
 
-    protected $developmentServiceProviders
-        = [
-            \Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
-        ];
+    protected $developmentServiceProviders = [
+        \Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
+    ];
 
     /**
      * Register any application services.

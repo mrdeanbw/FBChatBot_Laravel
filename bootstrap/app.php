@@ -122,6 +122,7 @@ app('Dingo\Api\Transformer\Factory')->setAdapter(function ($app) {
     );
 });
 
+$app->register(App\Providers\DingoApiExceptionHandler::class);
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;

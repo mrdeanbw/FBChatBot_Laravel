@@ -27,7 +27,7 @@ class FacebookWebhookController extends Controller
             return response($FacebookAppVerifier->challenge(), 200);
         }
 
-        throw new BadRequestHttpException;
+        throw new BadRequestHttpException("Invalid Request.");
     }
 
     /**

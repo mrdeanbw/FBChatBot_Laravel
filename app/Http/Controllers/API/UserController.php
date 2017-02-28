@@ -74,7 +74,7 @@ class UserController extends APIController
         $facebookAuthToken = $request->get('token');
 
         if (! $facebookAuthToken) {
-            throw new BadRequestHttpException;
+            throw new BadRequestHttpException("Facebook Access token is missing.");
         }
 
         $user = $this->account->loginUserByFacebookAccessToken($facebookAuthToken);

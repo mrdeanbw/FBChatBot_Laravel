@@ -1,12 +1,12 @@
 <?php namespace App\Services;
 
-use App\Jobs\SendTemplate;
 use App\Models\Bot;
 use App\Models\User;
+use App\Jobs\SendTemplate;
 use App\Models\Subscriber;
 use App\Models\MessagePreview;
 use App\Repositories\Bot\BotRepositoryInterface;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Repositories\MessagePreview\MessagePreviewRepositoryInterface;
 
 class MessagePreviewService
@@ -101,7 +101,7 @@ class MessagePreviewService
     {
         $subscriber = $this->botRepo->getSubscriberForUser($user, $bot);
         if (! $subscriber) {
-            throw new ModelNotFoundException;
+            throw new NotFoundHttpException;
         }
 
         return $subscriber;
