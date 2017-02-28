@@ -15,7 +15,8 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\SendDueBroadcasts::class,
         Commands\SendDueSequenceMessages::class,
-        Commands\CleanUpDeletedSequenceMessages::class
+        Commands\CleanUpDeletedSequenceMessages::class,
+        Commands\MonitorAlert::class
     ];
 
     /**
@@ -30,5 +31,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('broadcast:process')->everyMinute();
         $schedule->command('sequence:process')->everyFiveMinutes();
         $schedule->command('sequence:clear')->everyThirtyMinutes();
+        $schedule->command('monitor:alert')->everyFiveMinutes();
     }
 }

@@ -16,7 +16,6 @@ class MonitorController extends Controller
 	{
 		$this->monitor = $monitorService;
 	}
-
 	/**
 	 * Index , Get main info
 	 * @return \Response
