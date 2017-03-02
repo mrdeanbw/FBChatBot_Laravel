@@ -52,7 +52,8 @@ class SendDueSequenceMessages extends Command
 
         foreach ($schedules as $schedule) {
             $this->sequenceScheduleRepo->update($schedule, ['status' => 'running']);
-            dispatch(new SendScheduledSequenceMessage($schedule));
+            $job = (new SendScheduledSequenceMessage($schedule))->onQueue('onetry');
+            dispatch($job);
         }
 
         $this->info("Done");

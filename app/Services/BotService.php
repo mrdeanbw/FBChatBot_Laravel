@@ -1,5 +1,8 @@
 <?php namespace App\Services;
 
+use App\Jobs\AddGetStartedButtonOnFacebook;
+use App\Jobs\UpdateGreetingTextOnFacebook;
+use App\Jobs\UpdateMainMenuOnFacebook;
 use App\Models\Bot;
 use App\Models\Page;
 use App\Models\User;
@@ -7,7 +10,7 @@ use App\Models\WelcomeMessage;
 use MongoDB\BSON\ObjectID;
 use Illuminate\Support\Collection;
 use App\Services\Facebook\MessengerThread;
-use App\Jobs\InitializeBotForFacebookPage;
+use App\Jobs\SubscribeAppToFacebookPage;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Services\Facebook\PageService as FacebookPage;
@@ -180,7 +183,10 @@ class BotService
 
         $this->createDefaultAutoReplyRules($bot);
 
-        dispatch(new InitializeBotForFacebookPage($bot, $user->id));
+        dispatch(new SubscribeAppToFacebookPage($bot, $user->id));
+        dispatch(new AddGetStartedButtonOnFacebook($bot, $user->id));
+        dispatch(new UpdateMainMenuOnFacebook($bot, $user->id));
+        dispatch(new UpdateGreetingTextOnFacebook($bot, $user->id));
 
         return $bot;
     }

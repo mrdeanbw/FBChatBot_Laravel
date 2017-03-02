@@ -97,7 +97,8 @@ class SendDueBroadcasts extends Command
         $subscribers = $this->getTargetAudience($broadcast);
 
         foreach ($subscribers as $subscriber) {
-            dispatch(new SendBroadcast($broadcast, $subscriber));
+            $job = (new SendBroadcast($broadcast, $subscriber))->onQueue('onetry');
+            dispatch($job);
         }
     }
 

@@ -3,7 +3,7 @@
 use App\Models\Bot;
 use App\Services\Facebook;
 
-class InitializeBotForFacebookPage extends BaseJob
+class SubscribeAppToFacebookPage extends BaseJob
 {
 
     /**
@@ -27,16 +27,9 @@ class InitializeBotForFacebookPage extends BaseJob
     /**
      * Execute the job.
      * @param Facebook\Subscription    $FacebookSubscriptions
-     * @param Facebook\MessengerThread $MessengerThreads
      */
-    public function handle(Facebook\Subscription $FacebookSubscriptions, Facebook\MessengerThread $MessengerThreads)
+    public function handle(Facebook\Subscription $FacebookSubscriptions)
     {
         $FacebookSubscriptions->subscribe($this->bot->page->access_token);
-
-        $MessengerThreads->addGetStartedButton($this->bot->page->access_token);
-
-        dispatch(new UpdateMainMenuOnFacebook($this->bot, $this->userId));
-
-        dispatch(new UpdateGreetingTextOnFacebook($this->bot, $this->userId));
     }
 }

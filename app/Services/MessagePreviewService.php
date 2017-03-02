@@ -61,7 +61,8 @@ class MessagePreviewService
 
         $messagePreview = $this->create($input, $user, $bot);
 
-        dispatch(new SendTemplate($messagePreview->template, $subscriber));
+        $job = (new SendTemplate($messagePreview->template, $subscriber))->onQueue('onetry');
+        dispatch($job);
 
         return $messagePreview;
     }

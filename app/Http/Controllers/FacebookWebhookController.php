@@ -37,7 +37,8 @@ class FacebookWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        dispatch(new HandleIncomingFacebookCallback($request->all()));
+        $job = (new HandleIncomingFacebookCallback($request->all()))->onQueue('onetry');
+        dispatch($job);
 
         return response('');
     }
