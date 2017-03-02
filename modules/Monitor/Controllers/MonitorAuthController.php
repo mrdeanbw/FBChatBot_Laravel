@@ -1,5 +1,4 @@
-<?php
-namespace Modules\Monitor\Controllers;
+<?php namespace Modules\Monitor\Controllers;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 
@@ -13,7 +12,7 @@ class MonitorAuthController extends Controller
 	public function do_login(Request $request)
 	{
 		$token =  $request->input('token');
-		if($token != getenv('MONITOR_AUTH_TOKEN')){
+		if($token != config('monitor.auth_token')){
     		return redirect('/monitor/login');
     	}
     	$_SESSION['MonitorLogged'] = $token;

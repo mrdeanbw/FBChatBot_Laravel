@@ -2,10 +2,10 @@
 
 use Exception;
 use Illuminate\Bus\Queueable;
+use Maknz\Slack\Client as SlackClient;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Maknz\Slack\Client as SlackClient;
 
 abstract class BaseJob implements ShouldQueue
 {
@@ -13,66 +13,71 @@ abstract class BaseJob implements ShouldQueue
     use InteractsWithQueue, Queueable, SerializesModels;
 
     protected $userId;
-
-    protected $pushErrorsOnFail = false;
-    protected $failMessageTitle = "Unexpected Error!";
-    protected $failMessageBody = "An unexpected error has occurred. We are looking into it!";
+    protected $pushErrorsToSlackOnFail = true;
+    protected $pushErrorsToFrontendOnFail = false;
+    protected $frontendFailMessageTitle = "Unexpected Error!";
+    protected $frontendFailMessageBody = "An unexpected error has occurred. We are looking into it!";
 
     /**
      * The job failed to process.
+     * @param Exception $exception
      */
     public function failed(Exception $exception)
     {
-        if (! $this->pushErrorsOnFail) {
-            return;
+        if ($this->pushErrorsToFrontendOnFail) {
+            notify_frontend($this->getFrontendErrorChannel(), 'error', [
+                'title'   => $this->frontendFailMessageTitle,
+                'message' => $this->frontendFailMessageBody
+            ]);
         }
 
-        notify_frontend($this->getErrorChannel(), 'error', [
-            'title'   => $this->failMessageTitle,
-            'message' => $this->failMessageBody
-        ]);
-
-        $this->sendSlackAlert($exception);
-    }
-
-
-    protected function sendSlackAlert(Exception $exception)
-    {
-        $slackwebhook = getenv('MONITOR_SLACK_WEBHOOK');
-        if($slackwebhook == ''){
-            return;
+        if ($this->pushErrorsToSlackOnFail) {
+            $this->sendSlackAlert($exception);
         }
-        $client = new SlackClient($slackwebhook);
-        $client->withIcon(':robot_face:')->attach([
-                'fallback' => 'Job failed :'.get_class(),
-                'text' => 'Job failed :'.get_class(),
-                'color' => 'warning',
-                'fields' => [
-                    [
-                        'title' => 'Error Code',
-                        'value' => $exception->getCode(),
-                        'short' => true 
-                    ],
-                    [
-                        'title' => 'File',
-                        'value' => $exception->getFile(). ' ( line: ) '.$exception->getLine(),
-                        'short' => true
-                    ],
-                    [
-                        'title' => 'Error Message',
-                        'value' => $exception->getMessage(),
-                        'short' => false 
-                    ]
-                ]
-            ])->send('Job  '. get_class() .' is failing');
     }
 
     /**
      * @return string
      */
-    protected function getErrorChannel()
+    protected function getFrontendErrorChannel()
     {
         return "{$this->userId}_notifications";
     }
 
+    /**
+     * @param Exception $exception
+     */
+    protected function sendSlackAlert(Exception $exception)
+    {
+        $slackWebhook = config('monitor.slack_webhook');
+        if (! $slackWebhook) {
+            return;
+        }
+        $client = new SlackClient($slackWebhook);
+
+        $class = get_called_class();
+
+        $client->withIcon(':robot_face:')->attach([
+            'fallback' => 'Job failed: ' . $class,
+            'text'     => 'Job failed: ' . $class,
+            'color'    => 'warning',
+            'fields'   => [
+                [
+                    'title' => 'Error Code',
+                    'value' => $exception->getCode(),
+                    'short' => true
+                ],
+                [
+                    'title' => 'File',
+                    'value' => $exception->getFile() . ' ( line: ) ' . $exception->getLine(),
+                    'short' => true
+                ],
+                [
+                    'title' => 'Error Message',
+                    'value' => $exception->getMessage(),
+                    'short' => false
+                ]
+            ]
+        ])->send('Job  ' . $class . ' is failing');
+    }
 }

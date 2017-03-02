@@ -13,8 +13,8 @@ class UpdateMainMenuOnFacebook extends BaseJob
      */
     private $bot;
 
-    protected $pushErrorsOnFail = true;
-    protected $failMessageBody = "Failed to update the main menu on Facebook. We are looking into it!";
+    protected $pushErrorsToFrontendOnFail = true;
+    protected $frontendFailMessageBody = "Failed to update the main menu on Facebook. We are looking into it!";
 
     /**
      * UpdateMainMenuOnFacebook constructor.
@@ -42,7 +42,7 @@ class UpdateMainMenuOnFacebook extends BaseJob
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 
         if (! $success) {
-            throw new \Exception("{$this->failMessageBody}. Facebook response: " . $response->result);
+            throw new \Exception("{$this->frontendFailMessageBody}. Facebook response: " . $response->result);
         }
     }
 }

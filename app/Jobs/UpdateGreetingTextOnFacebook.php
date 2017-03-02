@@ -7,8 +7,8 @@ use App\Services\Facebook\MessengerThread;
 class UpdateGreetingTextOnFacebook extends BaseJob
 {
 
-    protected $pushErrorsOnFail = true;
-    protected $failMessageBody = "Failed to update the greeting text on Facebook. We are looking into it!";
+    protected $pushErrorsToFrontendOnFail = true;
+    protected $frontendFailMessageBody = "Failed to update the greeting text on Facebook. We are looking into it!";
 
     /**
      * @type Bot
@@ -41,7 +41,7 @@ class UpdateGreetingTextOnFacebook extends BaseJob
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 
         if (! $success) {
-            throw new \Exception("{$this->failMessageBody}. Facebook response: " . $response->result);
+            throw new \Exception("{$this->frontendFailMessageBody}. Facebook response: " . $response->result);
         }
     }
 

@@ -1,5 +1,5 @@
-<?php
-namespace Modules\Monitor\Services;
+<?php namespace Modules\Monitor\Services;
+
 use GuzzleHttp\Client;
 
 class MonitorService
@@ -14,12 +14,12 @@ class MonitorService
 
 	public function getServersInfo()
 	{
-		$servers = array_filter(explode(',',env('MONITOR_SERVERS')));
+		$servers = array_filter(explode(',',config('monitor.servers')));
         if (!$servers){
             return [];
         }
         
-		$monitorKey = env('MONITOR_KEY');
+		$monitorKey = config('monitor.key');
 
 		$serversData = [];
 

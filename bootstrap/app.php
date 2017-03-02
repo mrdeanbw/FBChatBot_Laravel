@@ -41,6 +41,7 @@ $app->withEloquent();
 $app->configure('app');
 $app->configure('jwt');
 $app->configure('queue');
+$app->configure('monitor');
 $app->configure('services');
 
 /*
