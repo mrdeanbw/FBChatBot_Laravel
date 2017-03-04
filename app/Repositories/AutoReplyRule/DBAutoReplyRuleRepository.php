@@ -26,20 +26,20 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
         $query = AutoReplyRule::where("bot_id", $bot->_id)->where(function (Builder $query) use ($keyword) {
 
             $query->orWhere(function ($subQuery) use ($keyword) {
-                $subQuery->where('mode', 'is')->where('keyword', $keyword);
+                $subQuery->where('mode', AutoReplyRule::MATCH_MODE_IS)->where('keyword', $keyword);
             });
 
             $query->orWhere(function (Builder $subQuery) use ($keyword) {
-                $subQuery->Where('mode', 'begins_with')->where('keyword', 'regexp', "/{$keyword}.*/i");
+                $subQuery->Where('mode', AutoReplyRule::MATCH_MODE_PREFIX)->where('keyword', 'regexp', "/{$keyword}.*/i");
             });
 
             $query->orWhere(function (Builder $subQuery) use ($keyword) {
-                $subQuery->where('mode', 'contains')->where('keyword', 'regexp', "/.*{$keyword}.*/i");
+                $subQuery->where('mode', AutoReplyRule::MATCH_MODE_CONTAINS)->where('keyword', 'regexp', "/.*{$keyword}.*/i");
             });
 
         });
 
-        return $query->orderBy('mode_priority')->first();
+        return $query->orderBy('mode')->first();
     }
 
 }

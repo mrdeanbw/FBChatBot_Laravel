@@ -3,13 +3,18 @@
 use App\Models\Bot;
 use App\Models\AutoReplyRule;
 use Illuminate\Pagination\Paginator;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AutoReplyRuleService
 {
 
+    protected $matchModeMap = [
+        'is'          => AutoReplyRule::MATCH_MODE_IS,
+        'begins_with' => AutoReplyRule::MATCH_MODE_PREFIX,
+        'contains'    => AutoReplyRule::MATCH_MODE_CONTAINS,
+    ];
     /**
      * @type AutoReplyRuleRepositoryInterface
      */
@@ -58,7 +63,7 @@ class AutoReplyRuleService
             $filterBy[] = ['operator' => 'prefix', 'key' => 'keyword', 'value' => $keyword];
         }
 
-        $orderBy = $orderBy ?: ['_id' => 'asc'];
+        $orderBy = $orderBy?: ['_id' => 'asc'];
 
         return $this->autoReplyRuleRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
@@ -73,7 +78,7 @@ class AutoReplyRuleService
     {
         $data = [
             'action'      => 'send',
-            'mode'        => $input['mode'],
+            'mode'        => $this->matchModeMap[$input['mode']],
             'keyword'     => $input['keyword'],
             'template_id' => $input['template']['id'],
             'bot_id'      => $bot->_id,
@@ -99,7 +104,7 @@ class AutoReplyRuleService
         }
 
         $data = [
-            'mode'        => $input['mode'],
+            'mode'        => $this->matchModeMap[$input['mode']],
             'keyword'     => $input['keyword'],
             'template_id' => $input['template']['id'],
         ];

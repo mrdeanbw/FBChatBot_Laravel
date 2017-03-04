@@ -7,6 +7,9 @@ use App\Repositories\BaseRepositoryInterface;
 interface SequenceScheduleRepositoryInterface extends BaseRepositoryInterface
 {
 
+    const STATUS_PENDING = 0;
+    const STATUS_RUNNING = 1;
+
     /**
      * Get list of sending-due sequence message schedules
      *

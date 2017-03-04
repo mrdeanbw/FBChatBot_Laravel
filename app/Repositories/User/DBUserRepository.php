@@ -1,10 +1,7 @@
 <?php namespace App\Repositories\User;
 
-use DB;
 use App\Models\Bot;
 use App\Models\User;
-use App\Models\Subscriber;
-use Illuminate\Support\Facades\Crypt;
 use App\Repositories\DBBaseRepository;
 
 class DBUserRepository extends DBBaseRepository implements UserRepositoryInterface
@@ -26,55 +23,6 @@ class DBUserRepository extends DBBaseRepository implements UserRepositoryInterfa
     public function findByFacebookId($facebookId)
     {
         return User::whereFacebookId($facebookId)->first();
-    }
-
-    /**
-     * Checks if the user is subscribed to a page
-     * @param User $user
-     * @param Bot  $page
-     * @return bool
-     */
-    public function isSubscribedToPage(User $user, Bot $page)
-    {
-        $subQuery = $this->userAsSubscriberSubQuery($user, $page);
-
-        return Subscriber::where('id', $subQuery)->exists();
-    }
-
-    /**
-     * Return the user's subscriber instance to page.
-     * @param User $user
-     * @param Bot  $page
-     * @return Subscriber
-     */
-    public function asSubscriber(User $user, Bot $page)
-    {
-        $subQuery = $this->userAsSubscriberSubQuery($user, $page);
-
-        return Subscriber::where('id', $subQuery)->first();
-    }
-
-    /**
-     * @param User $user
-     * @param Bot  $page
-     * @return \Illuminate\Database\Query\Expression
-     */
-    private function userAsSubscriberSubQuery(User $user, Bot $page)
-    {
-        $subQuery = DB::raw("(SELECT `subscriber_id` FROM `page_user` WHERE `page_id` = {$page->id} AND `user_id` = {$user->id})");
-
-        return $subQuery;
-    }
-
-    /**
-     * Sync a user's pages
-     * @param User  $user
-     * @param array $pages
-     * @param bool  $detaching Whether or not to detach the attached tags which are not included in the passed $tags
-     */
-    public function syncBots(User $user, array $pages, $detaching)
-    {
-        $user->pages()->sync($pages, $detaching);
     }
 
     /**
@@ -102,45 +50,34 @@ class DBUserRepository extends DBBaseRepository implements UserRepositoryInterfa
 
         return User::find($id);
     }
-
-    /**
-     * Persist the subscriber info, on the user-page relation
-     * @param User       $user
-     * @param Bot        $page
-     * @param Subscriber $subscriber
-     */
-    public function associateWithPageAsSubscriber(User $user, Bot $page, Subscriber $subscriber)
-    {
-        $user->pages()->updateExistingPivot($page->id, ['subscriber_id' => $subscriber->id]);
-    }
-
-    public function generateReferralLink(User $user)
-    {
-        $string = $user->first_name . '::' . $user->last_name . '::' . $user->id;
-
-        $user->referral_code = Crypt::encrypt($string);
-
-        $user->save();
-
-        return $string;
-    }
-
-    public function getDecryptedCode(User $user)
-    {
-        return Crypt::decrypt($user->referral_code);
-    }
-
-    public function connectReferrals(User $parent, User $child)
-    {
-        $child->referral = $parent->id;
-
-        return $child->save();
-    }
-
-    public function addCredits(User $user, $amount)
-    {
-        $user->credits += $amount;
-
-        return $user->save();
-    }
+//
+//    public function generateReferralLink(User $user)
+//    {
+//        $string = $user->first_name . '::' . $user->last_name . '::' . $user->id;
+//
+//        $user->referral_code = Crypt::encrypt($string);
+//
+//        $user->save();
+//
+//        return $string;
+//    }
+//
+//    public function getDecryptedCode(User $user)
+//    {
+//        return Crypt::decrypt($user->referral_code);
+//    }
+//
+//    public function connectReferrals(User $parent, User $child)
+//    {
+//        $child->referral = $parent->id;
+//
+//        return $child->save();
+//    }
+//
+//    public function addCredits(User $user, $amount)
+//    {
+//        $user->credits += $amount;
+//
+//        return $user->save();
+//    }
 }

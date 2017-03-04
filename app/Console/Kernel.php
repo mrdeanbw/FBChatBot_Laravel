@@ -16,7 +16,11 @@ class Kernel extends ConsoleKernel
         Commands\SendDueBroadcasts::class,
         Commands\SendDueSequenceMessages::class,
         Commands\CleanUpDeletedSequenceMessages::class,
-        Commands\MonitorAlert::class
+
+        Commands\MonitorAlert::class,
+
+        Commands\CreateDatabaseIndexes::class,
+        Commands\DropDatabaseIndexes::class,
     ];
 
     /**

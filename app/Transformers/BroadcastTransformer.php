@@ -2,6 +2,7 @@
 
 use App\Models\Message;
 use App\Models\Broadcast;
+use App\Repositories\Broadcast\BroadcastRepositoryInterface;
 use App\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class BroadcastTransformer extends BaseTransformer
@@ -11,7 +12,7 @@ class BroadcastTransformer extends BaseTransformer
     public function transform(Broadcast $broadcast)
     {
         $stats = $broadcast->stats;
-        if (in_array($broadcast->status, ['running', 'completed'])) {
+        if (in_array($broadcast->status, [BroadcastRepositoryInterface::STATUS_RUNNING, BroadcastRepositoryInterface::STATUS_COMPLETED])) {
             $this->loadModelsIfNotLoaded($broadcast, ['template']);
             $stats = array_merge($stats, $this->getMessageStats($broadcast->template->messages[0]));
         }

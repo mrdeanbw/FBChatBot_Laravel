@@ -89,7 +89,7 @@ class SendDueBroadcasts extends Command
      */
     protected function markAsRunning(Broadcast $broadcast)
     {
-        $this->broadcastRepo->update($broadcast, ['status' => 'running']);
+        $this->broadcastRepo->update($broadcast, ['status' => BroadcastRepositoryInterface::STATUS_RUNNING]);
     }
 
     public function send(Broadcast $broadcast)
@@ -110,10 +110,10 @@ class SendDueBroadcasts extends Command
         $data = $this->broadcasts->calculateNextScheduleDateTime($broadcast);
 
         if (is_null($data['next_send_at'])) {
-            $data['status'] = 'completed';
+            $data['status'] = BroadcastRepositoryInterface::STATUS_COMPLETED;
             $data['completed_at'] = Carbon::now();
         } else {
-            $data['status'] = 'pending';
+            $data['status'] = BroadcastRepositoryInterface::STATUS_PENDING;
         }
 
         $this->broadcastRepo->update($broadcast, $data);

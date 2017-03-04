@@ -22,7 +22,7 @@ class DBBroadcastRepository extends DBAssociatedWithBotRepository implements Bro
     public function getDueBroadcasts()
     {
         $filter = [
-            ['operator' => '=', 'key' => 'status', 'value' => 'pending'],
+            ['operator' => '=', 'key' => 'status', 'value' => BroadcastRepositoryInterface::STATUS_PENDING],
             ['operator' => '<=', 'key' => 'next_send_at', 'value' => Carbon::now()],
         ];
 

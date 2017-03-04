@@ -328,7 +328,7 @@ class SequenceService
                 'sequence_id'   => $sequence->_id,
                 'message_id'    => $message->id,
                 'subscriber_id' => $subscriber->_id,
-                'status'        => 'pending',
+                'status'        => SequenceScheduleRepositoryInterface::STATUS_PENDING,
                 'send_at'       => change_date(Carbon::now(), $message->conditions['wait_for']),
             ];
         }

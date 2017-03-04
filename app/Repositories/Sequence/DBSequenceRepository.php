@@ -4,7 +4,6 @@ use Carbon\Carbon;
 use App\Models\Sequence;
 use MongoDB\BSON\ObjectID;
 use App\Models\SequenceMessage;
-use Illuminate\Support\Collection;
 use App\Repositories\DBAssociatedWithBotRepository;
 
 class DBSequenceRepository extends DBAssociatedWithBotRepository implements SequenceRepositoryInterface
@@ -79,20 +78,6 @@ class DBSequenceRepository extends DBAssociatedWithBotRepository implements Sequ
         return array_first($sequence->messages, function (SequenceMessage $message) use ($id) {
             return $message->id == $id;
         });
-    }
-
-    /**
-     * Return the trashed (soft deleted) sequence messages which have no schedules.
-     *
-     * @return Collection
-     */
-    public function getTrashedMessagesWithNoSchedules()
-    {
-        $inCompleteSchedule = function ($query) {
-            $query->where('status', '!=', 'completed');
-        };
-
-        return SequenceMessage::onlyTrashed()->whereHas('schedules', $inCompleteSchedule, '=', 0);
     }
 
     public function completelyDeleteSoftDeletedSequenceMessagesWithNoPeopleQueued()

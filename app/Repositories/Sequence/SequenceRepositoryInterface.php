@@ -55,6 +55,9 @@ interface SequenceRepositoryInterface extends AssociatedWithBotRepositoryInterfa
     public function softDeleteSequenceMessage(Sequence $sequence, SequenceMessage $message);
 
 
+    /**
+     * @return mixed
+     */
     public function completelyDeleteSoftDeletedSequenceMessagesWithNoPeopleQueued();
 
     /**

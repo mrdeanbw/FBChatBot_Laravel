@@ -144,7 +144,7 @@ class BroadcastService
      */
     public function update($id, array $input, Bot $bot)
     {
-        $broadcast = $this->findByIdAndStatusOrFail($id, 'pending', $bot);
+        $broadcast = $this->findByIdAndStatusOrFail($id, BroadcastRepositoryInterface::STATUS_PENDING, $bot);
 
         $data = $this->cleanInput($input, $bot);
         $this->broadcastRepo->update($broadcast, $data);
@@ -175,7 +175,7 @@ class BroadcastService
         $data = array_merge(
             $data,
             [
-                'status'       => 'pending',
+                'status'       => BroadcastRepositoryInterface::STATUS_PENDING,
                 'completed_at' => null,
                 'filter'       => new AudienceFilter($input['filter'], true),
             ],
@@ -291,7 +291,7 @@ class BroadcastService
      */
     public function delete($id, $bot)
     {
-        $broadcast = $this->findByIdAndStatusOrFail($id, 'pending', $bot);
+        $broadcast = $this->findByIdAndStatusOrFail($id, BroadcastRepositoryInterface::STATUS_PENDING, $bot);
         $this->broadcastRepo->delete($broadcast);
     }
 
@@ -336,7 +336,7 @@ class BroadcastService
     public function broadcastWithDetailedStats($broadcastId, Bot $bot)
     {
         $broadcast = $this->findByIdOrFail($broadcastId, $bot);
-        if ($broadcast->status == 'pending') {
+        if ($broadcast->status == BroadcastRepositoryInterface::STATUS_PENDING) {
             return $broadcast;
         }
 

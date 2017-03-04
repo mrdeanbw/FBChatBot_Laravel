@@ -1,10 +1,10 @@
 <?php namespace App\Repositories\MessageRevision;
 
 use App\Models\Bot;
-use App\Models\MessageRevision;
-use App\Repositories\DBAssociatedWithBotRepository;
-use Illuminate\Support\Collection;
 use MongoDB\BSON\ObjectID;
+use App\Models\MessageRevision;
+use Illuminate\Support\Collection;
+use App\Repositories\DBAssociatedWithBotRepository;
 
 class DBMessageRevisionRepository extends DBAssociatedWithBotRepository implements MessageRevisionRepositoryInterface
 {

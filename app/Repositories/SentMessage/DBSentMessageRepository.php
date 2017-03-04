@@ -1,7 +1,7 @@
 <?php namespace App\Repositories\SentMessage;
 
-use App\Models\Bot;
 use Carbon\Carbon;
+use App\Models\Bot;
 use App\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
 use App\Models\SentMessage;

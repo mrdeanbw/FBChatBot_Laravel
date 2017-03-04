@@ -11,6 +11,9 @@ use App\Repositories\AssociatedWithBotRepositoryInterface;
 
 interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
+    
+    const ACTION_SUBSCRIBED = 1;
+    const ACTION_UNSUBSCRIBED = 0;
 
     /**
      * Find a bot subscriber by his Facebook ID.
@@ -63,11 +66,11 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      * Count the number of subscribers who last unsubscribed on a given date, or in a given time period.
      *
      * @param Carbon|string $date
-     * @param Bot           $page
+     * @param Bot           $bot
      *
      * @return int
      */
-    public function LastUnsubscribedAtCountForBot($date, Bot $page);
+    public function LastUnsubscribedAtCountForBot($date, Bot $bot);
 
     /**
      * @param Bot   $bot
@@ -108,13 +111,6 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      *
      */
     public function subscribeToSequenceIfNotUnsubscribed(Sequence $sequence);
-
-    /**
-     * @param Sequence $sequence
-     *
-     * @return int
-     */
-    public function subscribedToSequenceCount(Sequence $sequence);
 
     /**
      * Determine if a subscriber matches given filtering criteria.

@@ -7,7 +7,11 @@ use App\Repositories\AssociatedWithBotRepositoryInterface;
 
 interface BroadcastRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
-    
+
+    const STATUS_PENDING = 0;
+    const STATUS_RUNNING = 1;
+    const STATUS_COMPLETED = 2;
+
     /**
      * Get list of sending-due broadcasts
      * @return Collection

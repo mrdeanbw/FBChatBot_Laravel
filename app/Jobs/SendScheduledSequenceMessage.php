@@ -133,8 +133,8 @@ class SendScheduledSequenceMessage extends BaseJob
 
             $this->sequenceScheduleRepo->update($this->schedule, [
                 'message_id' => $newMessage->id,
-                'status'     => 'pending',
-                'send_at'    => change_date($sentAt ?: Carbon::now(), $newMessage->conditions['wait_for'])
+                'status'     => ScheduleRepositoryInter,
+                'send_at'    => change_date($sentAt?: Carbon::now(), $newMessage->conditions['wait_for'])
             ]);
 
         } else {

@@ -64,15 +64,4 @@ class UserService
 
         return $this->userRepo->create($data);
     }
-
-    /**
-     * Sync a user's pages
-     * @param User  $user
-     * @param array $bots
-     * @param bool  $detaching Whether or not to detach the attached tags which are not included in the passed $tags
-     */
-    public function syncBots(User $user, $bots, $detaching)
-    {
-        return $this->userRepo->syncBots($user, $bots, $detaching);
-    }
 }

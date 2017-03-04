@@ -29,7 +29,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function create(array $data)
     {
         if ($data['active']) {
-            $history = ['action' => 'subscribed', 'action_at' => mongo_date()];
+            $history = ['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => mongo_date()];
             $data['history'] = [new SubscriptionHistory($history)];
         }
 
@@ -48,11 +48,11 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
             $history = null;
 
             if ($model->active && ! $data['active']) {
-                $history = new SubscriptionHistory(['action' => 'unsubscribed', 'action_at' => mongo_date()]);
+                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED, 'action_at' => mongo_date()]);
             }
 
             if (! $model->active && $data['active']) {
-                $history = new SubscriptionHistory(['action' => 'subscribed', 'action_at' => mongo_date()]);
+                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => mongo_date()]);
             }
 
             if ($history) {
@@ -330,7 +330,10 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      */
     public function LastSubscribedAtCountForBot($date, Bot $bot)
     {
-        $filter = [['operator' => 'date', 'key' => 'last_subscribed_at', 'value' => $date]];
+        $filter = [
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+            ['operator' => 'date', 'key' => 'last_subscribed_at', 'value' => $date],
+        ];
 
         return $this->count($filter);
     }
@@ -339,13 +342,16 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      * Count the number of subscribers who last unsubscribed on a given date, or in a given time period.
      *
      * @param Carbon|string $date
-     * @param Bot           $page
+     * @param Bot           $bot
      *
      * @return int
      */
-    public function LastUnsubscribedAtCountForBot($date, Bot $page)
+    public function LastUnsubscribedAtCountForBot($date, Bot $bot)
     {
-        $filter = [['operator' => 'date', 'key' => 'last_unsubscribed_at', 'value' => $date]];
+        $filter = [
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+            ['operator' => 'date', 'key' => 'last_unsubscribed_at', 'value' => $date],
+        ];
 
         return $this->count($filter);
     }
@@ -424,18 +430,6 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     }
 
     /**
-     * @param Sequence $sequence
-     *
-     * @return int
-     */
-    public function subscribedToSequenceCount(Sequence $sequence)
-    {
-        $filterBy = [['operator' => '=', 'key' => 'sequences', 'value' => $sequence->_id]];
-
-        return $this->count($filterBy);
-    }
-
-    /**
      * @param Bot           $bot
      * @param string|Carbon $date
      *
@@ -444,7 +438,8 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function subscriptionCountForBot(Bot $bot, $date)
     {
         $filter = [
-            ['operator' => '=', 'key' => 'history.action', 'value' => 'subscribed'],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+            ['operator' => '=', 'key' => 'history.action', 'value' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED],
             ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
         ];
 
@@ -460,7 +455,8 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function unsubscriptionCountForBot(Bot $bot, $date)
     {
         $filter = [
-            ['operator' => '=', 'key' => 'history.action', 'value' => 'unsubscribed'],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+            ['operator' => '=', 'key' => 'history.action', 'value' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED],
             ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
         ];
 

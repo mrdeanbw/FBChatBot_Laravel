@@ -12,5 +12,4 @@ class Template extends BaseModel
     use HasEmbeddedArrayModels;
 
     public $multiArrayModels = ['messages' => Message::class . '::factory'];
-
 }

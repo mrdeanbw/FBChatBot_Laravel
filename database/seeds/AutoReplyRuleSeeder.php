@@ -16,11 +16,11 @@ class AutoReplyRuleSeeder extends Seeder
     {
         AutoReplyRule::truncate();
 
-        for($i = 0; $i < 10; $i++){
+        for($i = 0; $i < 1000; $i++){
             $bot = Bot::create([]);
 
-            factory(AutoReplyRule::class, 500)->create([
-                'bot_id' => $bot->id
+            factory(AutoReplyRule::class, 1000)->create([
+                'bot_id' => $bot->_id
             ]);
 
             $bot->delete();
