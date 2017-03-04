@@ -529,10 +529,6 @@ class SubscriberService
 
 
     /**
-     * @todo use $inc to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
-     * @todo bulk increment if possible? like: increment the "queued" attribute of first sendable message (whose deleted_at is null) whose sequence ID is among $sequences.
-     * @todo -> Consider another way: one query per sequence
-     * @todo -> For every bot sequence get the list of matching subscribers whose ids intersect with $subscriberIds, and then subscribe them.
      * @param ObjectID $botId
      * @param array    $subscriberIds
      * @param array    $sequenceIds
@@ -575,8 +571,6 @@ class SubscriberService
     }
 
     /**
-     * // @todo use $dec to avoid any data inconsistency, and on the columns list remove 'messages.queued'.
-     * // @todo bulk decrement if possible.
      * @param ObjectID $botId
      * @param array    $subscriberIds
      * @param array    $sequenceIds

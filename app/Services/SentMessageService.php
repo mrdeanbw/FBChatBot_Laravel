@@ -81,8 +81,6 @@ class SentMessageService
                 'per_subscriber' => $this->sentMessageRepo->perSubscriberTextMessageButtonClicks($button->id, $textMessageId, $startDateTime, $endDateTime),
             ]
         ];
-
-        // @todo: handle nested messages
     }
 
     /**
@@ -121,8 +119,6 @@ class SentMessageService
                 'per_subscriber' => $this->sentMessageRepo->perSubscriberCardButtonClicks($button->id, $cardId, $cardContainerId, $startDateTime, $endDateTime),
             ]
         ];
-
-        // @todo: handle nested messages
     }
 
 }

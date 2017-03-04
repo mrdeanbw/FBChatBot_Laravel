@@ -62,7 +62,6 @@ class GreetingTextController extends APIController
             $greetingText = trim(array_get($input, 'text'));
             $copyrightSentence = "- Powered By: MrReply.com";
 
-            // @todo and on free plan
             if (! ends_with($greetingText, $copyrightSentence)) {
                 $validator->errors()->add('text', "The greeting text has to end with the copyright sentence \"{$copyrightSentence}\".");
             }

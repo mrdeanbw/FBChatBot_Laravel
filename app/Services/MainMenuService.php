@@ -103,7 +103,6 @@ class MainMenuService
     {
         $lastButton = array_last($buttons);
 
-        // @todo: and on a free plan.
         if (! $lastButton || ! $lastButton->id || ! $lastButton->readonly || ! $this->sameAsCopyrightButton($lastButton)) {
             throw new ValidationHttpException([
                 "buttons" => ["Missing copyright button."]

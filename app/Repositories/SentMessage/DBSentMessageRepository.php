@@ -401,7 +401,6 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
     }
 
     /**
-     * @todo implement function
      * @param Bot    $bot
      * @param Carbon $startDateTime
      * @param Carbon $endDateTime
@@ -412,7 +411,6 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
     }
 
     /**
-     * @todo implement function
      * @param Bot         $bot
      * @param Carbon|null $startDateTime
      * @param Carbon|null $endDateTime

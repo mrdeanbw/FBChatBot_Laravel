@@ -30,7 +30,6 @@ class DBBroadcastRepository extends DBAssociatedWithBotRepository implements Bro
     }
 
     /**
-     * @todo one query if possible.
      * @param Bot      $bot
      * @param ObjectID $broadcastId
      * @param ObjectID $subscriberId

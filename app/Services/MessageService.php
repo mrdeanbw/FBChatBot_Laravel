@@ -110,7 +110,6 @@ class MessageService
             if ($isNew = empty($inputMessage->id)) {
                 $inputMessage->id = new ObjectID(null);
             } else {
-                //@todo handle exception (invalid message Id).
                 $inputMessage->id = new ObjectID($inputMessage->id);
             }
 
@@ -164,9 +163,7 @@ class MessageService
                 $this->messageRevisions[] = get_object_vars($inputMessage);
             }
         }
-
-        // @todo handle deleted messages (those in $current and not in $input): Delete Sent Messages records, Delete revisions, Delete image files.
-
+        
         $this->moveReadonlyBlockToTheBottom($normalized);
 
         return $normalized;

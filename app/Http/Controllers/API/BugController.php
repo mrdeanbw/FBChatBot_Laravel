@@ -7,9 +7,6 @@ use Illuminate\Http\Request;
 
 class BugController extends APIController
 {
-    /*
-     * ToDo: document all of this
-     */
     private $commentRepository;
     private $bugRepository;
     private $bugService;

@@ -93,7 +93,6 @@ class SubscriberController extends APIController
      */
     public function batchUpdate(Request $request)
     {
-        //@todo validate subscriber IDs (exist)
         $this->validate($request, [
             'actions'          => 'bail|required|array|button_actions',
             'subscribers'      => 'bail|required|array',

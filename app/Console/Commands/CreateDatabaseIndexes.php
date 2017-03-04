@@ -109,8 +109,6 @@ class CreateDatabaseIndexes extends Command
         $collection->createIndex(['bot_id' => 1, 'last_subscribed_at' => -1]);
         $collection->createIndex(['bot_id' => 1, 'last_unsubscribed_at' => -1]);
         $collection->createIndex(['bot_id' => 1, 'history.action' => 1, 'history.action_at' => 1]);
-
-        //@todo gender, tags, sequences, removed sequences combinations [TBD]
     }
 
     private function createTemplateIndexes()

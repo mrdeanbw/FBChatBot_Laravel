@@ -83,7 +83,6 @@ class SendScheduledSequenceMessage extends BaseJob
         $sentMessageIndex = $this->sequenceRepo->getMessageIndexInSequence($this->sequence, $this->message->id);
         $nextMessageIndex = $this->sequenceRepo->getMessageIndexInSequence($this->sequence, $nextMessage->id);
 
-        // @todo convert to $inc and $dec instead to avoid any possible conflicts. For example, 2 jobs running at the same time.
         $this->sequenceRepo->update($this->sequence, [
             "messages.{$sentMessageIndex}.queued" => $this->message->queued - 1,
             "messages.{$nextMessageIndex}.queued" => $nextMessage->queued + 1,

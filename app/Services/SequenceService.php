@@ -344,7 +344,6 @@ class SequenceService
     private function defaultSequenceMessages(Bot $bot)
     {
         $templates = $this->getDefaultTemplates($bot);
-        // @todo bulk create message revisions
         $this->templateRepo->bulkCreate($templates);
 
         $arr = [

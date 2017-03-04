@@ -44,7 +44,6 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * // @todo handle properly
      * Handle when a Facebook user de-authorizes our app.
      * @param Request    $request
      * @param BotService $pages

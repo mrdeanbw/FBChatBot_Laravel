@@ -112,7 +112,6 @@ class FacebookWebhookReceiver
 
                 // If the auto reply rule is a subscription message, subscribe the user.
                 if ($this->adapter->isSubscriptionMessage($rule)) {
-                    // @todo one query (if creating or updating subscriber).
                     $subscriber = $this->adapter->subscribe($bot, $event['sender']['id']);
                     $this->adapter->storeIncomingInteraction($subscriber);
 

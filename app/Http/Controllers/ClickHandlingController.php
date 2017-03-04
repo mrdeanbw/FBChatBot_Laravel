@@ -28,8 +28,7 @@ class ClickHandlingController extends Controller
         if ($redirectTo = $this->adapter->handleUrlMessageClick(urldecode($payload))) {
             return redirect($redirectTo);
         }
-        // @todo redirect to a frontend page that displays a user friendly error.
-        // like "Button / Card cannot be found (it has been deleted or sth)."
+
         return response("Oops", 200);
     }
 
@@ -42,7 +41,6 @@ class ClickHandlingController extends Controller
     {
         $redirectTo = $this->adapter->getMainMenuButtonUrl($botId, $buttonId);
 
-        // @todo redirect to the frontend with invalid button page.
         return is_null($redirectTo)? response("", 200) : redirect($redirectTo);
     }
 }

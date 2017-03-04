@@ -385,8 +385,6 @@ class MessageValidator extends LaravelValidator
                 return false;
             }
 
-            //@todo where exists and bot_id = $botId
-
             //            if (! $this->validateExists($attribute, $id, ['sequences', 'id',])) {
             //                $this->setErrorMessage("Your sequences format is invalid.");
             //

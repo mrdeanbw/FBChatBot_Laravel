@@ -451,7 +451,6 @@ class WebAppAdapter
      */
     private function handlePostbackMainMenuButtonClick(Bot $bot, $payload)
     {
-        //@todo extract subscriber from the payload
         $payload = substr($payload, strlen("MAIN_MENU_"));
 
         if (! ($id = SimpleEncryptionService::decode($payload))) {
@@ -635,8 +634,6 @@ class WebAppAdapter
     }
 
     /**
-     * @todo store all incoming interaction
-     * @todo Use Repository.
      * @param Subscriber $subscriber
      */
     public function storeIncomingInteraction($subscriber)
