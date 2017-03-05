@@ -24,10 +24,12 @@ class DatabaseMonitorController extends Controller
 	public function index()
 	{
 		$info = $this->db->getDBInfo();
+		$indexes  = $this->db->getIndexesDetails();
 		$slow = $this->db->getSlowQueries();
 		$latest = $this->db->getLatestQueries();
 		return view('modules-monitor::db',[
 			'info'=>$info,
+			'indexes'=>$indexes,
 			'slow'=>$slow,
 			'latest'=>$latest,
 			'converter'=>function($size){

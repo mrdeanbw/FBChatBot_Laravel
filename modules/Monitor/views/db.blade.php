@@ -2,6 +2,7 @@
 @section('title','Database')
 @section('content')
 	<div class="well">
+		<h2>General Info</h2>
 		<p> Database Name: <b>{{ $info['db'] }}</b></p>
 		<p>Total DB Size: <b>{{ $converter($info['dataSize'])  }}</b> , Allocated <b>{{  $converter($info['storageSize']) }} </b></p>
 		<p>Number of collections: <b>{{ $info['collections'] }}</b></p>
@@ -9,9 +10,20 @@
 		
 		<p>Number of indexes : <b>{{ $info['indexes'] }}</b> , Total indexes size : <b>{{ $converter($info['indexSize']) }}</b></p>
 	</div>
-
 	<div class="well">
-		<h3>Top 10 slowest queries</h3>
+		<h2>Indexes</h2>
+		@foreach($indexes as $collectionName => $indexesDetails)
+			<h3>{{ $collectionName }}</h3>
+			<p>Total Indexes Size: <b>{{ $converter($indexesDetails['totalIndexSize']) }}</b></p>
+			<p>
+			@foreach($indexesDetails['indexSizes'] as $key=>$size)
+				<code><b>{{ $key }}</b> => <b>{{ $converter($size) }}</b></code> , 
+			@endforeach
+			</p>
+		@endforeach
+	</div>
+	<div class="well">
+		<h2>Top 10 slowest queries</h2>
 		<ul class="list-group">
 		@foreach($slow as $squery)
 			<li class="list-group-item">
@@ -45,7 +57,7 @@
 
 
 	<div class="well">
-		<h3>Lastest 15 queries made</h3>
+		<h2>Lastest 15 queries made</h2>
 		<ul class="list-group">
 		@foreach($latest as $lquery)
 			<li class="list-group-item">

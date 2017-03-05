@@ -3,8 +3,6 @@ namespace Modules\Monitor\Repositories;
 use DB;
 class DBRepository
 {
-
-
 	/**
 	 * retrive the slow queries info 
 	 * @param type|int $num 
@@ -42,9 +40,34 @@ class DBRepository
 	public function getDBInfo()
 	{
 		$db = DB::getMongoDB();
-		$cursor = $db->command(['dbStats'=>1]);
-		$info = $cursor->toArray()[0];
+		$cursor = $db->command(['dbStats'=>1])->toArray();
+
+		$info = $cursor[0];
 		return $info;
+	}
+
+	public function getIndexesDetails()
+	{
+		$db = DB::getMongoDB();
+		//retrive collections
+		$indexes = [];
+		foreach($db->listCollections() as $collectionInfo)
+		{
+			$name = $collectionInfo->getName();
+			if($name == 'system.profile') continue;
+			$colStats = $db->command([
+				'collStats'=>$name
+			])->toArray();
+
+			
+			$indexes[$name] = [
+				'totalIndexSize'=>$colStats[0]['totalIndexSize'],
+				'indexSizes'=>$colStats[0]['indexSizes']
+			];
+		}
+		// print_r($final);
+		// exit;
+		return $indexes;
 	}
 
 }
