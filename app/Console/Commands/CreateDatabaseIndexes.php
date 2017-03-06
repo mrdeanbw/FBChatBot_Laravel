@@ -41,7 +41,7 @@ class CreateDatabaseIndexes extends Command
     {
         /** @type Collection $collection */
         $collection = \App\Models\AutoReplyRule::raw();
-        $collection->createIndex(['bot_id' => 1, 'keyword' => 1, 'mode' => 1]);
+        $collection->createIndex(['bot_id' => 1, 'mode' => 1, 'keyword' => 1]);
     }
 
     private function createBotIndexes()
