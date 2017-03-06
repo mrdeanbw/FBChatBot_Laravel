@@ -115,9 +115,9 @@ class BroadcastService
         $template = $this->templates->setVersioning(false)->createImplicit($input['template']['messages'], $bot->_id);
 
         $data = array_merge($this->cleanInput($input, $bot), [
-            'bot_id'      => $bot->_id,
-            'template_id' => $template->_id,
-            'stats'       => [
+            'bot_id'            => $bot->_id,
+            'template_id'       => $template->_id,
+            'stats'             => [
                 'clicked' => [
                     'total'          => 0,
                     'per_subscriber' => 0
@@ -182,7 +182,7 @@ class BroadcastService
             $this->calculateFirstScheduleDateTime($data, $bot)
         );
 
-        $data['notification'] = strtoupper($data['notification']);
+        $data['notification'] = $this->normalizeNotification($data['notification']);
 
         return $data;
     }
@@ -346,5 +346,21 @@ class BroadcastService
         }
 
         return $broadcast;
+    }
+
+    /**
+     * @param $notification
+     * @return int
+     */
+    private function normalizeNotification($notification)
+    {
+        switch (strtoupper($notification)) {
+            case 'NO_PUSH':
+                return FacebookAPIAdapter::NOTIFICATION_NO_PUSH;
+            case 'SILENT_PUSH':
+                return FacebookAPIAdapter::NOTIFICATION_SILENT_PUSH;
+            default:
+                return FacebookAPIAdapter::NOTIFICATION_REGULAR;
+        }
     }
 }

@@ -11,6 +11,7 @@
 |
 */
 
+use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 use Carbon\Carbon;
 use App\Models\Bot;
 
@@ -64,9 +65,9 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
 $factory->define(\App\Models\AutoReplyRule::class, function (Faker\Generator $faker) {
     return [
         'mode'        => $faker->randomElement([
-            \App\Models\AutoReplyRule::MATCH_MODE_IS,
-            \App\Models\AutoReplyRule::MATCH_MODE_PREFIX,
-            \App\Models\AutoReplyRule::MATCH_MODE_CONTAINS
+            AutoReplyRuleRepositoryInterface::MATCH_MODE_IS,
+            AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX,
+            AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS
         ]),
         'keyword'     => $faker->word,
         'action'      => 'send',

@@ -11,9 +11,9 @@ class AutoReplyRuleService
 {
 
     protected $matchModeMap = [
-        'is'          => AutoReplyRule::MATCH_MODE_IS,
-        'begins_with' => AutoReplyRule::MATCH_MODE_PREFIX,
-        'contains'    => AutoReplyRule::MATCH_MODE_CONTAINS,
+        'is'          => AutoReplyRuleRepositoryInterface::MATCH_MODE_IS,
+        'begins_with' => AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX,
+        'contains'    => AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS,
     ];
     /**
      * @type AutoReplyRuleRepositoryInterface

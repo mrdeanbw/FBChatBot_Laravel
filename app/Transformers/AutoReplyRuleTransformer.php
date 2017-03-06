@@ -1,9 +1,11 @@
 <?php namespace App\Transformers;
 
 use App\Models\AutoReplyRule;
+use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 
 class AutoReplyRuleTransformer extends BaseTransformer
 {
+
     protected $defaultIncludes = ['template'];
 
     public function transform(AutoReplyRule $rule)
@@ -11,9 +13,27 @@ class AutoReplyRuleTransformer extends BaseTransformer
         return [
             'id'       => $rule->id,
             'readonly' => $rule->readonly,
-            'mode'     => $rule->mode,
+            'mode'     => $this->getMode($rule->mode),
             'keyword'  => $rule->keyword,
             'action'   => $rule->action,
         ];
+    }
+
+    /**
+     * @param $mode
+     * @return string
+     */
+    protected function getMode($mode)
+    {
+        switch ($mode) {
+            case AutoReplyRuleRepositoryInterface::MATCH_MODE_IS:
+                return 'is';
+            case AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX:
+                return 'begins_with';
+            case AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS:
+                return 'contains';
+            default:
+                return null;
+        }
     }
 }

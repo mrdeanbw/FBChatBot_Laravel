@@ -7,6 +7,7 @@ use App\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class BroadcastTransformer extends BaseTransformer
 {
+
     protected $availableIncludes = ['template', 'filter'];
 
     public function transform(Broadcast $broadcast)
@@ -26,7 +27,7 @@ class BroadcastTransformer extends BaseTransformer
             'time'         => $broadcast->time,
             'send_from'    => $broadcast->send_from,
             'send_to'      => $broadcast->send_to,
-            'status'       => $broadcast->status,
+            'status'       => $this->getStatus($broadcast->status),
             'created_at'   => $broadcast->created_at->toAtomString(),
             'completed_at' => $broadcast->completed_at? $broadcast->completed_at->toAtomString() : null,
             'stats'        => $stats,
@@ -56,5 +57,26 @@ class BroadcastTransformer extends BaseTransformer
             'delivered' => $sentMessageRepo->totalDeliveredForMessage($message->id),
             'read'      => $sentMessageRepo->totalReadForMessage($message->id),
         ];
+    }
+
+    /**
+     * @param $status
+     * @return string
+     */
+    protected function getStatus($status)
+    {
+        switch ($status) {
+            case BroadcastRepositoryInterface::STATUS_PENDING:
+                return 'pending';
+
+            case BroadcastRepositoryInterface::STATUS_RUNNING:
+                return 'running';
+
+            case BroadcastRepositoryInterface::STATUS_COMPLETED:
+                return 'completed';
+
+            default:
+                return null;
+        }
     }
 }

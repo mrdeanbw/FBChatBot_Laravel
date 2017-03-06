@@ -2,7 +2,6 @@
 
 use App\Models\Bot;
 use App\Models\AutoReplyRule;
-use Illuminate\Database\Eloquent\Builder;
 use App\Repositories\DBAssociatedWithBotRepository;
 
 class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements AutoReplyRuleRepositoryInterface
@@ -12,34 +11,70 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
     {
         return AutoReplyRule::class;
     }
-    
+
     /**
      * Get the first matching auto reply rule.
-     * @param string $keyword
+     * @param string $searchKeyword
      * @param Bot    $bot
      * @return AutoReplyRule|null
      */
-    public function getMatchingRuleForBot($keyword, Bot $bot)
+    public function getMatchingRuleForBot($searchKeyword, Bot $bot)
     {
+        if ($rule = $this->exactMatchRule($searchKeyword, $bot)) {
+            return $rule;
+        }
 
-        /** @type Builder $query */
-        $query = AutoReplyRule::where("bot_id", $bot->_id)->where(function (Builder $query) use ($keyword) {
-
-            $query->orWhere(function ($subQuery) use ($keyword) {
-                $subQuery->where('mode', AutoReplyRule::MATCH_MODE_IS)->where('keyword', $keyword);
-            });
-
-            $query->orWhere(function (Builder $subQuery) use ($keyword) {
-                $subQuery->Where('mode', AutoReplyRule::MATCH_MODE_PREFIX)->where('keyword', 'regexp', "/{$keyword}.*/i");
-            });
-
-            $query->orWhere(function (Builder $subQuery) use ($keyword) {
-                $subQuery->where('mode', AutoReplyRule::MATCH_MODE_CONTAINS)->where('keyword', 'regexp', "/.*{$keyword}.*/i");
-            });
-
-        });
-
-        return $query->orderBy('mode')->first();
+        return $this->prefixOrContainsMatch($searchKeyword, $bot);
     }
 
+    /**
+     * @param string $searchKeyword
+     * @param Bot    $bot
+     * @return AutoReplyRule|null;
+     */
+    protected function exactMatchRule($searchKeyword, Bot $bot)
+    {
+        return AutoReplyRule::where("bot_id", $bot->_id)
+                            ->where('mode', AutoReplyRuleRepositoryInterface::MATCH_MODE_IS)
+                            ->where('keyword', $searchKeyword)->first();
+    }
+
+    /**
+     * @param string $searchKeyword
+     * @param Bot    $bot
+     * @return null
+     */
+    protected function prefixOrContainsMatch($searchKeyword, Bot $bot)
+    {
+        foreach ($this->prefixOrContainsRules($bot) as $rule) {
+
+            $escapedKeyword = preg_quote($rule->keyword, "|");
+
+            // prefix
+            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX && preg_match("|^{$escapedKeyword}|", $searchKeyword)) {
+                return $rule;
+            }
+
+            // contains
+            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS && preg_match("|.*?{$escapedKeyword}.*?|", $searchKeyword)) {
+                return $rule;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Bot $bot
+     * @return mixed
+     */
+    protected function prefixOrContainsRules(Bot $bot)
+    {
+        $rules = AutoReplyRule::where("bot_id", $bot->_id)
+                              ->where('mode', '!=', AutoReplyRuleRepositoryInterface::MATCH_MODE_IS)
+                              ->orderBy('mode')
+                              ->get();
+
+        return $rules;
+    }
 }
