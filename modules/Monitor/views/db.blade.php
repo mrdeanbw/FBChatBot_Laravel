@@ -14,6 +14,7 @@
 		<h2>Indexes</h2>
 		@foreach($indexes as $collectionName => $indexesDetails)
 			<h3>{{ $collectionName }}</h3>
+			<p>Total data Size: <b>{{ $converter($indexesDetails['size']) }}</b></p>
 			<p>Total Indexes Size: <b>{{ $converter($indexesDetails['totalIndexSize']) }}</b></p>
 			<p>
 			@foreach($indexesDetails['indexSizes'] as $key=>$size)

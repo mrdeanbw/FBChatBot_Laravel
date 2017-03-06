@@ -49,6 +49,7 @@ class DBRepository
 	public function getIndexesDetails()
 	{
 		$db = DB::getMongoDB();
+		
 		//retrive collections
 		$indexes = [];
 		foreach($db->listCollections() as $collectionInfo)
@@ -61,12 +62,12 @@ class DBRepository
 
 			
 			$indexes[$name] = [
+				'size'=>$colStats[0]['size'],
 				'totalIndexSize'=>$colStats[0]['totalIndexSize'],
 				'indexSizes'=>$colStats[0]['indexSizes']
 			];
 		}
-		// print_r($final);
-		// exit;
+
 		return $indexes;
 	}
 
