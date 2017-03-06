@@ -7,16 +7,12 @@ use App\Models\Text;
 use App\Models\Image;
 use App\Models\Button;
 use App\Models\Message;
-use App\Models\Template;
-use App\Models\Broadcast;
 use App\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
 use App\Models\CardContainer;
 
 class FacebookMessageMapper
 {
-
-    use LoadsAssociatedModels;
 
     /**
      * @type Bot
@@ -27,21 +23,9 @@ class FacebookMessageMapper
      */
     protected $subscriber;
     /**
-     * @type Template
+     * @type MessagePayloadEncoder
      */
-    protected $template;
-    /**
-     * @type Broadcast
-     */
-    protected $broadcast;
-    /**
-     * @type ObjectID
-     */
-    protected $sentMessageId;
-    /**
-     * @type array
-     */
-    protected $buttonPath = [];
+    public $payloadEncoder;
 
     /**
      * FacebookMessageMapper constructor.
@@ -50,6 +34,7 @@ class FacebookMessageMapper
     public function __construct(Bot $bot)
     {
         $this->bot = $bot;
+        $this->payloadEncoder = new MessagePayloadEncoder($bot);;
     }
 
     /**
@@ -60,52 +45,7 @@ class FacebookMessageMapper
     public function forSubscriber(Subscriber $subscriber)
     {
         $this->subscriber = $subscriber;
-
-        return $this;
-    }
-
-    /**
-     * Template Setter
-     * @param Template $template
-     * @return FacebookMessageMapper
-     */
-    public function forTemplate(Template $template)
-    {
-        $this->template = $template;
-
-        return $this;
-    }
-
-    /**
-     * Template Setter
-     * @param Broadcast $broadcast
-     * @return FacebookMessageMapper
-     */
-    public function forBroadcast(Broadcast $broadcast)
-    {
-        $this->broadcast = $broadcast;
-
-        return $this->forTemplate($broadcast->template);
-    }
-
-    /**
-     * @param array $buttonPath
-     * @return FacebookMessageMapper
-     */
-    public function setButtonPath(array $buttonPath)
-    {
-        $this->buttonPath = $buttonPath;
-
-        return $this;
-    }
-
-    /**
-     * @param ObjectID $id
-     * @return FacebookMessageMapper
-     */
-    public function sentMessageInstanceId(ObjectID $id)
-    {
-        $this->sentMessageId = $id;
+        $this->payloadEncoder->setSubscriber($subscriber);
 
         return $this;
     }
@@ -123,7 +63,7 @@ class FacebookMessageMapper
                 return [
                     "type"  => "web_url",
                     "title" => $button->title,
-                    "url"   => $this->getMainMenuButtonUrl($button->id->__toString())
+                    "url"   => $this->payloadEncoder->mainMenuUrl((string)$button->id)
                 ];
             }
 
@@ -131,7 +71,7 @@ class FacebookMessageMapper
             return [
                 'type'    => 'postback',
                 'title'   => $button->title,
-                'payload' => "MM:{$this->bot->id}:{$button->id->__toString()}",
+                'payload' => "MM:{$this->bot->id}:{$button->id}",
             ];
 
         }, $this->bot->main_menu->buttons);
@@ -255,10 +195,10 @@ class FacebookMessageMapper
 
             // If the card has a URL.
             if ($card->url) {
-                $payload = $this->getCardPayload($card->id, $cardContainerId);
+                $payload = $this->payloadEncoder->card($card->id, $cardContainerId);
                 $ret['default_action'] = [
                     'type' => 'web_url',
-                    'url'  => $this->getPayloadedUrl($payload)
+                    'url'  => $this->payloadEncoder->url($payload)
                 ];
             }
 
@@ -276,7 +216,7 @@ class FacebookMessageMapper
     protected function mapCardButtons(array  $buttons, $cardId, $cardContainerId)
     {
         return array_map(function (Button $button) use ($cardId, $cardContainerId) {
-            $payload = $this->getCardButtonPayload($button->id, $cardId, $cardContainerId);
+            $payload = $this->payloadEncoder->cardButton($button->id, $cardId, $cardContainerId);
 
             return $this->mapButton($button, $payload);
         }, $buttons);
@@ -290,7 +230,7 @@ class FacebookMessageMapper
     protected function mapTextButtons(array  $buttons, $textId)
     {
         return array_map(function (Button $button) use ($textId) {
-            $payload = $this->getTextButtonPayload($button->id, $textId);
+            $payload = $this->payloadEncoder->textButton($button->id, $textId);
 
             return $this->mapButton($button, $payload);
         }, $buttons);
@@ -309,7 +249,7 @@ class FacebookMessageMapper
             return [
                 "type"  => "web_url",
                 "title" => $button->title,
-                "url"   => $this->getPayloadedUrl($payload)
+                "url"   => $this->payloadEncoder->url($payload)
             ];
         }
 
@@ -335,115 +275,5 @@ class FacebookMessageMapper
             [$subscriber->first_name, $subscriber->last_name, $subscriber->full_name],
             $text
         );
-    }
-
-    /**
-     * Return a card payload.
-     * @param ObjectID $id
-     * @param ObjectID $cardContainerId
-     * @return string
-     */
-    protected function getAbstractCardPayload(ObjectID $id, ObjectID $cardContainerId)
-    {
-        $payload = $this->bot->id;
-        $payload .= ':';
-        $payload .= $this->subscriber->id;
-        $payload .= ':';
-        $payload .= $this->template? $this->template->id : implode(':', $this->buttonPath);
-        $payload .= ':' . 'messages';
-        $payload .= ':' . $cardContainerId;
-        $payload .= ':' . 'cards';
-        $payload .= ':' . $id;
-
-        return $payload;
-    }
-
-    /**
-     * Return a card payload.
-     * @param ObjectID $id
-     * @param ObjectID $cardContainerId
-     * @return string
-     */
-    protected function getCardPayload(ObjectID $id, ObjectID $cardContainerId)
-    {
-        $payload = $this->getAbstractCardPayload($id, $cardContainerId);
-
-        $payload .= '|' . $this->sentMessageId;
-
-        if ($this->broadcast) {
-            $payload .= '|' . $this->broadcast->id;
-        }
-
-        return $payload;
-    }
-
-    /**
-     * Return a text button payload.
-     * @param ObjectID $id
-     * @param ObjectID $textId
-     * @return string
-     */
-    protected function getTextButtonPayload(ObjectID $id, ObjectID $textId)
-    {
-        $payload = $this->bot->id;
-        $payload .= ':';
-        $payload .= $this->subscriber->id;
-        $payload .= ':';
-        $payload .= $this->template? $this->template->id : implode(':', $this->buttonPath);
-        $payload .= ':' . 'messages';
-        $payload .= ':' . $textId;
-        $payload .= ':' . 'buttons';
-        $payload .= ':' . $id;
-
-        $payload .= '|' . $this->sentMessageId;
-
-        if ($this->broadcast) {
-            $payload .= '|' . $this->broadcast->id;
-        }
-
-        return $payload;
-    }
-
-    /**
-     * Return a card button payload.
-     * @param ObjectID $id
-     * @param ObjectID $cardId
-     * @param ObjectID $cardContainerId
-     * @return string
-     */
-    protected function getCardButtonPayload(ObjectID $id, ObjectID $cardId, ObjectID $cardContainerId)
-    {
-        $payload = $this->getAbstractCardPayload($cardId, $cardContainerId);
-        $payload .= ':' . 'buttons';
-        $payload .= ':' . $id;
-
-        $payload .= '|' . $this->sentMessageId;
-
-        if ($this->broadcast) {
-            $payload .= '|' . $this->broadcast->id;
-        }
-
-
-        return $payload;
-    }
-
-    /**
-     * Return the URL to a main menu button.
-     * @param $buttonId
-     * @return string
-     */
-    protected function getMainMenuButtonUrl($buttonId)
-    {
-        return url(config('app.url') . "mb/{$this->bot->id}/{$buttonId}");
-    }
-
-    /**
-     * Return the URL to a button/card..
-     * @param string $payload
-     * @return string
-     */
-    protected function getPayloadedUrl($payload)
-    {
-        return url(config('app.url') . "ba/{$payload}");
     }
 }

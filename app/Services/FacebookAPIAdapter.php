@@ -18,8 +18,9 @@ class FacebookAPIAdapter
 
     use LoadsAssociatedModels;
 
-
-    CONST NO_HASH_PLACEHOLDER = "MAIN_MENU";
+    const NOTIFICATION_REGULAR = 0;
+    const NOTIFICATION_SILENT_PUSH = 1;
+    const NOTIFICATION_NO_PUSH = 2;
 
     /**
      * @type Sender
@@ -53,7 +54,8 @@ class FacebookAPIAdapter
         /** @type Bot $bot */
         $this->loadModelsIfNotLoaded($broadcast, ['bot', 'template']);
 
-        $mapper = (new FacebookMessageMapper($broadcast->bot))->forSubscriber($subscriber)->forBroadcast($broadcast);
+        $mapper = (new FacebookMessageMapper($broadcast->bot))->forSubscriber($subscriber);
+        $mapper->payloadEncoder->setBroadcast($broadcast);
 
         return $this->sendMessages($mapper, $broadcast->template->messages, $subscriber, $broadcast->bot, $broadcast->notification);
     }
@@ -68,7 +70,8 @@ class FacebookAPIAdapter
         /** @type Bot $bot */
         $this->loadModelsIfNotLoaded($template, ['bot']);
 
-        $mapper = (new FacebookMessageMapper($template->bot))->forSubscriber($subscriber)->forTemplate($template);
+        $mapper = (new FacebookMessageMapper($template->bot))->forSubscriber($subscriber);
+        $mapper->payloadEncoder->setTemplate($template);
 
         return $this->sendMessages($mapper, $template->messages, $subscriber, $template->bot);
     }
@@ -86,7 +89,8 @@ class FacebookAPIAdapter
             return $this->sendFromContext($button, $subscriber, $bot);
         }
 
-        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->setButtonPath($buttonPath);
+        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
+        $mapper->payloadEncoder->setButtonPath($buttonPath);
 
         return $this->sendMessages($mapper, $button->messages, $subscriber, $bot);
     }
@@ -102,7 +106,8 @@ class FacebookAPIAdapter
         /** @type Template $template */
         $this->loadModelsIfNotLoaded($context, ['template']);
 
-        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber)->forTemplate($context->template);
+        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
+        $mapper->payloadEncoder->setTemplate($context->template);
 
         return $this->sendMessages($mapper, $context->template->messages, $subscriber, $bot);
     }
@@ -113,22 +118,23 @@ class FacebookAPIAdapter
      * @param Message[]             $messages
      * @param Subscriber            $subscriber
      * @param Bot                   $bot
-     * @param string                $notificationType
+     * @param int                   $notificationType
      * @return \object[]
      * @throws Exception
      */
-    public function sendMessages(FacebookMessageMapper $mapper, array $messages, Subscriber $subscriber, Bot $bot, $notificationType = 'REGULAR')
+    public function sendMessages(FacebookMessageMapper $mapper, array $messages, Subscriber $subscriber, Bot $bot, $notificationType = self::NOTIFICATION_REGULAR)
     {
         $ret = [];
 
         foreach ($messages as $message) {
-
             $data = $this->buildSentMessageInstance($subscriber, $bot, $message);
 
-            $mappedMessage = $mapper->sentMessageInstanceId($data['_id'])->toFacebookMessage($message);
-            
+            $mapper->payloadEncoder->setSentMessageInstanceId($data['_id']);
+
+            $mappedMessage = $mapper->toFacebookMessage($message);
+
             $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot->page, $notificationType);
-            
+
             $ret[] = $this->sentMessageRepo->create(
                 array_merge($data, ['facebook_id' => $facebookMessageId])
             );
@@ -142,10 +148,10 @@ class FacebookAPIAdapter
      * @param array      $message
      * @param Subscriber $subscriber
      * @param Page       $page
-     * @param string     $notificationType
+     * @param int        $notificationType
      * @return \object[]
      */
-    public function send(array $message, Subscriber $subscriber, Page $page, $notificationType = 'REGULAR')
+    public function send(array $message, Subscriber $subscriber, Page $page, $notificationType = self::NOTIFICATION_REGULAR)
     {
         $message = $this->addRecipientHeader($message, $subscriber);
         $message = $this->addNotificationType($message, $notificationType);
@@ -178,6 +184,17 @@ class FacebookAPIAdapter
      */
     protected function addNotificationType($message, $notificationType)
     {
+        switch ($notificationType) {
+            case self::NOTIFICATION_REGULAR:
+                $message['notification'] = 'REGULAR';
+                break;
+            case self::NOTIFICATION_SILENT_PUSH:
+                $message['notification'] = 'SILENT_PUSH';
+                break;
+            case self::NOTIFICATION_NO_PUSH:
+                $message['notification'] = 'NO_PUSH';
+                break;
+        }
         $message['notification'] = $notificationType;
 
         return $message;

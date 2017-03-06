@@ -172,32 +172,32 @@ class FacebookWebhookReceiver
 
     /**
      * Handle button clicks (postback)
-     * @param Bot             $page
+     * @param Bot             $bot
      * @param Subscriber|null $subscriber
      * @param                 $event
      * @return bool
      */
-    private function handlePostbackEvent(Bot $page, $subscriber, $event)
+    private function handlePostbackEvent(Bot $bot, $subscriber, $event)
     {
         // If clicked on the get started button, then subscribe the user.
         if ($event['postback']['payload'] == MessengerThread::GET_STARTED_PAYLOAD) {
-            $this->adapter->subscribe($page, $event['sender']['id']);
+            $this->adapter->subscribe($bot, $event['sender']['id']);
 
             return;
         }
 
         // If the user clicks on the button to confirm unsubscription, then unsubscribe him.
         if ($event['postback']['payload'] == WebAppAdapter::UNSUBSCRIBE_PAYLOAD) {
-            $this->adapter->concludeUnsubscriptionProcess($page, $subscriber);
+            $this->adapter->concludeUnsubscriptionProcess($bot, $subscriber);
 
             return;
         }
 
         // If the user clicks on any other button, then subscribe him silently!
-        $this->adapter->subscribeSilently($page, $event['sender']['id']);
+        $this->adapter->subscribeSilently($bot, $event['sender']['id']);
 
         // payload is a hashed button.
-        if (! $this->adapter->handlePostbackButtonClick($page, $subscriber, $event['postback']['payload'])) {
+        if (! $this->adapter->handlePostbackButtonClick($event['postback']['payload'], $bot, $subscriber)) {
             Log::debug("Unknown postback payload: " . $event['postback']['payload']);
         }
     }

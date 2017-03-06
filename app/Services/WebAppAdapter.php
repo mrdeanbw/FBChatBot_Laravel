@@ -1,25 +1,23 @@
 <?php namespace App\Services;
 
-use App\Models\Card;
 use Carbon\Carbon;
 use App\Models\Bot;
 use App\Models\Button;
-use App\Models\Template;
 use App\Models\Subscriber;
-use App\Models\SentMessage;
 use App\Models\AutoReplyRule;
-use App\Services\Facebook\Sender as FacebookSender;
 use App\Repositories\Bot\BotRepositoryInterface;
 use App\Repositories\User\UserRepositoryInterface;
+use App\Services\Facebook\Sender as FacebookSender;
 use App\Repositories\Template\TemplateRepositoryInterface;
 use App\Repositories\Broadcast\BroadcastRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use App\Repositories\SentMessage\SentMessageRepositoryInterface;
 use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
-use MongoDB\BSON\ObjectID;
 
 class WebAppAdapter
 {
+
+    use LoadsAssociatedModels;
 
     const UNSUBSCRIBE_PAYLOAD = "UNSUBSCRIBE";
     /**
@@ -269,6 +267,33 @@ class WebAppAdapter
     }
 
     /**
+     * @param string $botId
+     * @param string $buttonId
+     * @return null|string
+     */
+    public function handleUrlMainMenuButtonClick($botId, $buttonId)
+    {
+        /** @type Bot $bot */
+        $bot = $this->botRepo->findById($botId);
+        if (! $bot) {
+            return null;
+        }
+
+        /** @type Button $button */
+        $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
+            return (string)$button->id == $buttonId;
+        });
+
+        if (! $button || ! $button->url) {
+            return null;
+        }
+
+        $this->botRepo->incrementMainMenuButtonClicks($bot, $button);
+
+        return $button->url;
+    }
+
+    /**
      * Return the redirect URL from a button/card, via the message block hash.
      *
      * @param $payload
@@ -276,64 +301,13 @@ class WebAppAdapter
      */
     public function handleUrlMessageClick($payload)
     {
-        $payload = explode('|', $payload);
-        if (count($payload) < 2) {
+        $decoder = MessagePayloadDecoder::factory($payload);
+        $message = $decoder->getClickedMessage();
+        if (! $message || ! $message->url) {
             return null;
         }
 
-        $sentMessageId = $payload[1];
-
-        $broadcastId = isset($payload[2])? $payload[2] : null;
-
-        $payload = explode(':', $payload[0]);
-        $payloadSize = count($payload);
-
-        if ($payloadSize < 7) {
-            return null;
-        }
-
-        /** @type Bot $bot */
-        $bot = $this->botRepo->findById($payload[0]);
-        /** @type Subscriber $subscriber */
-        $subscriber = $this->subscriberRepo->findById($payload[1]);
-
-        if (! $bot || ! $subscriber) {
-            return null;
-        }
-
-        /** @type SentMessage $sentMessage */
-        $sentMessage = $this->sentMessageRepo->findById($sentMessageId);
-        if (! $sentMessage || $sentMessage->bot_id != $bot->_id || $sentMessage->subscriber_id != $subscriber->_id || (string)$sentMessage->message_id != $payload[4]) {
-            return null;
-        }
-
-        /** @type Template $template */
-        $template = $this->templateRepo->findByIdForBot($payload[2], $bot);
-        if (! $template) {
-            return null;
-        }
-
-        $messagePath = array_slice($payload, 3);
-        $message = $this->navigateThroughMessagePath($template, $messagePath);
-        if (! $message || (! is_a($message, Button::class) && ! is_a($message, Card::class)) || ! $message->url) {
-            return null;
-        }
-
-        $cardOrButtonPath = implode('.', array_slice($payload, 5));
-
-        if (is_null(array_get($sentMessage->toArray(), $cardOrButtonPath))) {
-            return null;
-        }
-
-        $this->sentMessageRepo->recordClick($sentMessage, $cardOrButtonPath, mongo_date());
-
-        if ($broadcastId) {
-            $this->broadcastRepo->recordClick($bot, new ObjectID($broadcastId), $subscriber->_id);
-        }
-
-        if ($message->type == 'button') {
-            $this->carryOutButtonActions($message, $subscriber, $bot, $messagePath);
-        }
+        $this->handleClick($decoder);
 
         if (valid_url($message->url)) {
             return $message->url;
@@ -347,46 +321,47 @@ class WebAppAdapter
      *
      * @param Bot        $bot
      * @param Subscriber $subscriber
-     * @param            $payload
+     * @param string     $payload
      *
      * @return bool
      */
-    public function handlePostbackButtonClick($bot, $subscriber, $payload)
+    public function handlePostbackButtonClick($payload, Bot $bot, Subscriber $subscriber = null)
     {
-        $payload = explode('|', $payload);
-        $broadcastId = isset($payload[1])? $payload[1] : null;
-
-        $payload = explode(':', $payload[0]);
-
-        if ($payload[0] == 'MM') {
-            return $this->handlePostbackMainMenuButtonClick($bot, $payload);
-        }
-
-        $payloadSize = count($payload);
-
-        if (! $bot || ! $subscriber || $payloadSize < 7 || $bot->id != $payload[0] || $subscriber->id != $payload[1]) {
+        $decoder = MessagePayloadDecoder::factory($payload, $bot, $subscriber);
+        $message = $decoder->getClickedMessage();
+        if (! $message || $message->type != 'button') {
             return false;
         }
 
-        /** @type Template $template */
-        $template = $this->templateRepo->findByIdForBot($payload[2], $bot);
-        if (! $template) {
-            return false;
+        $this->handleClick($decoder);
+
+        return true;
+    }
+
+    /**
+     * @param MessagePayloadDecoder $decoder
+     */
+    protected function handleClick(MessagePayloadDecoder $decoder)
+    {
+        $bot = $decoder->getBot();
+        $message = $decoder->getClickedMessage();
+        $subscriber = $decoder->getSubscriber();
+
+        if ($message->type == 'button') {
+            $this->carryOutButtonActions($message, $subscriber, $bot, $decoder->getTemplatePath());
         }
 
-        $buttonPath = array_slice($payload, 2);
-        $button = $this->navigateThroughMessagePath($template, $buttonPath);
-        if (! $button) {
-            return false;
+        if ($decoder->isMainMenuButton()) {
+            return $this->botRepo->incrementMainMenuButtonClicks($bot, $message);
         }
 
-        $this->templateRepo->recordButtonClick($template, $subscriber, array_slice($payload, 4));
+        $sentMessage = $decoder->getSentMessageInstance();
+        $sentMessagePath = $decoder->getSentMessagePath();
+        $this->sentMessageRepo->recordClick($sentMessage, $sentMessagePath, mongo_date());
 
-        if ($broadcastId) {
-            $this->broadcastRepo->recordClick();
+        if ($broadcastId = $decoder->getBroadcastId()) {
+            $this->broadcastRepo->recordClick($bot, $broadcastId, $subscriber->_id);
         }
-
-        $this->carryOutButtonActions($button, $subscriber, $bot, $buttonPath);
     }
 
     /**
@@ -406,94 +381,6 @@ class WebAppAdapter
         if ($button->template_id || $button->messages) {
             $this->FacebookAdapter->sendFromButton($button, $buttonPath, $subscriber, $bot);
         }
-    }
-
-    /**
-     * @param Template $template
-     * @param array    $messagePath
-     *
-     * @return Button|null
-     */
-    private function navigateThroughMessagePath(Template $template, array $messagePath)
-    {
-        $ret = $template;
-
-        foreach ($messagePath as $section) {
-
-            if (in_array($section, ['messages', 'buttons', 'cards']) && is_object($ret) && isset($ret->{$section})) {
-                $ret = $ret->{$section};
-                continue;
-            }
-
-            if (is_array($ret)) {
-                $ret = array_first($ret, function ($message) use ($section) {
-                    return (isset($message->id) && (string)$message->id == $section);
-                });
-
-                if ($ret) {
-                    continue;
-                }
-            }
-
-            return null;
-        }
-
-        return is_object($ret)? $ret : null;
-    }
-
-    /**
-     * Handle a main menu button click.
-     *
-     * @param Bot        $bot
-     * @param            $payload
-     *
-     * @return bool
-     */
-    private function handlePostbackMainMenuButtonClick(Bot $bot, $payload)
-    {
-        $payload = substr($payload, strlen("MAIN_MENU_"));
-
-        if (! ($id = SimpleEncryptionService::decode($payload))) {
-            return false;
-        }
-
-        $block = $this->messages->findMessageBlockForPage($id, $bot);
-
-        // Make sure that the message block is button
-        if (! $block || $block->type != 'button') {
-            return false;
-        }
-
-        $this->carryOutButtonActions($block, $subscriber);
-
-        return true;
-    }
-
-    /**
-     * @param string $botId
-     * @param string $buttonId
-     *
-     * @return null
-     */
-    public function getMainMenuButtonUrl($botId, $buttonId)
-    {
-        /** @type Bot $bot */
-        $bot = $this->botRepo->findById($botId);
-        if (! $bot) {
-            return null;
-        }
-
-        $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
-            return $button->id->__toString() === $buttonId;
-        });
-
-        if (! $button || ! $button->url) {
-            return null;
-        }
-
-        $this->botRepo->incrementMainMenuButtonClicks($bot, $button);
-
-        return $button->url;
     }
 
     /**
@@ -542,6 +429,7 @@ class WebAppAdapter
      */
     public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber)
     {
+        $this->loadModelsIfNotLoaded($rule, ['template']);
         $this->FacebookAdapter->sendTemplate($rule->template, $subscriber);
     }
 
