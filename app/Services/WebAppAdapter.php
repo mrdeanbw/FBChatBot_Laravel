@@ -290,7 +290,12 @@ class WebAppAdapter
 
         $this->botRepo->incrementMainMenuButtonClicks($bot, $button);
 
-        return $button->url;
+
+        if (valid_url($button->url)) {
+            return $button->url;
+        }
+
+        return "http://{$button->url}";
     }
 
     /**
