@@ -83,7 +83,7 @@ class MessageService
         $this->messageRevisions = [];
 
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
-        
+
         if ($this->versioning && $this->messageRevisions) {
 
             foreach ($this->messageRevisions as $i => &$version) {
@@ -137,7 +137,7 @@ class MessageService
                 $inputMessage->readonly = false;
             }
 
-            if ($this->forMainMenuButtons && !$isNew){
+            if ($this->forMainMenuButtons && ! $isNew) {
                 $inputMessage->last_revision_id = $originalMessage->last_revision_id;
             }
 
@@ -210,11 +210,22 @@ class MessageService
             return;
         }
 
+        $ext = $message->file->type;
+        if (! in_array($ext, ['png', 'jpg', 'gif'])) {
+            $ext = 'png';
+        }
+        
+        $fileName = $this->randomFileName($ext);
+
         $image = ImageManagerStatic::make($message->file->encoded);
-        $image->encode('png');
-        $fileName = $this->randomFileName('png');
-        $image->save(public_path("img/uploads/{$fileName}"));
-        $message->image_url = config('app.url') . 'img/uploads/' . $fileName;
+        $image->encode($ext);
+
+        $message->file->encoded = null;
+        $message->file->path = public_path("img/uploads/{$fileName}");
+
+        $image->save($message->file->path);
+
+        $message->image_url = rtrim(config('app.url'), '/') . '/img/uploads/' . $fileName;
     }
 
     /**
