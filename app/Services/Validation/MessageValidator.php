@@ -584,8 +584,6 @@ class MessageValidator extends LaravelValidator
 
             return true;
         } catch (\Exception $e) {
-            dd($e->getMessage());
-
             return false;
         }
 
