@@ -25,7 +25,8 @@ class MessageService
 
     /** @type MessageRevision[] */
     protected $messageRevisions;
-
+    /** @type bool */
+    protected $forMainMenuButtons;
     /**
      * @type BotRepositoryInterface
      */
@@ -82,12 +83,21 @@ class MessageService
         $this->messageRevisions = [];
 
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
+        
         if ($this->versioning && $this->messageRevisions) {
-            foreach ($this->messageRevisions as &$version) {
+
+            foreach ($this->messageRevisions as $i => &$version) {
                 $version['bot_id'] = $botId;
                 $version['message_id'] = $version['id'];
+
+                if ($this->forMainMenuButtons) {
+                    $version['clicks'] = ['total' => 0, 'subscribers' => []];
+                    $ret[$i]->last_revision_id = $version['_id'] = new ObjectID(null);
+                }
+
                 unset($version['id']);
             }
+
             $this->messageRevisionRepo->bulkCreate($this->messageRevisions);
         }
 
@@ -127,13 +137,19 @@ class MessageService
                 $inputMessage->readonly = false;
             }
 
+            if ($this->forMainMenuButtons && !$isNew){
+                $inputMessage->last_revision_id = $originalMessage->last_revision_id;
+            }
+
             if (! $allowReadOnly) {
                 $inputMessage->readonly = $isNew? false : $originalMessage->readonly;
             }
 
             if ($inputMessage->type === 'button') {
                 $tags = array_merge($inputMessage->actions['add_tags'], $inputMessage->actions['remove_tags']);
-                $this->botRepo->createTagsForBot($botId, $tags);
+                if ($tags) {
+                    $this->botRepo->createTagsForBot($botId, $tags);
+                }
                 if ($inputMessage->messages) {
                     $inputMessage->messages = $this->makeMessages($inputMessage->messages, $isNew? [] : $originalMessage->messages, $botId, $allowReadOnly);
                     if (! $inputMessage->messages && ! $inputMessage->url) {
@@ -163,7 +179,7 @@ class MessageService
                 $this->messageRevisions[] = get_object_vars($inputMessage);
             }
         }
-        
+
         $this->moveReadonlyBlockToTheBottom($normalized);
 
         return $normalized;
@@ -263,6 +279,17 @@ class MessageService
     public function setVersioning($versioning)
     {
         $this->versioning = $versioning;
+
+        return $this;
+    }
+
+    /**
+     * @param bool $value
+     * @return MessageService
+     */
+    public function forMainMenuButtons($value = true)
+    {
+        $this->forMainMenuButtons = $value;
 
         return $this;
     }

@@ -13,6 +13,8 @@ use App\Repositories\Broadcast\BroadcastRepositoryInterface;
 use App\Repositories\Subscriber\SubscriberRepositoryInterface;
 use App\Repositories\SentMessage\SentMessageRepositoryInterface;
 use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
+use App\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 class WebAppAdapter
 {
@@ -64,21 +66,26 @@ class WebAppAdapter
      * @type BroadcastRepositoryInterface
      */
     private $broadcastRepo;
+    /**
+     * @type MessageRevisionRepositoryInterface
+     */
+    private $messageRevisionRepo;
 
     /**
      * WebAppAdapter constructor.
      *
-     * @param MessageService                   $messages
-     * @param FacebookSender                   $FacebookSender
-     * @param SubscriberService                $subscribers
-     * @param BotRepositoryInterface           $botRepo
-     * @param UserRepositoryInterface          $userRepo
-     * @param FacebookAPIAdapter               $FacebookAdapter
-     * @param TemplateRepositoryInterface      $templateRepo
-     * @param BroadcastRepositoryInterface     $broadcastRepo
-     * @param SubscriberRepositoryInterface    $subscriberRepo
-     * @param SentMessageRepositoryInterface   $sentMessageRepo
-     * @param AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
+     * @param MessageService                     $messages
+     * @param FacebookSender                     $FacebookSender
+     * @param SubscriberService                  $subscribers
+     * @param BotRepositoryInterface             $botRepo
+     * @param UserRepositoryInterface            $userRepo
+     * @param FacebookAPIAdapter                 $FacebookAdapter
+     * @param TemplateRepositoryInterface        $templateRepo
+     * @param BroadcastRepositoryInterface       $broadcastRepo
+     * @param SubscriberRepositoryInterface      $subscriberRepo
+     * @param SentMessageRepositoryInterface     $sentMessageRepo
+     * @param AutoReplyRuleRepositoryInterface   $autoReplyRuleRepo
+     * @param MessageRevisionRepositoryInterface $messageRevisionRepo
      */
     public function __construct(
         MessageService $messages,
@@ -91,19 +98,21 @@ class WebAppAdapter
         BroadcastRepositoryInterface $broadcastRepo,
         SubscriberRepositoryInterface $subscriberRepo,
         SentMessageRepositoryInterface $sentMessageRepo,
-        AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
+        AutoReplyRuleRepositoryInterface $autoReplyRuleRepo,
+        MessageRevisionRepositoryInterface $messageRevisionRepo
     ) {
         $this->botRepo = $botRepo;
         $this->messages = $messages;
         $this->userRepo = $userRepo;
         $this->subscribers = $subscribers;
         $this->templateRepo = $templateRepo;
+        $this->broadcastRepo = $broadcastRepo;
         $this->subscriberRepo = $subscriberRepo;
         $this->FacebookSender = $FacebookSender;
         $this->FacebookAdapter = $FacebookAdapter;
         $this->sentMessageRepo = $sentMessageRepo;
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
-        $this->broadcastRepo = $broadcastRepo;
+        $this->messageRevisionRepo = $messageRevisionRepo;
     }
 
     /**
@@ -269,10 +278,19 @@ class WebAppAdapter
     /**
      * @param string $botId
      * @param string $buttonId
+     * @param string $revisionId
      * @return null|string
      */
-    public function handleUrlMainMenuButtonClick($botId, $buttonId)
+    public function handleUrlMainMenuButtonClick($botId, $buttonId, $revisionId)
     {
+        try {
+            $botId = new ObjectID($botId);
+            $buttonId = new ObjectID($buttonId);
+            $revisionId = new ObjectID($revisionId);
+        } catch (\Exception $e) {
+            return null;
+        }
+
         /** @type Bot $bot */
         $bot = $this->botRepo->findById($botId);
         if (! $bot) {
@@ -288,8 +306,7 @@ class WebAppAdapter
             return null;
         }
 
-        $this->botRepo->incrementMainMenuButtonClicks($bot, $button);
-
+        $this->messageRevisionRepo->recordMainMenuButtonClick($revisionId, $bot, null);
 
         if (valid_url($button->url)) {
             return $button->url;
@@ -357,7 +374,7 @@ class WebAppAdapter
         }
 
         if ($decoder->isMainMenuButton()) {
-            return $this->botRepo->incrementMainMenuButtonClicks($bot, $message);
+            return $this->messageRevisionRepo->recordMainMenuButtonClick($decoder->getMainMenuButtonRevisionId(), $bot, $subscriber);
         }
 
         $sentMessage = $decoder->getSentMessageInstance();
@@ -377,14 +394,14 @@ class WebAppAdapter
      * @param Subscriber $subscriber
      * @param Bot        $bot
      */
-    private function carryOutButtonActions(Button $button, Subscriber $subscriber, Bot $bot, array $buttonPath)
+    protected function carryOutButtonActions(Button $button, Subscriber $subscriber, Bot $bot, array $buttonPath = null)
     {
         if ($button->actions['add_tags'] || $button->actions['remove_tags'] || $button->actions['add_sequences'] || $button->actions['remove_sequences']) {
             $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, [$subscriber->_id], $button->actions);
         }
 
         if ($button->template_id || $button->messages) {
-            $this->FacebookAdapter->sendFromButton($button, $buttonPath, $subscriber, $bot);
+            $this->FacebookAdapter->sendFromButton($button, $subscriber, $bot, (array)$buttonPath);
         }
     }
 

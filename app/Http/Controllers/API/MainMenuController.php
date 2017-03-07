@@ -45,7 +45,7 @@ class MainMenuController extends APIController
     {
         return [
             'buttons'   => 'bail|required|array|max:5',
-            'buttons.*' => 'bail|required|message:button',
+            'buttons.*' => 'bail|required|message:main_menu_button',
         ];
     }
 

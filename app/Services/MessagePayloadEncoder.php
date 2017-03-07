@@ -1,6 +1,7 @@
 <?php namespace App\Services;
 
 use App\Models\Bot;
+use App\Models\Button;
 use App\Models\Template;
 use App\Models\Broadcast;
 use App\Models\Subscriber;
@@ -193,12 +194,12 @@ class MessagePayloadEncoder
 
     /**
      * Return the URL to a main menu button.
-     * @param $buttonId
+     * @param Button $button
      * @return string
      */
-    public function mainMenuUrl($buttonId)
+    public function mainMenuUrl(Button $button)
     {
-        return url(config('app.url') . "mb/{$this->bot->id}/{$buttonId}");
+        return url(config('app.url') . "mb/{$this->bot->id}/{$button->id}/{$button->last_revision_id}");
     }
 
     /**

@@ -46,7 +46,7 @@ class MainMenuService
         DBBotRepository $botRepo
     ) {
         $this->botRepo = $botRepo;
-        $this->messages = $messages;
+        $this->messages = $messages->forMainMenuButtons();
         $this->FacebookThread = $facebookThread;
         $this->FacebookAdapter = $FacebookAdapter;
     }
@@ -60,9 +60,13 @@ class MainMenuService
      */
     public function update(array $input, Bot $bot, User $user)
     {
-        $buttons = $this->normalizeButtons($input, $bot);
+        $buttons = $input['buttons'];
 
-        $this->validateCopyrightButton($buttons);
+        // remove the last element in the main menu buttons (the copyrighted block).
+        array_pop($buttons);
+
+        $buttons = $this->normalizeButtons($buttons, $bot);
+        $buttons[] = array_last($bot->main_menu->buttons);
 
         $this->botRepo->update($bot, ['main_menu.buttons' => $buttons]);
 
@@ -73,12 +77,13 @@ class MainMenuService
 
     /**
      * Create the default main menu.
-     * @return Button[]
+     * @param $botId
+     * @return MainMenu
      */
-    public function defaultMainMenu()
+    public function defaultMainMenu($botId)
     {
         return new MainMenu([
-            'buttons' => [$this->copyrightedButton()]
+            'buttons' => $this->messages->correspondInputMessagesToOriginal([$this->copyrightedButton()], [], $botId, true)
         ]);
     }
 
@@ -89,7 +94,6 @@ class MainMenuService
     private function copyrightedButton()
     {
         return new Button([
-            'id'       => new ObjectID(null),
             'title'    => 'Powered By Mr. Reply',
             'readonly' => true,
             'url'      => 'https://www.mrreply.com',
@@ -128,27 +132,52 @@ class MainMenuService
         $attributes = get_object_vars($button);
         unset($attributes['id']);
         unset($attributes['template']);
+        unset($attributes['last_revision_id']);
 
         return $attributes;
     }
 
     /**
-     * @param array $input
+     * @param array $buttons
      * @param Bot   $bot
      * @return Button[]
      */
-    private function normalizeButtons(array $input, Bot $bot)
+    private function normalizeButtons(array $buttons, Bot $bot)
     {
-        $buttons = array_map(function (array $button) {
-            return new Button($button, true);
-        }, $input['buttons']);
+        $buttons = $this->cleanButtons($buttons);
+        if (! $buttons) {
+            return [];
+        }
 
         $buttons = $this->messages->correspondInputMessagesToOriginal($buttons, $bot->main_menu->buttons, $bot->_id);
+
         if (! $buttons) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }
 
         return $buttons;
+    }
+
+    /**
+     * @param array $buttons
+     * @return array
+     */
+    private function cleanButtons(array $buttons)
+    {
+        return array_map(function (array $button) {
+
+            if ($button['main_action'] == 'url') {
+                $ret = new Button([]);
+                $ret->title = $button['title'];
+                $ret->url = $button['url'];
+            } else {
+                $ret = new Button($button, true);
+                $ret->url = "";
+            }
+
+            return $ret;
+
+        }, $buttons);
     }
 
 }

@@ -58,6 +58,10 @@ class MessagePayloadDecoder
      */
     protected $isMainMenuButton = false;
     /**
+     * @type ObjectID
+     */
+    protected $mainMenuButtonRevisionId;
+    /**
      * @type BotRepositoryInterface
      */
     private $botRepo;
@@ -212,7 +216,7 @@ class MessagePayloadDecoder
         list($fullMessagePath, $sentMessageId, $broadcastId) = $this->slicePayload();
 
         if (array_get($fullMessagePath, 0, null) == 'MM') {
-            return $this->processMainMenuButton($fullMessagePath);
+            return $this->processMainMenuButton($fullMessagePath, $sentMessageId);
         }
 
         $cnt = count($fullMessagePath);
@@ -263,14 +267,15 @@ class MessagePayloadDecoder
             return $this->invalid();
         }
 
-        $this->broadcastId = new ObjectID($broadcastId);
         $this->isValid = true;
+        $this->broadcastId = new ObjectID($broadcastId);
     }
 
     /**
      * @param $payload
+     * @param $revisionId
      */
-    protected function processMainMenuButton($payload)
+    protected function processMainMenuButton($payload, $revisionId)
     {
         $botId = array_get($payload, 1);
         $buttonId = array_get($payload, 2);
@@ -281,12 +286,13 @@ class MessagePayloadDecoder
         $this->message = array_first($this->bot->main_menu->buttons, function (Button $button) use ($buttonId) {
             return (string)$button->id == $buttonId;
         });
-        
         if (! $this->message) {
             $this->invalid();
         }
-        
+
+        $this->isValid = true;
         $this->isMainMenuButton = true;
+        $this->mainMenuButtonRevisionId = new ObjectID($revisionId);
     }
 
     /**
@@ -346,5 +352,13 @@ class MessagePayloadDecoder
     public function isMainMenuButton()
     {
         return $this->isMainMenuButton;
+    }
+
+    /**
+     * @return ObjectID
+     */
+    public function getMainMenuButtonRevisionId()
+    {
+        return $this->mainMenuButtonRevisionId;
     }
 }

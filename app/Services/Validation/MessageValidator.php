@@ -54,8 +54,14 @@ class MessageValidator extends LaravelValidator
 
         $type = array_get($value, 'type');
 
-        if (! $type && count($allowedTypes) === 1) {
-            $type = $allowedTypes[0];
+        if (count($allowedTypes) === 1) {
+            if ($allowedTypes[0] == 'main_menu_button') {
+                return $this->_validateMainMenuButton("", $value);
+            }
+
+            if (! $type) {
+                $type = $allowedTypes[0];
+            }
         }
 
         if (! in_array($type, $allowedTypes)) {
@@ -305,6 +311,104 @@ class MessageValidator extends LaravelValidator
         return true;
     }
 
+    private function _validateMainMenuButton($attribute, $button)
+    {
+        if (! is_array($button)) {
+            $this->setErrorMessage("Your button format is invalid.");
+
+            return false;
+        }
+
+        $title = array_get($button, 'title');
+        if (! $this->validateRequired($attribute, $title)) {
+            $this->setErrorMessage("Your button title is required.");
+
+            return false;
+        }
+
+        if (! $this->validateBetween($attribute, $title, [1, 30])) {
+            $this->setErrorMessage("Your button title must be between 1 and 30 characters.");
+
+            return false;
+        }
+
+        $mainAction = array_get($button, 'main_action');
+        if (! $this->validateRequired($attribute, $mainAction)) {
+            $this->setErrorMessage("Your button's main action is required.");
+
+            return false;
+        }
+
+        if (! $this->validateString($attribute, $mainAction) && ! $this->validateIn($attribute, $mainAction, ['url', 'template'])) {
+            $this->setErrorMessage("Your button's main action is invalid.");
+
+            return false;
+        }
+
+        if ($mainAction == 'url') {
+            $url = array_get($button, 'url');
+            if (! $this->validateRequired($attribute, $url)) {
+                $this->setErrorMessage("The Go To URL field is required.");
+
+                return false;
+            }
+            if ($url && ! $this->validateUrl($attribute, $url) && ! $this->validateUrl($attribute, "http://{$url}")) {
+                $this->setErrorMessage("Your button url is invalid.");
+
+                return false;
+            }
+
+            return true;
+        }
+
+        $template = array_get($button, 'template', []);
+
+        if (! $this->validateRequired($attribute, $template)) {
+            $this->setErrorMessage("The message tree is required.");
+
+            return false;
+        }
+
+        if (! $this->_validateTemplate($attribute, $template)) {
+            return false;
+        }
+
+
+        $addTags = array_get($button, 'actions.add_tags', []);
+        if (! $this->validateTags($attribute, $addTags)) {
+            return false;
+        }
+
+        $removeTags = array_get($button, 'actions.remove_tags', []);
+        if (! $this->validateTags($attribute, $removeTags)) {
+            return false;
+        }
+
+        if (array_intersect($addTags, $removeTags)) {
+            $this->setErrorMessage("You cannot add the same tag to 'Tag' and 'Untag' actions.");
+
+            return false;
+        }
+
+        $addSequences = array_get($button, 'actions.add_sequences', []);
+        if (! $this->validateSequences($attribute, $addSequences)) {
+            return false;
+        }
+
+        $removeSequences = array_get($button, 'actions.remove_sequences', []);
+        if (! $this->validateSequences($attribute, $removeSequences)) {
+            return false;
+        }
+
+        if (array_intersect(array_column($addSequences, 'id'), array_column($removeSequences, 'id'))) {
+            $this->setErrorMessage("You cannot add the same sequence to 'Subscribe to sequence' and 'Unsubscribe from sequence' actions.");
+
+            return false;
+        }
+
+        return true;
+    }
+
     public function validateButtonActions($attribute, $actions)
     {
         if (! is_array($actions)) {
@@ -486,5 +590,4 @@ class MessageValidator extends LaravelValidator
         }
 
     }
-
 }

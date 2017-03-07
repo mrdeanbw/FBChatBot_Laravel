@@ -78,12 +78,12 @@ class FacebookAPIAdapter
 
     /**
      * @param Button     $button
-     * @param array      $buttonPath
      * @param Subscriber $subscriber
      * @param Bot        $bot
+     * @param array      $buttonPath
      * @return \object[]
      */
-    public function sendFromButton(Button $button, array $buttonPath, Subscriber $subscriber, Bot $bot)
+    public function sendFromButton(Button $button, Subscriber $subscriber, Bot $bot, array $buttonPath = [])
     {
         if ($button->template_id) {
             return $this->sendFromContext($button, $subscriber, $bot);

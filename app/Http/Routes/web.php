@@ -7,6 +7,6 @@ $app->group(['prefix' => 'callback'], function () use ($app) {
     $app->post('stripe/web-hook', '\Laravel\Cashier\Http\Controllers\WebhookController@handleWebhook');
 });
 
-$app->get('/mb/{botId}/{buttonId}', 'ClickHandlingController@mainMenuButton');
+$app->get('/mb/{botId}/{buttonId}/{revisionId}', 'ClickHandlingController@mainMenuButton');
 $app->get('/ba/{payload}', 'ClickHandlingController@handle');
 

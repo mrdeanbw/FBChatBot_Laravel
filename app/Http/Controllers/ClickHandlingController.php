@@ -35,11 +35,12 @@ class ClickHandlingController extends Controller
     /**
      * @param string $botId
      * @param string $buttonId
+     * @param string $revisionId
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Laravel\Lumen\Http\Redirector|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function mainMenuButton($botId, $buttonId)
+    public function mainMenuButton($botId, $buttonId, $revisionId)
     {
-        $redirectTo = $this->adapter->handleUrlMainMenuButtonClick($botId, $buttonId);
+        $redirectTo = $this->adapter->handleUrlMainMenuButtonClick($botId, $buttonId, $revisionId);
 
         return is_null($redirectTo)? response("", 200) : redirect($redirectTo);
     }

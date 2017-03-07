@@ -63,7 +63,7 @@ class FacebookMessageMapper
                 return [
                     "type"  => "web_url",
                     "title" => $button->title,
-                    "url"   => $this->payloadEncoder->mainMenuUrl((string)$button->id)
+                    "url"   => $this->payloadEncoder->mainMenuUrl($button)
                 ];
             }
 
@@ -71,7 +71,7 @@ class FacebookMessageMapper
             return [
                 'type'    => 'postback',
                 'title'   => $button->title,
-                'payload' => "MM:{$this->bot->id}:{$button->id}",
+                'payload' => "MM:{$this->bot->id}:{$button->id}|{$button->last_revision_id}",
             ];
 
         }, $this->bot->main_menu->buttons);

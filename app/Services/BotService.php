@@ -173,7 +173,7 @@ class BotService
             'tags'            => $this->getDefaultTags(),
             'greeting_text'   => $this->getDefaultGreetingText($page->name),
             'welcome_message' => $this->getDefaultWelcomeMessage($id),
-            'main_menu'       => $this->getDefaultMainMenu(),
+            'main_menu'       => $this->getDefaultMainMenu($id),
             'default_reply'   => $this->getDefaultDefaultReply($id),
             'users'           => []
         ];
@@ -229,11 +229,12 @@ class BotService
     }
 
     /**
+     * @param $botId
      * @return array
      */
-    private function getDefaultMainMenu()
+    private function getDefaultMainMenu($botId)
     {
-        return $this->mainMenus->defaultMainMenu();
+        return $this->mainMenus->defaultMainMenu($botId);
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php namespace App\Jobs;
 
 use App\Models\Bot;
+use App\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
 use App\Services\FacebookAPIAdapter;
 use App\Services\Facebook\MessengerThread;
 use App\Services\FacebookMessageMapper;
@@ -36,7 +37,7 @@ class UpdateMainMenuOnFacebook extends BaseJob
     public function handle(MessengerThread $MessengerThreads)
     {
         $messages = (new FacebookMessageMapper($this->bot))->mapMainMenuButtons();
-
+        
         $response = $MessengerThreads->setPersistentMenu($this->bot->page->access_token, $messages);
 
         $success = isset($response->result) && starts_with($response->result, "Successfully");

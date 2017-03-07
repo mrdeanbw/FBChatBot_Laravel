@@ -1,8 +1,11 @@
 <?php namespace App\Models;
 
+use MongoDB\BSON\ObjectID;
+
 /**
  * @property Template $template
- * @property array    stats
+ * @property array    $stats
+ * @property ObjectID $last_revision_id
  */
 class Button extends Message
 {
@@ -19,7 +22,7 @@ class Button extends Message
         'add_sequences'    => [],
         'remove_sequences' => [],
     ];
-    
+
     /**
      * Button constructor.
      * @param array $data
@@ -28,7 +31,7 @@ class Button extends Message
     public function __construct(array $data, $strict = false)
     {
         if ($templateId = array_get($data, 'template.id')) {
-            $this->template_id = $templateId;
+            $this->template_id = new ObjectID($templateId);
             $this->messages = [];
         } else {
             if ($this->messages = array_pull($data, 'messages', [])) {
