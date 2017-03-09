@@ -1,6 +1,6 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Models\Bot;
+use Common\Models\Bot;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Transformers\BaseTransformer;

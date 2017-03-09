@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\WelcomeMessage;
+use Common\Models\WelcomeMessage;
 
 class WelcomeMessageTransformer extends BaseTransformer
 {

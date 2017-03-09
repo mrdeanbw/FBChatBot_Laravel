@@ -1,13 +1,13 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\User;
-use App\Models\Button;
-use App\Models\MainMenu;
+use Common\Models\Bot;
+use Common\Models\User;
+use Common\Models\Button;
+use Common\Models\MainMenu;
 use MongoDB\BSON\ObjectID;
 use App\Jobs\UpdateMainMenuOnFacebook;
 use App\Services\Facebook\MessengerThread;
-use App\Repositories\Bot\DBBotRepository;
+use Common\Repositories\Bot\DBBotRepository;
 use Dingo\Api\Exception\ValidationHttpException;
 
 class MainMenuService

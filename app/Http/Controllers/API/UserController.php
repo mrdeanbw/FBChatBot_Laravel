@@ -1,17 +1,17 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Repositories\User\UserRepositoryInterface;
+use Common\Models\User;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Http\Request;
 use App\Services\AuthService;
+use App\Services\ReferralService;
 use App\Transformers\UserTransformer;
 use App\Transformers\BaseTransformer;
+use Common\Repositories\User\UserRepositoryInterface;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use App\Models\User;
-use App\Services\ReferralService;
 
 class UserController extends APIController
 {
@@ -101,21 +101,6 @@ class UserController extends APIController
         return $user->referral_code;
     }
 
-    /*
-     * Creates the connection between the parent and child.
-     * The post parameter referralCode is encrypted!
-     *
-     * @param Request $request
-     */
-
-    public function makeReferral(Request $request)
-    {
-        if(!is_null($request->input('referralCode')) && !is_null($request->input('childId')))
-        {
-            $child = User::find($request->input('childId'));
-            return $this->refService->createConnection($child, $request->input('referralCode'));
-        }
-    }
     /** @return BaseTransformer */
     protected function transformer()
     {

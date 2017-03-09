@@ -11,11 +11,11 @@
 |
 */
 
-use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
+use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 use Carbon\Carbon;
-use App\Models\Bot;
+use Common\Models\Bot;
 
-$factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker) {
+$factory->define(\Common\Models\Subscriber::class, function (Faker\Generator $faker) {
 
     $gender = $faker->randomElement(['male', 'female']);
     $firstName = $gender == 'male'? $faker->firstNameMale : $faker->firstNameFemale;
@@ -62,7 +62,7 @@ $factory->define(\App\Models\Subscriber::class, function (Faker\Generator $faker
 });
 
 
-$factory->define(\App\Models\AutoReplyRule::class, function (Faker\Generator $faker) {
+$factory->define(\Common\Models\AutoReplyRule::class, function (Faker\Generator $faker) {
     return [
         'mode'        => $faker->randomElement([
             AutoReplyRuleRepositoryInterface::MATCH_MODE_IS,

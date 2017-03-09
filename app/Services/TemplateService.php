@@ -1,11 +1,11 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\Message;
-use App\Models\Template;
+use Common\Models\Bot;
+use Common\Models\Message;
+use Common\Models\Template;
 use MongoDB\BSON\ObjectID;
 use Dingo\Api\Exception\ValidationHttpException;
-use App\Repositories\Template\TemplateRepositoryInterface;
+use Common\Repositories\Template\TemplateRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class TemplateService
@@ -106,7 +106,7 @@ class TemplateService
      *
      * @param bool  $allowReadOnly
      *
-     * @return \App\Models\BaseModel|Template
+     * @return \Common\Models\BaseModel|Template
      */
     private function create(array $input, ObjectID $botId, $allowReadOnly = false)
     {
@@ -181,7 +181,7 @@ class TemplateService
      *
      * @param bool      $allowReadOnly
      *
-     * @return \App\Models\Message[]
+     * @return \Common\Models\Message[]
      */
     private function normalizeMessages(array $messages, array $original = [], $botId, $allowReadOnly = false)
     {

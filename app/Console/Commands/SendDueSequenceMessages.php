@@ -2,8 +2,8 @@
 
 use Illuminate\Console\Command;
 use App\Jobs\SendScheduledSequenceMessage;
-use App\Repositories\Sequence\SequenceRepositoryInterface;
-use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
+use Common\Repositories\Sequence\SequenceRepositoryInterface;
+use Common\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 
 class SendDueSequenceMessages extends Command
 {

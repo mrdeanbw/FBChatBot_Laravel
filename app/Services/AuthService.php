@@ -1,6 +1,6 @@
 <?php namespace App\Services;
 
-use App\Models\User;
+use Common\Models\User;
 use App\Services\Facebook\AuthService as FacebookAuthService;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 

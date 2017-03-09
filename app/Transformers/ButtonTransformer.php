@@ -1,7 +1,7 @@
 <?php namespace App\Transformers;
 
-use App\Models\Button;
-use App\Models\MessageRevision;
+use Common\Models\Button;
+use Common\Models\MessageRevision;
 use App\Services\LoadsAssociatedModels;
 
 class ButtonTransformer extends BaseTransformer

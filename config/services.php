@@ -14,7 +14,7 @@ return [
     |
     */
     'stripe' => [
-        'model'  => \App\Models\Bot::class,
+        'model'  => \Common\Models\Bot::class,
         'key'    => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
     ],
@@ -29,6 +29,10 @@ return [
         'app_id'     => env('PUSHER_APP_ID'),
         'app_key'    => env('PUSHER_APP_KEY'),
         'app_secret' => env('PUSHER_APP_SECRET'),
+    ],
+    
+    'slack' => [
+        'monitor_webhook' => env('MONITOR_SLACK_WEBHOOK')
     ]
 
 ];

@@ -1,10 +1,9 @@
 <?php namespace App\Http\Controllers;
 
-use DB;
-use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\BotService;
 use App\Services\Facebook\AppVerifier;
+use Common\Http\Controllers\Controller;
 use App\Jobs\HandleIncomingFacebookCallback;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 

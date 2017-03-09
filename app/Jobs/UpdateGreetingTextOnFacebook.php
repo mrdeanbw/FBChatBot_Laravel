@@ -1,6 +1,6 @@
 <?php namespace App\Jobs;
 
-use App\Models\Bot;
+use Common\Models\Bot;
 use App\Services\Facebook;
 use App\Services\Facebook\MessengerThread;
 

@@ -205,6 +205,22 @@ if (! function_exists('to_bytes')) {
     }
 }
 
+if (! function_exists('human_size')) {
+
+    /**
+     * @param int $bytes
+     * @param int $decimals
+     * @return string
+     */
+    function human_size($bytes, $decimals = 2)
+    {
+        $sz = 'BKMGTP';
+        $factor = (int)floor((strlen($bytes) - 1) / 3);
+
+        return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . $sz[$factor];
+    }
+}
+
 if (! function_exists('mongo_date')) {
 
     /**

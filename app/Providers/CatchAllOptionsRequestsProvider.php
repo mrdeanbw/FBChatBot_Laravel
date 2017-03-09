@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\PaymentPlan;
+use Common\Models\PaymentPlan;
 use App\Transformers\PaymentPlanTransformer;
 use Dingo\Api\Transformer\Factory;
 use Illuminate\Support\ServiceProvider;

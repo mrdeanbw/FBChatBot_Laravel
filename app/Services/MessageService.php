@@ -1,16 +1,16 @@
 <?php namespace App\Services;
 
-use App\Models\Card;
-use App\Models\Image;
-use App\Models\Message;
+use Common\Models\Card;
+use Common\Models\Image;
+use Common\Models\Message;
 use MongoDB\BSON\ObjectID;
-use App\Models\MessageRevision;
+use Common\Models\MessageRevision;
 use Illuminate\Support\Collection;
 use Intervention\Image\ImageManagerStatic;
 use Dingo\Api\Exception\ValidationHttpException;
-use App\Repositories\Bot\BotRepositoryInterface;
-use App\Repositories\Template\TemplateRepositoryInterface;
-use App\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
+use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\Template\TemplateRepositoryInterface;
+use Common\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
 
 class MessageService
 {
@@ -62,7 +62,7 @@ class MessageService
     /**
      * @param array $input
      *
-     * @return \App\Models\Message[]
+     * @return \Common\Models\Message[]
      */
     public static function normalizeMessages(array $input)
     {
@@ -76,7 +76,7 @@ class MessageService
      * @param Message[] $original
      * @param           $botId
      * @param bool      $allowReadOnly
-     * @return \App\Models\Message[]
+     * @return \Common\Models\Message[]
      */
     public function correspondInputMessagesToOriginal(array $input, array $original = [], $botId, $allowReadOnly = false)
     {

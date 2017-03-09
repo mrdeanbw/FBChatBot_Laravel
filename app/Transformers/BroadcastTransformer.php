@@ -1,9 +1,9 @@
 <?php namespace App\Transformers;
 
-use App\Models\Message;
-use App\Models\Broadcast;
-use App\Repositories\Broadcast\BroadcastRepositoryInterface;
-use App\Repositories\SentMessage\SentMessageRepositoryInterface;
+use Common\Models\Message;
+use Common\Models\Broadcast;
+use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class BroadcastTransformer extends BaseTransformer
 {

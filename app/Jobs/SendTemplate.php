@@ -1,8 +1,8 @@
 <?php namespace App\Jobs;
 
-use App\Models\Broadcast;
-use App\Models\Subscriber;
-use App\Models\Template;
+use Common\Models\Broadcast;
+use Common\Models\Subscriber;
+use Common\Models\Template;
 use App\Services\FacebookAPIAdapter;
 
 class SendTemplate extends BaseJob

@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\GreetingText;
+use Common\Models\GreetingText;
 
 class GreetingTextTransformer extends BaseTransformer
 {

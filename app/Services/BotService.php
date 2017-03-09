@@ -3,16 +3,16 @@
 use App\Jobs\AddGetStartedButtonOnFacebook;
 use App\Jobs\UpdateGreetingTextOnFacebook;
 use App\Jobs\UpdateMainMenuOnFacebook;
-use App\Models\Bot;
-use App\Models\Page;
-use App\Models\User;
-use App\Models\WelcomeMessage;
+use Common\Models\Bot;
+use Common\Models\Page;
+use Common\Models\User;
+use Common\Models\WelcomeMessage;
 use MongoDB\BSON\ObjectID;
 use Illuminate\Support\Collection;
 use App\Services\Facebook\MessengerThread;
 use App\Jobs\SubscribeAppToFacebookPage;
-use App\Repositories\Bot\BotRepositoryInterface;
-use App\Repositories\User\UserRepositoryInterface;
+use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\User\UserRepositoryInterface;
 use App\Services\Facebook\PageService as FacebookPage;
 
 class BotService

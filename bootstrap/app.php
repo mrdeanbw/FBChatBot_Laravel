@@ -33,7 +33,6 @@ $app->bind('redirect', 'Laravel\Lumen\Http\Redirector');
  */
 $app->register(Jenssegers\Mongodb\MongodbServiceProvider::class);
 $app->register(Jenssegers\Mongodb\MongodbQueueServiceProvider::class);
-$app->register(Modules\Monitor\MonitorServiceProvider::class);
 
 
 $app->withEloquent();
@@ -41,7 +40,7 @@ $app->withEloquent();
 $app->configure('app');
 $app->configure('jwt');
 $app->configure('queue');
-$app->configure('monitor');
+$app->configure('admin');
 $app->configure('services');
 
 /*
@@ -149,12 +148,8 @@ $app->configureMonologUsing(function ($monolog) {
 | can respond to, as well as the controllers that may handle them.
 |
 */
-$app->group(['namespace' => 'App\Http\Controllers'], function ($app) {
-    require __DIR__ . '/../app/Http/Routes/api.php';
-    require __DIR__ . '/../app/Http/Routes/web.php';
-});
-
-require __DIR__ . '/../app/Http/Routes/modules.php';
-
+require __DIR__ . '/../app/Http/Routes/api.php';
+require __DIR__ . '/../app/Http/Routes/web.php';
+require __DIR__ . '/../admin/Http/Routes/admin-api.php';
 
 return $app;

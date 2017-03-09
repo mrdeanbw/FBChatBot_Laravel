@@ -1,7 +1,7 @@
 <?php namespace App\Services;
 
-use App\Models\User;
-use App\Repositories\User\UserRepositoryInterface;
+use Common\Models\User;
+use Common\Repositories\User\UserRepositoryInterface;
 
 class UserService
 {

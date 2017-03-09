@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\Template;
+use Common\Models\Template;
 
 class TemplateTransformer extends BaseTransformer
 {

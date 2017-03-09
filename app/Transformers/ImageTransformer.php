@@ -1,7 +1,7 @@
 <?php namespace App\Transformers;
 
-use App\Models\Image;
-use App\Models\MessageRevision;
+use Common\Models\Image;
+use Common\Models\MessageRevision;
 
 class ImageTransformer extends BaseTransformer
 {

@@ -3,7 +3,7 @@
 use Illuminate\Console\Command;
 
 use Maknz\Slack\Client as SlackClient;
-use Modules\Monitor\Services\MonitorService;
+use Admin\Services\MonitorService;
 
 class MonitorAlert extends Command
 {
@@ -76,7 +76,7 @@ class MonitorAlert extends Command
 
     public function sendAlert($type, $server)
     {
-        $slackWebhook = config('monitor.slack_webhook');
+        $slackWebhook = config('services.slack.monitor_webhook');
         if (! $slackWebhook) {
             return;
         }

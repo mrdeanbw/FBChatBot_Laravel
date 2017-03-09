@@ -1,7 +1,7 @@
 <?php namespace App\Jobs;
 
-use App\Models\Bot;
-use App\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
+use Common\Models\Bot;
+use Common\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
 use App\Services\FacebookAPIAdapter;
 use App\Services\Facebook\MessengerThread;
 use App\Services\FacebookMessageMapper;

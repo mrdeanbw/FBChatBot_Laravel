@@ -1,13 +1,13 @@
 <?php namespace App\Console\Commands;
 
 use Carbon\Carbon;
-use App\Models\Broadcast;
+use Common\Models\Broadcast;
 use App\Jobs\SendBroadcast;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use App\Services\BroadcastService;
-use App\Repositories\Broadcast\BroadcastRepositoryInterface;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 
 class SendDueBroadcasts extends Command
 {

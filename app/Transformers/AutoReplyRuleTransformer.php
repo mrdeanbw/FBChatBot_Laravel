@@ -1,7 +1,7 @@
 <?php namespace App\Transformers;
 
-use App\Models\AutoReplyRule;
-use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
+use Common\Models\AutoReplyRule;
+use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 
 class AutoReplyRuleTransformer extends BaseTransformer
 {

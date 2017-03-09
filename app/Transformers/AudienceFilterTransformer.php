@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\AudienceFilter;
+use Common\Models\AudienceFilter;
 
 class AudienceFilterTransformer extends BaseTransformer
 {

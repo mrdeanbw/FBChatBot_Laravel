@@ -49,7 +49,7 @@ abstract class BaseJob implements ShouldQueue
      */
     protected function sendSlackAlert(Exception $exception)
     {
-        $slackWebhook = config('monitor.slack_webhook');
+        $slackWebhook = config('services.slack.monitor_webhook');
         if (! $slackWebhook) {
             return;
         }

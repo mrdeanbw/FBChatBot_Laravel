@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\User;
+use Common\Models\User;
 
 class UserTransformer extends BaseTransformer
 {

@@ -1,16 +1,16 @@
 <?php namespace App\Services;
 
 use Carbon\Carbon;
-use App\Models\Bot;
+use Common\Models\Bot;
 use MongoDB\BSON\ObjectID;
-use App\Models\Subscriber;
-use App\Models\AudienceFilter;
+use Common\Models\Subscriber;
+use Common\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
 use App\Services\Facebook\FacebookUser;
-use App\Repositories\Bot\BotRepositoryInterface;
-use App\Repositories\Sequence\SequenceRepositoryInterface;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
-use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
+use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\Sequence\SequenceRepositoryInterface;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class SubscriberService

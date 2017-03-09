@@ -1,7 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Repositories\Sequence\SequenceRepositoryInterface;
+use Common\Repositories\Sequence\SequenceRepositoryInterface;
 
 class CleanUpDeletedSequenceMessages extends Command
 {

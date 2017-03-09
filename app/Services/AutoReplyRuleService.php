@@ -1,11 +1,11 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\AutoReplyRule;
+use Common\Models\Bot;
+use Common\Models\AutoReplyRule;
 use Illuminate\Pagination\Paginator;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
+use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 
 class AutoReplyRuleService
 {

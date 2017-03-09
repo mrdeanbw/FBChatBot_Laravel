@@ -1,10 +1,10 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\Text;
-use App\Models\Template;
-use App\Models\WelcomeMessage;
-use App\Repositories\Bot\BotRepositoryInterface;
+use Common\Models\Bot;
+use Common\Models\Text;
+use Common\Models\Template;
+use Common\Models\WelcomeMessage;
+use Common\Repositories\Bot\BotRepositoryInterface;
 
 class WelcomeMessageService
 {

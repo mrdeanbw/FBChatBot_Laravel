@@ -1,11 +1,11 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\User;
-use App\Models\GreetingText;
+use Common\Models\Bot;
+use Common\Models\User;
+use Common\Models\GreetingText;
 use App\Jobs\UpdateGreetingTextOnFacebook;
 use App\Services\Facebook\MessengerThread;
-use App\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\Bot\BotRepositoryInterface;
 
 class GreetingTextService
 {

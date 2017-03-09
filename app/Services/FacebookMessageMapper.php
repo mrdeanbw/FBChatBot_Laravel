@@ -1,15 +1,15 @@
 <?php namespace App\Services;
 
 use Exception;
-use App\Models\Bot;
-use App\Models\Card;
-use App\Models\Text;
-use App\Models\Image;
-use App\Models\Button;
-use App\Models\Message;
-use App\Models\Subscriber;
+use Common\Models\Bot;
+use Common\Models\Card;
+use Common\Models\Text;
+use Common\Models\Image;
+use Common\Models\Button;
+use Common\Models\Message;
+use Common\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
-use App\Models\CardContainer;
+use Common\Models\CardContainer;
 
 class FacebookMessageMapper
 {

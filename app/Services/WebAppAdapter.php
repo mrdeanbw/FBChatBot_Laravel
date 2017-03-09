@@ -1,19 +1,19 @@
 <?php namespace App\Services;
 
 use Carbon\Carbon;
-use App\Models\Bot;
-use App\Models\Button;
-use App\Models\Subscriber;
-use App\Models\AutoReplyRule;
-use App\Repositories\Bot\BotRepositoryInterface;
-use App\Repositories\User\UserRepositoryInterface;
+use Common\Models\Bot;
+use Common\Models\Button;
+use Common\Models\Subscriber;
+use Common\Models\AutoReplyRule;
+use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\User\UserRepositoryInterface;
 use App\Services\Facebook\Sender as FacebookSender;
-use App\Repositories\Template\TemplateRepositoryInterface;
-use App\Repositories\Broadcast\BroadcastRepositoryInterface;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
-use App\Repositories\SentMessage\SentMessageRepositoryInterface;
-use App\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
-use App\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
+use Common\Repositories\Template\TemplateRepositoryInterface;
+use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
+use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
+use Common\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
 use MongoDB\BSON\ObjectID;
 
 class WebAppAdapter

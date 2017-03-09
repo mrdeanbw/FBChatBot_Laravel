@@ -1,8 +1,8 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\DefaultReply;
-use App\Repositories\Bot\BotRepositoryInterface;
+use Common\Models\Bot;
+use Common\Models\DefaultReply;
+use Common\Repositories\Bot\BotRepositoryInterface;
 
 class DefaultReplyService
 {

@@ -1,10 +1,10 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\Button;
-use App\Models\Template;
-use App\Models\Broadcast;
-use App\Models\Subscriber;
+use Common\Models\Bot;
+use Common\Models\Button;
+use Common\Models\Template;
+use Common\Models\Broadcast;
+use Common\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
 
 class MessagePayloadEncoder

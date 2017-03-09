@@ -2,8 +2,8 @@
 
 use Log;
 use Carbon\Carbon;
-use App\Models\Bot;
-use App\Models\Subscriber;
+use Common\Models\Bot;
+use Common\Models\Subscriber;
 use App\Services\Facebook\MessengerThread;
 
 class FacebookWebhookReceiver

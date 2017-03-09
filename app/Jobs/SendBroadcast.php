@@ -1,7 +1,7 @@
 <?php namespace App\Jobs;
 
-use App\Models\Broadcast;
-use App\Models\Subscriber;
+use Common\Models\Broadcast;
+use Common\Models\Subscriber;
 use App\Services\FacebookAPIAdapter;
 
 class SendBroadcast extends BaseJob

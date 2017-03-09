@@ -1,10 +1,10 @@
 <?php namespace App\Services;
 
 use Carbon\Carbon;
-use App\Models\Bot;
-use App\Models\Broadcast;
-use App\Models\AudienceFilter;
-use App\Repositories\Broadcast\BroadcastRepositoryInterface;
+use Common\Models\Bot;
+use Common\Models\Broadcast;
+use Common\Models\AudienceFilter;
+use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class BroadcastService

@@ -1,7 +1,7 @@
 <?php namespace App\Transformers;
 
-use App\Models\SubscriptionHistory;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Models\SubscriptionHistory;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 
 class SubscriptionHistoryTransformer extends BaseTransformer
 {

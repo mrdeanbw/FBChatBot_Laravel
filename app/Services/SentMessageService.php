@@ -1,12 +1,12 @@
 <?php namespace App\Services;
 
 use Carbon\Carbon;
-use App\Models\Card;
-use App\Models\Button;
-use App\Models\Message;
+use Common\Models\Card;
+use Common\Models\Button;
+use Common\Models\Message;
 use MongoDB\BSON\ObjectID;
-use App\Models\MessageRevision;
-use App\Repositories\SentMessage\SentMessageRepositoryInterface;
+use Common\Models\MessageRevision;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class SentMessageService
 {
@@ -51,7 +51,7 @@ class SentMessageService
         ];
 
         if ($message->type == 'text') {
-            /** @type \App\Models\Text $message */
+            /** @type \Common\Models\Text $message */
             foreach ($message->buttons as $button) {
                 $this->setTextButtonStats($button, $messageId, $startDateTime, $endDateTime);
             }
@@ -60,7 +60,7 @@ class SentMessageService
         }
 
         if ($message->type == 'card_container') {
-            /** @type \App\Models\CardContainer $message */
+            /** @type \Common\Models\CardContainer $message */
             foreach ($message->cards as $card) {
                 $this->setCardStats($card, $messageId, $startDateTime, $endDateTime);
             }

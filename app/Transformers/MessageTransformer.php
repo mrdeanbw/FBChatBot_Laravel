@@ -1,7 +1,7 @@
 <?php namespace App\Transformers;
 
-use App\Models\Message;
-use App\Models\MessageRevision;
+use Common\Models\Message;
+use Common\Models\MessageRevision;
 
 class MessageTransformer extends BaseTransformer
 {

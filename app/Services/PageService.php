@@ -1,10 +1,10 @@
 <?php namespace App\Services;
 
-use App\Models\Page;
-use App\Models\User;
+use Common\Models\Page;
+use Common\Models\User;
 use Illuminate\Support\Collection;
-use App\Repositories\Bot\BotRepositoryInterface;
-use App\Repositories\User\UserRepositoryInterface;
+use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\User\UserRepositoryInterface;
 use App\Services\Facebook\PageService as FacebookPage;
 
 class PageService

@@ -1,13 +1,13 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\User;
+use Common\Models\Bot;
+use Common\Models\User;
 use App\Jobs\SendTemplate;
-use App\Models\Subscriber;
-use App\Models\MessagePreview;
-use App\Repositories\Bot\BotRepositoryInterface;
+use Common\Models\Subscriber;
+use Common\Models\MessagePreview;
+use Common\Repositories\Bot\BotRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use App\Repositories\MessagePreview\MessagePreviewRepositoryInterface;
+use Common\Repositories\MessagePreview\MessagePreviewRepositoryInterface;
 
 class MessagePreviewService
 {

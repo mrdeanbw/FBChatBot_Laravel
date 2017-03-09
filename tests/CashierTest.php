@@ -6,7 +6,7 @@ use Illuminate\Database\Capsule\Manager as DB;
 use Jenssegers\Mongodb\Eloquent\Model as Eloquent;
 use Laravel\Cashier\Http\Controllers\WebhookController;
 
-use App\Models\Bot;
+use Common\Models\Bot;
 
 use PHPUnit\Framework\TestCase;
 

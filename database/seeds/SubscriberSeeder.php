@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Subscriber;
+use Common\Models\Subscriber;
 use Illuminate\Database\Seeder;
 
 class SubscriberSeeder extends Seeder

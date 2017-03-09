@@ -1,17 +1,17 @@
 <?php namespace App\Services;
 
 use Carbon\Carbon;
-use App\Models\Bot;
-use App\Models\Text;
-use App\Models\Sequence;
+use Common\Models\Bot;
+use Common\Models\Text;
+use Common\Models\Sequence;
 use MongoDB\BSON\ObjectID;
-use App\Models\AudienceFilter;
-use App\Models\SequenceMessage;
-use App\Repositories\Sequence\SequenceRepositoryInterface;
-use App\Repositories\Template\TemplateRepositoryInterface;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Models\AudienceFilter;
+use Common\Models\SequenceMessage;
+use Common\Repositories\Sequence\SequenceRepositoryInterface;
+use Common\Repositories\Template\TemplateRepositoryInterface;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
+use Common\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 
 class SequenceService
 {

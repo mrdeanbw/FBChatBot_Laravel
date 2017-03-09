@@ -22,16 +22,16 @@ class DropDatabaseIndexes extends Command
 
 
     protected $collections = [
-        \App\Models\Bot::class,
-        \App\Models\User::class,
-        \App\Models\Template::class,
-        \App\Models\Sequence::class,
-        \App\Models\Broadcast::class,
-        \App\Models\Subscriber::class,
-        \App\Models\SentMessage::class,
-        \App\Models\AutoReplyRule::class,
-        \App\Models\MessageRevision::class,
-        \App\Models\SequenceSchedule::class,
+        \Common\Models\Bot::class,
+        \Common\Models\User::class,
+        \Common\Models\Template::class,
+        \Common\Models\Sequence::class,
+        \Common\Models\Broadcast::class,
+        \Common\Models\Subscriber::class,
+        \Common\Models\SentMessage::class,
+        \Common\Models\AutoReplyRule::class,
+        \Common\Models\MessageRevision::class,
+        \Common\Models\SequenceSchedule::class,
     ];
 
     /**

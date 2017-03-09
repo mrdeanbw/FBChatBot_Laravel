@@ -1,7 +1,7 @@
 <?php namespace App\Transformers;
 
-use App\Models\CardContainer;
-use App\Models\MessageRevision;
+use Common\Models\CardContainer;
+use Common\Models\MessageRevision;
 
 class CardContainerTransformer extends BaseTransformer
 {

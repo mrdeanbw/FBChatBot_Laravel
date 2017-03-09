@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\DefaultReply;
+use Common\Models\DefaultReply;
 
 class DefaultReplyTransformer extends BaseTransformer
 {

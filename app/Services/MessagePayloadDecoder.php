@@ -1,17 +1,17 @@
 <?php namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\Card;
-use App\Models\Button;
-use App\Models\Message;
-use App\Models\Template;
-use App\Models\Subscriber;
+use Common\Models\Bot;
+use Common\Models\Card;
+use Common\Models\Button;
+use Common\Models\Message;
+use Common\Models\Template;
+use Common\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
-use App\Models\SentMessage;
-use App\Repositories\Bot\BotRepositoryInterface;
-use App\Repositories\Template\TemplateRepositoryInterface;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
-use App\Repositories\SentMessage\SentMessageRepositoryInterface;
+use Common\Models\SentMessage;
+use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\Template\TemplateRepositoryInterface;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class MessagePayloadDecoder
 {

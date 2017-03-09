@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\Bot;
+use Common\Models\Bot;
 
 class BotTransformer extends BaseTransformer
 {

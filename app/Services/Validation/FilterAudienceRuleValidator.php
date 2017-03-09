@@ -1,6 +1,6 @@
 <?php namespace App\Services\Validation;
 
-use App\Models\Bot;
+use Common\Models\Bot;
 
 trait FilterAudienceRuleValidator
 {

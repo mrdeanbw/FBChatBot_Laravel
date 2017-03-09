@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\Subscriber;
+use Common\Models\Subscriber;
 use App\Services\LoadsAssociatedModels;
 
 class SubscriberTransformer extends BaseTransformer

@@ -1,7 +1,7 @@
 <?php namespace App\Services;
 
-use App\Models\BaseModel;
-use App\Repositories\DBBaseRepository;
+use Common\Models\BaseModel;
+use Common\Repositories\DBBaseRepository;
 
 trait LoadsAssociatedModels
 {
@@ -24,7 +24,7 @@ trait LoadsAssociatedModels
     /**
      * @param BaseModel $model
      * @param string    $modelToLoad
-     * @return \App\Models\BaseModel|null
+     * @return \Common\Models\BaseModel|null
      */
     public function loadModel($model, $modelToLoad)
     {

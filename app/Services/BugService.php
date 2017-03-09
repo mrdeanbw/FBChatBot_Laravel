@@ -1,7 +1,7 @@
 <?php namespace App\Services;
 
-use App\Repositories\BugRepository\BugRepositoryInterface;
-use App\Repositories\CommentRepository\CommentRepositoryInterface;
+use Common\Repositories\BugRepository\BugRepositoryInterface;
+use Common\Repositories\CommentRepository\CommentRepositoryInterface;
 
 
 class BugService

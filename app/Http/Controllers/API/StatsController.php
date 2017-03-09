@@ -1,8 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Models\Bot;
+use Common\Models\Bot;
 use App\Services\SubscriberService;
-use App\Repositories\SentMessage\SentMessageRepositoryInterface;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use Illuminate\Http\Request;
 
 class StatsController extends APIController

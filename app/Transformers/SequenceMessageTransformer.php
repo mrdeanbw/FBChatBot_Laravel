@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\SequenceMessage;
+use Common\Models\SequenceMessage;
 
 class SequenceMessageTransformer extends BaseTransformer
 {

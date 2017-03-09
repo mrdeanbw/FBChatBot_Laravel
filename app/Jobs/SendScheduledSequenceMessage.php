@@ -1,16 +1,16 @@
 <?php namespace App\Jobs;
 
 use Carbon\Carbon;
-use App\Models\Sequence;
-use App\Models\Subscriber;
-use App\Models\SequenceMessage;
-use App\Models\SequenceSchedule;
+use Common\Models\Sequence;
+use Common\Models\Subscriber;
+use Common\Models\SequenceMessage;
+use Common\Models\SequenceSchedule;
 use App\Services\SequenceService;
 use App\Services\FacebookAPIAdapter;
-use App\Repositories\Sequence\SequenceRepositoryInterface;
-use App\Repositories\Template\TemplateRepositoryInterface;
-use App\Repositories\Subscriber\SubscriberRepositoryInterface;
-use App\Repositories\Sequence\SequenceScheduleRepositoryInterface;
+use Common\Repositories\Sequence\SequenceRepositoryInterface;
+use Common\Repositories\Template\TemplateRepositoryInterface;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 
 class SendScheduledSequenceMessage extends BaseJob
 {

@@ -1,8 +1,8 @@
 <?php namespace App\Services;
 
 use DB;
-use App\Models\User;
-use App\Repositories\User\UserRepositoryInterface;
+use Common\Models\User;
+use Common\Repositories\User\UserRepositoryInterface;
 
 class ReferralService
 {

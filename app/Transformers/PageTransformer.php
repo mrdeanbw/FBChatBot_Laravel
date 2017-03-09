@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\Page;
+use Common\Models\Page;
 
 class PageTransformer extends BaseTransformer
 {

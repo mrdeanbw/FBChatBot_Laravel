@@ -2,16 +2,16 @@
 
 use Exception;
 use Carbon\Carbon;
-use App\Models\Bot;
-use App\Models\Page;
-use App\Models\Button;
-use App\Models\Message;
-use App\Models\Template;
-use App\Models\Broadcast;
-use App\Models\Subscriber;
+use Common\Models\Bot;
+use Common\Models\Page;
+use Common\Models\Button;
+use Common\Models\Message;
+use Common\Models\Template;
+use Common\Models\Broadcast;
+use Common\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
 use App\Services\Facebook\Sender;
-use App\Repositories\SentMessage\SentMessageRepositoryInterface;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class FacebookAPIAdapter
 {

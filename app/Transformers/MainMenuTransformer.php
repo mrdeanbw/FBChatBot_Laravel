@@ -1,6 +1,6 @@
 <?php namespace App\Transformers;
 
-use App\Models\MainMenu;
+use Common\Models\MainMenu;
 
 class MainMenuTransformer extends BaseTransformer
 {

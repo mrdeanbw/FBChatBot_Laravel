@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Bot;
-use App\Models\AutoReplyRule;
+use Common\Models\Bot;
+use Common\Models\AutoReplyRule;
 use Illuminate\Database\Seeder;
 
 class AutoReplyRuleSeeder extends Seeder
