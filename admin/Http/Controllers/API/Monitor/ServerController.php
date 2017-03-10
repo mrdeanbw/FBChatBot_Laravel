@@ -1,10 +1,10 @@
-<?php namespace Admin\Http\Controllers;
+<?php namespace Admin\Http\Controllers\API\Monitor;
 
 use Admin\Services\MonitorService;
 use App\Transformers\BaseTransformer;
 use Admin\Http\Controllers\API\APIController;
 
-class MonitorController extends APIController
+class ServerController extends APIController
 {
 
     /**
@@ -23,17 +23,11 @@ class MonitorController extends APIController
 
     /**
      * Index , Get main info
-     * @return \Response
+     * @return \Dingo\Api\Http\Response
      */
     public function index()
     {
-        $servers = $this->monitor->getServersInfo();
-        $logs = $this->monitor->getLogsInfo();
-
-        return view('modules-monitor::index', [
-            'servers'  => $servers,
-            'logFiles' => $logs
-        ]);
+        return $this->arrayResponse($this->monitor->getServersInfo());
     }
 
     /**

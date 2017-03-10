@@ -9,9 +9,11 @@ class CorsMiddleware
     {
         $response = $next($request);
 
-        $response->header('Access-Control-Allow-Methods', 'HEAD, GET, POST, PUT, PATCH, DELETE');
-        $response->header('Access-Control-Allow-Headers', $request->header('Access-Control-Request-Headers'));
-        $response->header('Access-Control-Allow-Origin', '*');
+        if (method_exists($response, 'header')) {
+            $response->header('Access-Control-Allow-Methods', 'HEAD, GET, POST, PUT, PATCH, DELETE');
+            $response->header('Access-Control-Allow-Headers', $request->header('Access-Control-Request-Headers'));
+            $response->header('Access-Control-Allow-Origin', '*');
+        }
 
         return $response;
     }

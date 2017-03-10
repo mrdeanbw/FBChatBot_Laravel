@@ -301,6 +301,10 @@ if (! function_exists('carbon_date')) {
         if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $date)) {
             return Carbon::createFromFormat('Y-m-d', $date)->startOfDay();
         }
+        
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $date)) {
+            return Carbon::createFromFormat('Y-m-d H:i:s', $date);
+        }
 
         throw new Exception("Unknown date: {$date}");
     }
