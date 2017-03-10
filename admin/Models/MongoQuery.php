@@ -2,7 +2,7 @@
 
 use Common\Models\BaseModel;
 
-class SystemProfile extends BaseModel
+class MongoQuery extends BaseModel
 {
 
     protected $collection = 'system.profile';

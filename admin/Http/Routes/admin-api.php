@@ -33,7 +33,10 @@ $api->version('v1', $options, function (Router $api) {
                 $api->delete('/logs/{id}', 'Monitor\LogController@destroy');
                 $api->get('/logs/{id}/download', 'Monitor\LogController@download');
 
-                $api->get('/database', 'Monitor\DatabaseController@index');
+                $api->get('/databases/{id}', 'Monitor\Database\DatabaseInfoController@show');
+                $api->get('/databases/{id}/collections', 'Monitor\Database\CollectionController@index');
+                $api->get('/databases/{id}/queries/slow', 'Monitor\Database\QueryController@slow');
+                $api->get('/databases/{id}/queries/latest', 'Monitor\Database\QueryController@latest');
             });
 
         });

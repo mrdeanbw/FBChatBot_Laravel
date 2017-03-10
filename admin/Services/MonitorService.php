@@ -61,7 +61,7 @@ class MonitorService
                 'load'    => array_map(function ($num) {
                     return (int)round($num, 2);
                 }, $data['load']),
-                'disk'    => $data['disk'],
+                'disk'    => trim($data['disk']),
                 'memory'  => [
                     'total' => (int)round($data['memory']['total']),
                     'free'  => (int)round($data['memory']['free']),

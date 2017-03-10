@@ -1,7 +1,7 @@
 <?php namespace Admin\Repositories\MongoDatabase;
 
 use Admin\Models\DatabaseInfo;
-use Admin\Models\SystemProfile;
+use Admin\Models\MongoQuery;
 use Admin\Models\CollectionInfo;
 use Illuminate\Support\Collection;
 use Common\Repositories\DBBaseRepository;
@@ -14,17 +14,17 @@ class DBMongoDatabaseRepository extends DBBaseRepository implements MongoDatabas
      */
     public function model()
     {
-        return SystemProfile::class;
+        return MongoQuery::class;
     }
 
     /**
      * Retrieve the slow queries info
-     * @param int $milliseconds
      * @param int $page
      * @param int $perPage
+     * @param int $milliseconds
      * @return Collection
      */
-    public function paginateSlowQueries($milliseconds = 100, $page = 1, $perPage = 15)
+    public function paginateSlowQueries($page = 1, $perPage = 15, $milliseconds = 100)
     {
         $filterBy = [['key' => 'millis', 'operator' => '>', 'value' => $milliseconds]];
         $orderBy = ['millis' => 'desc'];
@@ -63,9 +63,9 @@ class DBMongoDatabaseRepository extends DBBaseRepository implements MongoDatabas
     }
 
     /**
-     * @return array
+     * @return Collection
      */
-    public function getIndexDetails()
+    public function getCollectionDetails()
     {
         $db = $this->getDatabase();
 
@@ -84,13 +84,13 @@ class DBMongoDatabaseRepository extends DBBaseRepository implements MongoDatabas
             $colStats = $db->command(['collStats' => $collectionName])->toArray();
 
             $ret[] = new CollectionInfo([
-                'name'      => $collectionName,
-                'dataSize'  => $colStats[0]['size'],
-                'indexSize' => $colStats[0]['totalIndexSize'],
-                'indexes'   => iterator_to_array($colStats[0]['indexSizes'])
+                'name'          => $collectionName,
+                'dataSize'      => $colStats[0]['size'],
+                'indexSize'     => $colStats[0]['totalIndexSize'],
+                'indexes'       => iterator_to_array($colStats[0]['indexSizes'])
             ]);
         }
 
-        return $ret;
+        return collect($ret);
     }
 }

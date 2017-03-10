@@ -10,7 +10,7 @@ class AdminAuthMiddleware
     public function handle(Request $request, Closure $next)
     {
         if ($request->get('auth_token') != config('admin.auth_token')) {
-            throw new UnauthorizedHttpException('Auth Token', 'Missing Auth Token');
+            throw new UnauthorizedHttpException('Auth Token', 'Invalid Auth Token');
         }
 
         return $next($request);

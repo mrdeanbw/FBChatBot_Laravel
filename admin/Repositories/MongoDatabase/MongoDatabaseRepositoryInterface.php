@@ -2,6 +2,7 @@
 
 use MongoDB\Model\DatabaseInfo;
 use Illuminate\Support\Collection;
+use Illuminate\Pagination\Paginator;
 use Common\Repositories\BaseRepositoryInterface;
 
 interface MongoDatabaseRepositoryInterface extends BaseRepositoryInterface
@@ -9,18 +10,18 @@ interface MongoDatabaseRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * Retrieve the slow queries info
-     * @param int $milliseconds
      * @param int $page
      * @param int $perPage
-     * @return Collection
+     * @param int $milliseconds
+     * @return Paginator
      */
-    public function paginateSlowQueries($milliseconds = 100, $page = 1, $perPage = 15);
+    public function paginateSlowQueries($page = 1, $perPage = 15, $milliseconds = 100);
 
     /**
      * get the last queries
      * @param int $page
      * @param int $perPage
-     * @return Collection
+     * @return Paginator
      */
     public function paginateLatestQueries($page = 1, $perPage = 15);
 
@@ -31,7 +32,7 @@ interface MongoDatabaseRepositoryInterface extends BaseRepositoryInterface
     public function getDatabaseInfo();
 
     /**
-     * @return mixed
+     * @return Collection
      */
-    public function getIndexDetails();
+    public function getCollectionDetails();
 }
