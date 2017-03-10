@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\SubscriberService;
-use App\Transformers\BaseTransformer;
-use App\Transformers\SubscriberTransformer;
+use Common\Services\SubscriberService;
+use Common\Transformers\BaseTransformer;
+use Common\Transformers\SubscriberTransformer;
 
 class SubscriberController extends APIController
 {

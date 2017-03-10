@@ -39,7 +39,7 @@
       "Common\\": "common/"
     },
     "files": [
-      "app/helpers.php"
+      "common/helpers.php"
     ]
   },
   "autoload-dev": {

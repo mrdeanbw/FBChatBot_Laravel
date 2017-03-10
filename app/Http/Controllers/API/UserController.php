@@ -3,10 +3,10 @@
 use Common\Models\User;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Http\Request;
-use App\Services\AuthService;
-use App\Services\ReferralService;
-use App\Transformers\UserTransformer;
-use App\Transformers\BaseTransformer;
+use Common\Services\AuthService;
+use Common\Services\ReferralService;
+use Common\Transformers\UserTransformer;
+use Common\Transformers\BaseTransformer;
 use Common\Repositories\User\UserRepositoryInterface;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;

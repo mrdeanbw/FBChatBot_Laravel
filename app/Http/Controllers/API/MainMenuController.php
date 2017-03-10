@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\MainMenuService;
-use App\Transformers\BaseTransformer;
-use App\Transformers\MainMenuTransformer;
+use Common\Services\MainMenuService;
+use Common\Transformers\BaseTransformer;
+use Common\Transformers\MainMenuTransformer;
 
 class MainMenuController extends APIController
 {

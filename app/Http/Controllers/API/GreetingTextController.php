@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\GreetingTextService;
-use App\Transformers\BaseTransformer;
-use App\Transformers\GreetingTextTransformer;
+use Common\Services\GreetingTextService;
+use Common\Transformers\BaseTransformer;
+use Common\Transformers\GreetingTextTransformer;
 
 class GreetingTextController extends APIController
 {

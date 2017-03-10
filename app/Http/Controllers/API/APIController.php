@@ -1,7 +1,7 @@
 <?php namespace App\Http\Controllers\API;
 
 use Common\Models\Bot;
-use App\Services\BotService;
+use Common\Services\BotService;
 use Illuminate\Http\Request;
 use Dingo\Api\Routing\Helpers;
 use Common\Http\Controllers\APIController as BaseAPIController;

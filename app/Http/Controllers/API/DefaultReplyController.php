@@ -1,8 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\DefaultReplyService;
-use App\Transformers\DefaultReplyTransformer;
+use Common\Services\DefaultReplyService;
+use Common\Transformers\DefaultReplyTransformer;
 
 class DefaultReplyController extends APIController
 {

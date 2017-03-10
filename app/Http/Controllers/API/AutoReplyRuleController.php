@@ -3,9 +3,9 @@
 use Common\Models\Bot;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Transformers\BaseTransformer;
-use App\Services\AutoReplyRuleService;
-use App\Transformers\AutoReplyRuleTransformer;
+use Common\Transformers\BaseTransformer;
+use Common\Services\AutoReplyRuleService;
+use Common\Transformers\AutoReplyRuleTransformer;
 
 class AutoReplyRuleController extends APIController
 {

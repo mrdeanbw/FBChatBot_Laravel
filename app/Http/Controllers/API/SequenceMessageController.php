@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\SequenceService;
-use App\Transformers\BaseTransformer;
-use App\Transformers\SequenceMessageTransformer;
+use Common\Services\SequenceService;
+use Common\Transformers\BaseTransformer;
+use Common\Transformers\SequenceMessageTransformer;
 
 class SequenceMessageController extends APIController
 {

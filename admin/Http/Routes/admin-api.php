@@ -20,6 +20,7 @@ $api->version('v1', $options, function (Router $api) {
     $api->group(['prefix' => 'admin'], function (Router $api) {
 
         $api->get('/test', function () {
+            return [];
         });
 
         $api->group(['middleware' => Admin\Http\Middlewares\AdminAuthMiddleware::class], function (Router $api) {

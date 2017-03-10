@@ -1,7 +1,6 @@
 <?php namespace Admin\Http\Controllers\API\Monitor;
 
 use Admin\Services\MonitorService;
-use App\Transformers\BaseTransformer;
 use Admin\Http\Controllers\API\APIController;
 
 class ServerController extends APIController
@@ -30,9 +29,6 @@ class ServerController extends APIController
         return $this->arrayResponse($this->monitor->getServersInfo());
     }
 
-    /**
-     * @return BaseTransformer
-     */
     protected function transformer()
     {
     }

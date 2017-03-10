@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Dingo\Api\Routing\Helpers;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
-use App\Transformers\BaseTransformer;
+use Common\Transformers\BaseTransformer;
 use Dingo\Api\Exception\ValidationHttpException;
 
 abstract class APIController extends Controller

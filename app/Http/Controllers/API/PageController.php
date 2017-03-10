@@ -1,10 +1,10 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Transformers\PageTransformer;
+use Common\Transformers\PageTransformer;
 use Illuminate\Http\Request;
-use App\Services\PageService;
-use App\Services\UserService;
-use App\Services\TimezoneService;
+use Common\Services\PageService;
+use Common\Services\UserService;
+use Common\Services\TimezoneService;
 
 class PageController extends APIController
 {

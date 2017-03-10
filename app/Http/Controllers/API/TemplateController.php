@@ -2,10 +2,9 @@
 
 use Common\Models\Bot;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use App\Services\TemplateService;
-use App\Transformers\BaseTransformer;
-use App\Transformers\TemplateTransformer;
+use Common\Services\TemplateService;
+use Common\Transformers\BaseTransformer;
+use Common\Transformers\TemplateTransformer;
 
 class TemplateController extends APIController
 {

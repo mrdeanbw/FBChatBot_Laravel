@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\BotService;
-use App\Services\TimezoneService;
-use App\Transformers\BotTransformer;
+use Common\Services\BotService;
+use Common\Services\TimezoneService;
+use Common\Transformers\BotTransformer;
 
 class BotController extends APIController
 {

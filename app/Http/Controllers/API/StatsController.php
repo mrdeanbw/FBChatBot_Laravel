@@ -1,7 +1,7 @@
 <?php namespace App\Http\Controllers\API;
 
 use Common\Models\Bot;
-use App\Services\SubscriberService;
+use Common\Services\SubscriberService;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use Illuminate\Http\Request;
 

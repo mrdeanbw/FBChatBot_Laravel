@@ -1,8 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Transformers\BaseTransformer;
-use App\Services\MessagePreviewService;
+use Common\Transformers\BaseTransformer;
+use Common\Services\MessagePreviewService;
 
 class MessagePreviewController extends APIController
 {

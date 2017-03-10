@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Transformers\BaseTransformer;
-use App\Services\WelcomeMessageService;
-use App\Transformers\WelcomeMessageTransformer;
+use Common\Transformers\BaseTransformer;
+use Common\Services\WelcomeMessageService;
+use Common\Transformers\WelcomeMessageTransformer;
 
 class WelcomeMessageController extends APIController
 {

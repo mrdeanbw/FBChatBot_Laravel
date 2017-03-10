@@ -33,45 +33,4 @@ class User extends BaseModel implements AuthenticatableContract, JWTSubject
     {
         return [];
     }
-
-    /*
-     * Get the user's referrals
-     */
-
-    public function referrals()
-    {
-        return $this->belongsToMany('App\User');
-    }
-
-    /*
-     * Get the referred user's parent referral
-     */
-
-    public function parentReferral()
-    {
-        return $this->belongsTo('App\User');
-    }
-
-    /*
-     * Get the amount of users the person has referred
-     */
-
-    public function countReferrals()
-    {
-        return User::withCount('referrals')->get();
-    }
-
-    /*
-     * Generate a referral link for new users
-     */
-
-    public static function boot()
-    {
-//        static::created(function(User $user)
-//        {
-//            $user->userRepository->generateReferralLink($user->id);
-//        });
-
-        parent::boot();
-    }
 }

@@ -1,6 +1,6 @@
 <?php namespace App\Http\Controllers;
 
-use App\Services\WebAppAdapter;
+use Common\Services\WebAppAdapter;
 use Common\Http\Controllers\Controller;
 
 class ClickHandlingController extends Controller

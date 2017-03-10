@@ -1,8 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
-use App\Services\MessageRevisionService;
-use App\Transformers\BaseTransformer;
-use App\Transformers\MessageTransformer;
+use Common\Services\MessageRevisionService;
+use Common\Transformers\BaseTransformer;
+use Common\Transformers\MessageTransformer;
 
 class MessageRevisionController extends APIController
 {

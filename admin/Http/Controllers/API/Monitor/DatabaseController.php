@@ -1,6 +1,5 @@
 <?php namespace Admin\Http\Controllers\API\Monitor;
 
-use App\Transformers\BaseTransformer;
 use Admin\Http\Controllers\API\APIController;
 use Admin\Repositories\MongoDatabase\MongoDatabaseRepositoryInterface;
 
@@ -42,11 +41,7 @@ class DatabaseController extends APIController
         ]);
     }
 
-    /**
-     * @return BaseTransformer
-     */
     protected function transformer()
     {
-        // TODO: Implement transformer() method.
     }
 }

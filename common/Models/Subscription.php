@@ -1,6 +1,4 @@
-<?php
-
-namespace Common\Models;
+<?php namespace Common\Models;
 
 use Carbon\Carbon;
 use LogicException;

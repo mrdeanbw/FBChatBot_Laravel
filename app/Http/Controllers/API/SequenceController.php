@@ -1,10 +1,10 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\SequenceService;
-use App\Transformers\BaseTransformer;
-use App\Transformers\SequenceTransformer;
-use App\Services\Validation\FilterAudienceRuleValidator;
+use Common\Services\SequenceService;
+use Common\Transformers\BaseTransformer;
+use Common\Transformers\SequenceTransformer;
+use Common\Services\Validation\FilterAudienceRuleValidator;
 
 class SequenceController extends APIController
 {

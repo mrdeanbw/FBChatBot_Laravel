@@ -54,9 +54,9 @@ $app->configure('services');
 |
 */
 
-$app->singleton(Illuminate\Contracts\Debug\ExceptionHandler::class, App\Exceptions\Handler::class);
+$app->singleton(Illuminate\Contracts\Debug\ExceptionHandler::class, Common\Exceptions\Handler::class);
 
-$app->singleton(Illuminate\Contracts\Console\Kernel::class, App\Console\Kernel::class);
+$app->singleton(Illuminate\Contracts\Console\Kernel::class, Common\Console\Kernel::class);
 
 $app->singleton(Illuminate\Contracts\Routing\ResponseFactory::class, Illuminate\Routing\ResponseFactory::class);
 
@@ -79,12 +79,8 @@ $app->singleton(Illuminate\Cache\CacheManager::class, function (Application $app
 |
 */
 
-// $app->middleware([
-//    App\Http\Middleware\ExampleMiddleware::class
-// ]);
-
 $app->routeMiddleware([
-    'fb.webhook.verify' => App\Http\Middleware\FacebookWebhookMiddleware::class,
+    'fb.webhook.verify' => Common\Http\Middleware\FacebookWebhookMiddleware::class,
 ]);
 
 /*
@@ -98,17 +94,16 @@ $app->routeMiddleware([
 |
 */
 
-$app->register(App\Providers\FractalServiceProvider::class);
+$app->register(Common\Providers\FractalServiceProvider::class);
 
 $app->register(Dingo\Api\Provider\LumenServiceProvider::class);
 $app->register(Tymon\JWTAuth\Providers\LumenServiceProvider::class);
 $app->register(Laravel\Cashier\CashierServiceProvider::class);
 
-$app->register(App\Providers\AppServiceProvider::class);
-$app->register(App\Providers\EventServiceProvider::class);
-$app->register(App\Providers\CatchAllOptionsRequestsProvider::class);
-$app->register(App\Providers\RepositoryServiceProvider::class);
-$app->register(App\Providers\PusherServiceProvider::class);
+$app->register(Common\Providers\AppServiceProvider::class);
+$app->register(Common\Providers\CatchAllOptionsRequestsProvider::class);
+$app->register(Common\Providers\RepositoryServiceProvider::class);
+$app->register(Common\Providers\PusherServiceProvider::class);
 $app->register(Illuminate\Redis\RedisServiceProvider::class);
 
 $app->make(Dingo\Api\Auth\Auth::class)->extend('jwt', function (Application $app) {
@@ -121,7 +116,7 @@ app('Dingo\Api\Transformer\Factory')->setAdapter(function ($app) {
     );
 });
 
-$app->register(App\Providers\DingoApiExceptionHandler::class);
+$app->register(Common\Providers\DingoApiExceptionHandler::class);
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;

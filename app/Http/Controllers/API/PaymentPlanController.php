@@ -2,7 +2,7 @@
 
 use Common\Models\PaymentPlan;
 use Illuminate\Http\Request;
-use App\Transformers\PaymentPlanTransformer;
+use Common\Transformers\PaymentPlanTransformer;
 
 class PaymentPlanController extends APIController
 {

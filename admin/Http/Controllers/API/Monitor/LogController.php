@@ -1,7 +1,6 @@
 <?php namespace Admin\Http\Controllers\API\Monitor;
 
 use Admin\Services\MonitorService;
-use App\Transformers\BaseTransformer;
 use Admin\Http\Controllers\API\APIController;
 
 class LogController extends APIController
@@ -60,9 +59,6 @@ class LogController extends APIController
         return response()->download($filePath);
     }
 
-    /**
-     * @return BaseTransformer
-     */
     protected function transformer()
     {
         // TODO: Implement transformer() method.

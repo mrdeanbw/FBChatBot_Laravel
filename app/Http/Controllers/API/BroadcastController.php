@@ -1,9 +1,9 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
-use App\Services\BroadcastService;
-use App\Transformers\BroadcastTransformer;
-use App\Services\Validation\FilterAudienceRuleValidator;
+use Common\Services\BroadcastService;
+use Common\Transformers\BroadcastTransformer;
+use Common\Services\Validation\FilterAudienceRuleValidator;
 
 class BroadcastController extends APIController
 {
