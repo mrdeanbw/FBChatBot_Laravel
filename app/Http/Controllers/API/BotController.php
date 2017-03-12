@@ -16,7 +16,7 @@ class BotController extends APIController
     /**
      * PageController constructor.
      *
-     * @param BotService              $bots
+     * @param BotService $bots
      */
     public function __construct(BotService $bots)
     {
@@ -117,13 +117,12 @@ class BotController extends APIController
         $bot = $this->bot();
 
         $this->validate($request, [
-            'timezone'        => 'bail|required|max:255',
-            'timezone_offset' => 'bail|required|numeric|in:' . implode(',', TimezoneService::UTC_OFFSETS)
+            'timezone' => 'bail|required|max:255|timezone',
         ]);
-        
-        $this->bots->updateTimezone($request->all(), $bot);
 
-        return $this->response->accepted();
+        $bot = $this->bots->updateTimezone($request->all(), $bot);
+
+        return $this->itemResponse($bot);
     }
 
     /**

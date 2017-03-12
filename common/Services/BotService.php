@@ -1,5 +1,6 @@
 <?php namespace Common\Services;
 
+use Carbon\Carbon;
 use Common\Jobs\AddGetStartedButtonOnFacebook;
 use Common\Jobs\UpdateGreetingTextOnFacebook;
 use Common\Jobs\UpdateMainMenuOnFacebook;
@@ -267,10 +268,18 @@ class BotService
     /**
      * @param array $input
      * @param Bot   $bot
+     * @return Bot
      */
     public function updateTimezone(array $input, Bot $bot)
     {
-        return $this->botRepo->update($bot, array_only($input, ['timezone', 'timezone_offset']));
+        $data = [
+            'timezone'        => $input['timezone'],
+            'timezone_offset' => Carbon::now($input['timezone'])->offsetHours,
+        ];
+
+        $this->botRepo->update($bot, $data);
+
+        return $bot;
     }
 
     /**
