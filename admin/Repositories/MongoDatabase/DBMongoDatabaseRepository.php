@@ -27,10 +27,9 @@ class DBMongoDatabaseRepository extends DBBaseRepository implements MongoDatabas
     public function paginateSlowQueries($page = 1, $perPage = 15, $milliseconds = 100)
     {
         $filterBy = [
-            ['key' => 'op', 'operator' => '!=', 'value' => 'command'],
             ['key' => 'millis', 'operator' => '>', 'value' => $milliseconds]
         ];
-        $orderBy = ['millis' => 'desc'];
+        $orderBy = ['ts' => 'desc'];
 
         return $this->paginate($page, $filterBy, $orderBy, $perPage);
     }
@@ -46,7 +45,6 @@ class DBMongoDatabaseRepository extends DBBaseRepository implements MongoDatabas
     {
         $name = "{$this->getDatabase()->getDatabaseName()}.system.profile";
         $filterBy = [
-            ['key' => 'op', 'operator' => '!=', 'value' => 'command'],
             ['key' => 'ns', 'operator' => '!=', 'value' => $name]
         ];
         $orderBy = ['ts' => 'desc'];
