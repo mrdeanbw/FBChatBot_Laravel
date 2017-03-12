@@ -4,10 +4,9 @@ use Common\Models\Bot;
 use Common\Models\User;
 use Common\Models\Button;
 use Common\Models\MainMenu;
-use MongoDB\BSON\ObjectID;
 use Common\Jobs\UpdateMainMenuOnFacebook;
-use Common\Services\Facebook\MessengerThread;
 use Common\Repositories\Bot\DBBotRepository;
+use Common\Services\Facebook\MessengerThread;
 use Dingo\Api\Exception\ValidationHttpException;
 
 class MainMenuService
@@ -98,43 +97,6 @@ class MainMenuService
             'readonly' => true,
             'url'      => 'https://www.mrreply.com',
         ]);
-    }
-
-    /**
-     * @param Button[] $buttons
-     */
-    private function validateCopyrightButton(array $buttons)
-    {
-        $lastButton = array_last($buttons);
-
-        if (! $lastButton || ! $lastButton->id || ! $lastButton->readonly || ! $this->sameAsCopyrightButton($lastButton)) {
-            throw new ValidationHttpException([
-                "buttons" => ["Missing copyright button."]
-            ]);
-        }
-    }
-
-    /**
-     * @param Button $button
-     * @return bool
-     */
-    private function sameAsCopyrightButton(Button $button)
-    {
-        return $this->buttonAttributes($button) == $this->buttonAttributes($this->copyrightedButton());
-    }
-
-    /**
-     * @param Button $button
-     * @return array
-     */
-    private function buttonAttributes(Button $button)
-    {
-        $attributes = get_object_vars($button);
-        unset($attributes['id']);
-        unset($attributes['template']);
-        unset($attributes['last_revision_id']);
-
-        return $attributes;
     }
 
     /**
