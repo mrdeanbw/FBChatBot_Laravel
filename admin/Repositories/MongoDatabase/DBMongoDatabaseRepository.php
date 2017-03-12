@@ -1,7 +1,7 @@
 <?php namespace Admin\Repositories\MongoDatabase;
 
-use Admin\Models\DatabaseInfo;
 use Admin\Models\MongoQuery;
+use Admin\Models\DatabaseInfo;
 use Admin\Models\CollectionInfo;
 use Illuminate\Support\Collection;
 use Common\Repositories\DBBaseRepository;
@@ -26,7 +26,10 @@ class DBMongoDatabaseRepository extends DBBaseRepository implements MongoDatabas
      */
     public function paginateSlowQueries($page = 1, $perPage = 15, $milliseconds = 100)
     {
-        $filterBy = [['key' => 'millis', 'operator' => '>', 'value' => $milliseconds]];
+        $filterBy = [
+            ['key' => 'op', 'operator' => '!=', 'value' => 'command'],
+            ['key' => 'millis', 'operator' => '>', 'value' => $milliseconds]
+        ];
         $orderBy = ['millis' => 'desc'];
 
         return $this->paginate($page, $filterBy, $orderBy, $perPage);
