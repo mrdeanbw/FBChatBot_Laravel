@@ -99,6 +99,7 @@ $api->version('v1', $options, function (Router $api) {
 
         // Message Revisions
         $api->get('/bots/{botId}/messages/{messageId}/revisions', 'MessageRevisionController@index');
+        $api->get('/bots/{botId}/main-menu-buttons/{buttonId}/revisions', 'MessageRevisionController@mainMenuButton');
     });
 
 });

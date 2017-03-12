@@ -1,7 +1,7 @@
 <?php namespace App\Http\Controllers\API;
 
-use Common\Services\MessageRevisionService;
 use Common\Transformers\BaseTransformer;
+use Common\Services\MessageRevisionService;
 use Common\Transformers\MessageTransformer;
 
 class MessageRevisionController extends APIController
@@ -21,11 +21,25 @@ class MessageRevisionController extends APIController
     {
         $this->messageRevisions = $messageRevisions;
     }
-
-
+    
+    /**
+     * @param $messageId
+     * @return \Dingo\Api\Http\Response
+     */
     public function index($messageId)
     {
         $revisions = $this->messageRevisions->getRevisionsWithStatsForMessage($messageId, $this->bot());
+
+        return $this->collectionResponse($revisions);
+    }
+
+    /**
+     * @param $buttonId
+     * @return \Dingo\Api\Http\Response
+     */
+    public function mainMenuButton($buttonId)
+    {
+        $revisions = $this->messageRevisions->getRevisionsWithStatsForMainMenuButton($buttonId, $this->bot());
 
         return $this->collectionResponse($revisions);
     }

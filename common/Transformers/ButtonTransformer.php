@@ -13,7 +13,7 @@ class ButtonTransformer extends BaseTransformer
      * @param Button|MessageRevision $button
      * @return array
      */
-    public function transform(Button $button)
+    public function transform($button)
     {
         return [
             'title'    => $button->title,
@@ -25,10 +25,10 @@ class ButtonTransformer extends BaseTransformer
     }
 
     /**
-     * @param Button $button
+     * @param Button|MessageRevision $button
      * @return null
      */
-    private function getTransformedTemplate(Button $button)
+    private function getTransformedTemplate($button)
     {
         $item = $this->includeTemplate($button);
         

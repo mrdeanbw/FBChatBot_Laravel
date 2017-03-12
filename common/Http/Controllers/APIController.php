@@ -15,26 +15,37 @@ abstract class APIController extends Controller
     /**
      * @return BaseTransformer
      */
-    protected abstract function transformer();
+    protected function transformer()
+    {
+        return null;
+    }
 
     /**
      * A wrapper around Dingo collection response.
-     * @param Collection $collection
+     * @param Collection      $collection
+     * @param BaseTransformer $transformer
      * @return \Dingo\Api\Http\Response
+     * @throws \Exception
      */
-    public function collectionResponse(Collection $collection)
+    public function collectionResponse(Collection $collection, BaseTransformer $transformer = null)
     {
-        return $this->response->collection($collection, $this->transformer());
+        $transformer = $this->normalizeAndValidateTransformer($transformer);
+
+        return $this->response->collection($collection, $transformer);
     }
 
     /**
      * A wrapper around Dingo pagination response.
-     * @param Paginator $paginator
+     * @param Paginator       $paginator
+     * @param BaseTransformer $transformer
      * @return \Dingo\Api\Http\Response
+     * @throws \Exception
      */
-    public function paginatorResponse($paginator)
+    public function paginatorResponse($paginator, BaseTransformer $transformer = null)
     {
-        return $this->response->paginator($paginator, $this->transformer());
+        $transformer = $this->normalizeAndValidateTransformer($transformer);
+
+        return $this->response->paginator($paginator, $transformer);
     }
 
     /**
@@ -49,14 +60,18 @@ abstract class APIController extends Controller
 
     /**
      * A wrapper around Dingo item response.
-     * @param $model
+     * @param                 $model
+     * @param BaseTransformer $transformer
      * @return \Dingo\Api\Http\Response
+     * @throws \Exception
      */
-    public function itemResponse($model)
+    public function itemResponse($model, BaseTransformer $transformer = null)
     {
-        return $this->response->item($model, $this->transformer());
+        $transformer = $this->normalizeAndValidateTransformer($transformer);
+
+        return $this->response->item($model, $transformer);
     }
-    
+
     /**
      * A helper method to make the Validator.
      * @param Request       $request
@@ -97,5 +112,20 @@ abstract class APIController extends Controller
     protected function errorsResponse($errors)
     {
         throw new ValidationHttpException($errors);
+    }
+
+    /**
+     * @param BaseTransformer $transformer
+     * @return BaseTransformer
+     * @throws \Exception
+     */
+    private function normalizeAndValidateTransformer(BaseTransformer $transformer = null)
+    {
+        $transformer = $transformer?: $this->transformer();
+        if (is_null($transformer)) {
+            throw new \Exception("Transformer not set.");
+        }
+
+        return $transformer;
     }
 }
