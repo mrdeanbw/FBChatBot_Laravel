@@ -128,10 +128,8 @@ class StatsController extends APIController
         $dateBoundaries = date_boundaries($dateString);
 
         return [
-            'total'          => 0,
-            'per_subscriber' => 0
-            //            'total'          => $this->sentMessageRepo->totalMessageClicksForBot($bot, $dateBoundaries[0], $dateBoundaries[1]),
-            //            'per_subscriber' => $this->sentMessageRepo->perSubscriberMessageClicksForBot($bot, $dateBoundaries[0], $dateBoundaries[1]),
+            'total'          => $this->sentMessageRepo->totalMessageClicksForBot($bot, $dateBoundaries[0], $dateBoundaries[1]),
+            'per_subscriber' => $this->sentMessageRepo->perSubscriberMessageClicksForBot($bot, $dateBoundaries[0], $dateBoundaries[1]),
         ];
     }
 

@@ -2,10 +2,11 @@
 
 use Carbon\Carbon;
 use Common\Models\Bot;
-use Common\Models\Subscriber;
+use Common\Models\Message;
 use MongoDB\BSON\ObjectID;
-use Common\Models\SentMessage;
 use MongoDB\BSON\UTCDatetime;
+use Common\Models\Subscriber;
+use Common\Models\SentMessage;
 use Common\Repositories\DBAssociatedWithBotRepository;
 
 class DBSentMessageRepository extends DBAssociatedWithBotRepository implements SentMessageRepositoryInterface
@@ -50,12 +51,47 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
     /**
      * @param SentMessage $sentMessage
-     * @param string      $cardOrButtonPath
+     * @param array       $cardOrButtonPath
      * @param UTCDatetime $dateTime
      */
-    public function recordClick(SentMessage $sentMessage, $cardOrButtonPath, UTCDatetime $dateTime)
+    public function recordClick(SentMessage $sentMessage, array $cardOrButtonPath, UTCDatetime $dateTime)
     {
-        $sentMessage->push($cardOrButtonPath, $dateTime);
+        $path = $this->normalizePath($sentMessage, $cardOrButtonPath) . '.clicks';
+        $sentMessage->push($path, $dateTime);
+    }
+
+    /**
+     * @param SentMessage|Message $model
+     * @param array               $path
+     * @return string
+     * @throws \Exception
+     */
+    protected function normalizePath($model, array $path)
+    {
+        if (! $path) {
+            return '';
+        }
+
+        $index = null;
+
+        $container = $path[0];
+        foreach ($model->{$container} as $i => $message) {
+            if ((string)$message['id'] == $path[1]) {
+                $index = $i;
+                break;
+            }
+        }
+
+        if (is_null($index)) {
+            throw new \Exception("Invalid button/card path");
+        }
+
+        $ret = "{$container}.{$index}";
+        if ($temp = $this->normalizePath($model->{$container}[$index], array_slice($path, 2))) {
+            $ret .= '.' . $temp;
+        }
+
+        return $ret;
     }
 
     /**
@@ -217,7 +253,12 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function totalTextMessageButtonClicks(ObjectID $buttonId, ObjectID $textMessageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
-        $matchFilters = ['$and' => [['message_id' => $textMessageId]]];
+        $matchFilters = [
+            '$and' => [
+                ['message_id' => $textMessageId],
+                ['buttons.id' => $buttonId],
+            ]
+        ];
 
         if ($startDateTime) {
             $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
@@ -227,12 +268,15 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
         }
 
-        $filter = [
+        $aggregate = [
             ['$match' => $matchFilters],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$buttons.' . $buttonId]]]]
+            ['$project' => ['buttons' => 1]],
+            ['$unwind' => '$buttons'],
+            ['$match' => ['buttons.id' => $buttonId]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$buttons.clicks']]]]
         ];
 
-        $ret = SentMessage::raw()->aggregate($filter)->toArray();
+        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
 
         return count($ret)? $ret[0]->count : 0;
     }
@@ -246,24 +290,27 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function perSubscriberTextMessageButtonClicks(ObjectID $buttonId, ObjectID $textMessageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
-        $matchFilters = ['$and' => [['message_id' => $textMessageId]]];
+        $matchFilters['$and'][] = ["buttons.id" => $buttonId];
 
         if ($startDateTime) {
-            $matchFilters['$and'][] = ["buttons.{$buttonId}" => ['$gte' => mongo_date($startDateTime)]];
+            $matchFilters['$and'][] = ["buttons.clicks" => ['$gte' => mongo_date($startDateTime)]];
         }
 
         if ($endDateTime) {
-            $matchFilters['$and'][] = ["buttons.{$buttonId}" => ['$lt' => mongo_date($endDateTime)]];
+            $matchFilters['$and'][] = ["buttons.clicks" => ['$lt' => mongo_date($endDateTime)]];
         }
 
         if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ["buttons.{$buttonId}.0" => ['$exists' => true]];
+            $matchFilters['$and'][] = ["buttons.clicks.0" => ['$exists' => true]];
         }
 
         $aggregate = [
+            ['$match' => ['message_id' => $textMessageId]],
+            ['$project' => ['buttons' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$buttons'],
             ['$match' => $matchFilters],
             ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
         ];
 
         $result = SentMessage::raw()->aggregate($aggregate)->toArray();
@@ -281,7 +328,13 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function totalCardButtonClicks(ObjectID $buttonId, ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
-        $matchFilters = ['$and' => [['message_id' => $cardContainerId]]];
+        $matchFilters = [
+            '$and' => [
+                ['message_id' => $cardContainerId],
+                ["cards.id" => $cardId],
+                ["cards.buttons.id" => $buttonId]
+            ]
+        ];
 
         if ($startDateTime) {
             $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
@@ -293,13 +346,17 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         $filter = [
             ['$match' => $matchFilters],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.' . $cardId . '.buttons.' . $buttonId]]]]
+            ['$project' => ['cards' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $cardId]],
+            ['$unwind' => '$cards.buttons'],
+            ['$match' => ['cards.buttons.id' => $buttonId]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.buttons.clicks']]]]
         ];
 
         $ret = SentMessage::raw()->aggregate($filter)->toArray();
 
         return count($ret)? $ret[0]->count : 0;
-
     }
 
     /**
@@ -312,25 +369,31 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function perSubscriberCardButtonClicks(ObjectID $buttonId, ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
-        $matchFilters = ['$and' => [['message_id' => $cardContainerId]]];
+        $matchFilters = ['$and' => [["cards.buttons.id" => $buttonId]]];
 
         if ($startDateTime) {
-            $matchFilters['$and'][] = ["cards.{$cardId}.buttons.{$buttonId}" => ['$gte' => mongo_date($startDateTime)]];
+            $matchFilters['$and'][] = ["cards.buttons.id" => ['$gte' => mongo_date($startDateTime)]];
         }
 
         if ($endDateTime) {
-            $matchFilters['$and'][] = ["cards.{$cardId}.buttons.{$buttonId}" => ['$lt' => mongo_date($endDateTime)]];
+            $matchFilters['$and'][] = ["cards.buttons.id" => ['$lt' => mongo_date($endDateTime)]];
         }
 
         if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ["cards.{$cardId}.buttons.{$buttonId}.0" => ['$exists' => true]];
+            $matchFilters['$and'][] = ["cards.buttons.id.0" => ['$exists' => true]];
         }
 
         $aggregate = [
+            ['$match' => ['message_id' => $cardContainerId]],
+            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $cardId]],
+            ['$unwind' => '$cards.buttons'],
             ['$match' => $matchFilters],
             ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
         ];
+
 
         $result = SentMessage::raw()->aggregate($aggregate)->toArray();
 
@@ -346,7 +409,12 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function totalCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
-        $matchFilters = ['$and' => [['message_id' => $cardContainerId]]];
+        $matchFilters = [
+            '$and' => [
+                ['message_id' => $cardContainerId],
+                ['cards.id' => $cardId],
+            ]
+        ];
 
         if ($startDateTime) {
             $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
@@ -356,12 +424,15 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
         }
 
-        $filter = [
+        $aggregate = [
             ['$match' => $matchFilters],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.' . $cardId]]]]
+            ['$project' => ['cards' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $cardId]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$card.clicks']]]]
         ];
 
-        $ret = SentMessage::raw()->aggregate($filter)->toArray();
+        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
 
         return count($ret)? $ret[0]->count : 0;
     }
@@ -375,24 +446,27 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function perSubscriberCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
-        $matchFilters = ['$and' => [['message_id' => $cardContainerId]]];
+        $matchFilters['$and'][] = ["cards.id" => $cardId];
 
         if ($startDateTime) {
-            $matchFilters['$and'][] = ["cards.{$cardId}" => ['$gte' => mongo_date($startDateTime)]];
+            $matchFilters['$and'][] = ["cards.clicks" => ['$gte' => mongo_date($startDateTime)]];
         }
 
         if ($endDateTime) {
-            $matchFilters['$and'][] = ["cards.{$cardId}" => ['$lt' => mongo_date($endDateTime)]];
+            $matchFilters['$and'][] = ["cards.clicks" => ['$lt' => mongo_date($endDateTime)]];
         }
 
         if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ["cards.{$cardId}.0" => ['$exists' => true]];
+            $matchFilters['$and'][] = ["cards.clicks.0" => ['$exists' => true]];
         }
 
         $aggregate = [
+            ['$match' => ['message_id' => $cardContainerId]],
+            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$cards'],
             ['$match' => $matchFilters],
             ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
         ];
 
         $result = SentMessage::raw()->aggregate($aggregate)->toArray();
@@ -408,6 +482,31 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function totalMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
+        $matchFilters = [
+            '$and' => [
+                ['bot_id' => $bot->_id],
+                ['buttons' => ['$exists' => true]],
+            ]
+        ];
+
+        if ($startDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
+        }
+
+        if ($endDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        $filter = [
+            ['$match' => $matchFilters],
+            ['$project' => ['buttons' => 1]],
+            ['$unwind' => '$buttons'],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$buttons.clicks']]]]
+        ];
+
+        $ret = SentMessage::raw()->aggregate($filter)->toArray();
+
+        return count($ret)? $ret[0]->count : 0;
     }
 
     /**
@@ -418,6 +517,32 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function perSubscriberMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
+        $matchFilters = ['$and' => []];
+
+        if ($startDateTime) {
+            $matchFilters['$and'][] = ["buttons.clicks" => ['$gte' => mongo_date($startDateTime)]];
+        }
+
+        if ($endDateTime) {
+            $matchFilters['$and'][] = ["buttons.clicks" => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ["buttons.clicks.0" => ['$exists' => true]];
+        }
+
+        $aggregate = [
+            ['$match' => ['$and' => [['bot_id' => $bot->_id], ['buttons' => ['$exists' => true]]]]],
+            ['$project' => ['buttons' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$buttons'],
+            ['$match' => $matchFilters],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
     }
 
     /**

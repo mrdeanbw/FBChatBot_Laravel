@@ -3,13 +3,15 @@
 use Exception;
 use Carbon\Carbon;
 use Common\Models\Bot;
+use Common\Models\Text;
 use Common\Models\Page;
 use Common\Models\Button;
+use MongoDB\BSON\ObjectID;
 use Common\Models\Message;
 use Common\Models\Template;
 use Common\Models\Broadcast;
 use Common\Models\Subscriber;
-use MongoDB\BSON\ObjectID;
+use Common\Models\CardContainer;
 use Common\Services\Facebook\Sender;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
@@ -219,21 +221,34 @@ class FacebookAPIAdapter
             'read_at'       => null,
         ];
 
+
         if ($message->type == 'text') {
+            /** @type Text $message */
             $data['buttons'] = [];
             foreach ($message->buttons as $button) {
-                $data['buttons'][$button->id->__toString()] = [];
+                $data['buttons'][] = [
+                    'id'     => $button->id,
+                    'clicks' => []
+                ];
             }
         }
 
         if ($message->type == 'card_container') {
+            /** @type CardContainer $message */
             $data['cards'] = [];
             foreach ($message->cards as $card) {
-                $cardId = $card->id->__toString();
-                $data['cards'][$cardId] = ['clicks' => [], 'buttons' => []];
+                $cardStats = [
+                    'id'      => $card->id,
+                    'clicks'  => [],
+                    'buttons' => []
+                ];
                 foreach ($card->buttons as $button) {
-                    $data['cards'][$cardId]['buttons'][$button->id->__toString()] = [];
+                    $cardStats['buttons'][] = [
+                        'id'     => $button->id,
+                        'clicks' => []
+                    ];
                 }
+                $data['cards'][] = $cardStats;
             }
         }
 

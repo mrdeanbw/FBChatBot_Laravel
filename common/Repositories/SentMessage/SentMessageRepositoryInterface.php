@@ -114,10 +114,11 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
 
     /**
      * @param SentMessage $sentMessage
-     * @param string      $cardOrButtonPath
+     * @param array       $cardOrButtonPath
      * @param UTCDatetime $dateTime
+     * @return
      */
-    public function recordClick(SentMessage $sentMessage, $cardOrButtonPath, UTCDatetime $dateTime);
+    public function recordClick(SentMessage $sentMessage, array $cardOrButtonPath, UTCDatetime $dateTime);
 
 
     /**
@@ -147,7 +148,7 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
     public function totalSentForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null);
 
     /**
-     * @param Bot    $bot
+     * @param Bot         $bot
      * @param Carbon|null $startDateTime
      * @param Carbon|null $endDateTime
      * @return int
@@ -155,7 +156,7 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
     public function totalMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null);
 
     /**
-     * @param Bot    $bot
+     * @param Bot         $bot
      * @param Carbon|null $startDateTime
      * @param Carbon|null $endDateTime
      * @return int
