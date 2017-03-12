@@ -30,7 +30,7 @@ class ClickHandlingController extends Controller
             return redirect($redirectTo);
         }
 
-        return response("Oops", 200);
+        return redirect(config('app.invalid_button_url'));
     }
 
     /**
@@ -41,8 +41,10 @@ class ClickHandlingController extends Controller
      */
     public function mainMenuButton($botId, $buttonId, $revisionId)
     {
-        $redirectTo = $this->adapter->handleUrlMainMenuButtonClick($botId, $buttonId, $revisionId);
+        if ($redirectTo = $this->adapter->handleUrlMainMenuButtonClick($botId, $buttonId, $revisionId)) {
+            return redirect($redirectTo);
+        }
 
-        return is_null($redirectTo)? response("", 200) : redirect($redirectTo);
+        return redirect(config('app.invalid_button_url'));
     }
 }

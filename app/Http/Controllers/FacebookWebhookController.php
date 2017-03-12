@@ -2,8 +2,8 @@
 
 use Illuminate\Http\Request;
 use Common\Services\BotService;
-use Common\Services\Facebook\AppVerifier;
 use Common\Http\Controllers\Controller;
+use Common\Services\Facebook\AppVerifier;
 use Common\Jobs\HandleIncomingFacebookCallback;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
