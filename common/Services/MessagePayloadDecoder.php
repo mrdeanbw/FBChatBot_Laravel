@@ -46,7 +46,7 @@ class MessagePayloadDecoder
      */
     protected $templatePath;
     /**
-     * @type string
+     * @type array
      */
     protected $sentMessagePath;
     /**
@@ -262,22 +262,11 @@ class MessagePayloadDecoder
 
         $this->templatePath = array_slice($fullMessagePath, 3);
         $this->message = $this->navigateThroughMessagePath($template, $this->templatePath);
-        if (! $this->message || (! is_a($this->message, Button::class) && ! is_a($this->message, Card::class))) {
+        if (! $this->message || ! is_object($this->message) || (! is_a($this->message, Button::class) && ! is_a($this->message, Card::class))) {
             return $this->invalid();
         }
 
-        $temp = [];
-        for ($i = count($fullMessagePath) - 1; $i >= 0; $i--) {
-            if ($fullMessagePath[$i] == 'messages') {
-                break;
-            }
-            $temp[] = $fullMessagePath[$i];
-        }
-        array_pop($temp);
-
-        $this->sentMessagePath = implode('.', array_reverse($temp));
-
-        if (is_null(array_get($this->sentMessage->toArray(), $this->sentMessagePath))) {
+        if (! $this->isValidMessagePath($fullMessagePath)) {
             return $this->invalid();
         }
 
@@ -311,12 +300,11 @@ class MessagePayloadDecoder
     }
 
     /**
-     * @param Template $template
-     * @param array    $messagePath
-     *
+     * @param Template|SentMessage $template
+     * @param array                $messagePath
      * @return Message|null
      */
-    private function navigateThroughMessagePath(Template $template, array $messagePath)
+    private function navigateThroughMessagePath($template, array $messagePath)
     {
         $ret = $template;
 
@@ -329,7 +317,9 @@ class MessagePayloadDecoder
 
             if (is_array($ret)) {
                 $ret = array_first($ret, function ($message) use ($section) {
-                    return (isset($message->id) && (string)$message->id == $section);
+                    return
+                        (is_object($message) && isset($message->id) && (string)$message->id == $section) ||
+                        (is_array($message) && isset($message['id']) && (string)$message['id'] == $section);
                 });
 
                 if ($ret) {
@@ -340,7 +330,7 @@ class MessagePayloadDecoder
             return null;
         }
 
-        return is_object($ret)? $ret : null;
+        return $ret;
     }
 
     /**
@@ -383,5 +373,29 @@ class MessagePayloadDecoder
     public function getTemplate()
     {
         return $this->template;
+    }
+
+    /**
+     * @param $fullMessagePath
+     * @return bool
+     */
+    protected function isValidMessagePath($fullMessagePath)
+    {
+        $temp = [];
+        for ($i = count($fullMessagePath) - 1; $i >= 0; $i--) {
+            if ($fullMessagePath[$i] == 'messages') {
+                break;
+            }
+            $temp[] = $fullMessagePath[$i];
+        }
+        array_pop($temp);
+
+        $this->sentMessagePath = array_reverse($temp);
+
+        if (! is_array($this->navigateThroughMessagePath($this->sentMessage, $this->sentMessagePath))) {
+            return $this->invalid();
+        }
+
+        return true;
     }
 }
