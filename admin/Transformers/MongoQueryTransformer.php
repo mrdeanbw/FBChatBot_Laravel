@@ -8,6 +8,6 @@ class MongoQueryTransformer extends BaseTransformer
 
     public function transform(MongoQuery $query)
     {
-        return get_object_vars($query);
+        return $query;
     }
 }
