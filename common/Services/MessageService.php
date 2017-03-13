@@ -4,12 +4,15 @@ use Common\Models\Card;
 use Common\Models\Image;
 use Common\Models\Message;
 use MongoDB\BSON\ObjectID;
+use Common\Models\SentMessage;
 use Common\Models\MessageRevision;
 use Illuminate\Support\Collection;
+use Illuminate\Filesystem\Filesystem;
 use Intervention\Image\ImageManagerStatic;
 use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\Template\TemplateRepositoryInterface;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use Common\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
 
 class MessageService
@@ -23,10 +26,22 @@ class MessageService
         'button'         => ['title', 'url', 'messages', 'template_id', 'actions'],
     ];
 
-    /** @type MessageRevision[] */
+    /**
+     * @type MessageRevision[]
+     */
     protected $messageRevisions;
-    /** @type bool */
+    /**
+     * @type bool
+     */
     protected $forMainMenuButtons;
+    /**
+     * @type array
+     */
+    protected $delete = [
+        'image_files'       => [],
+        'sent_messages'     => [],
+        'message_revisions' => []
+    ];
     /**
      * @type BotRepositoryInterface
      */
@@ -39,23 +54,39 @@ class MessageService
      * @type MessageRevisionRepositoryInterface
      */
     private $messageRevisionRepo;
-
+    /**
+     * @type SentMessageRepositoryInterface
+     */
+    private $sentMessageRepo;
+    /**
+     * @type bool
+     */
     private $versioning = true;
+    /**
+     * @type Filesystem
+     */
+    private $files;
 
     /**
      * MessageBlockService constructor.
      *
-     * @param TemplateRepositoryInterface        $templateRepo
+     * @param Filesystem                         $files
      * @param BotRepositoryInterface             $botRepo
+     * @param TemplateRepositoryInterface        $templateRepo
+     * @param SentMessageRepositoryInterface     $sentMessageRepo
      * @param MessageRevisionRepositoryInterface $messageRevisionRepo
      */
     public function __construct(
+        Filesystem $files,
         BotRepositoryInterface $botRepo,
         TemplateRepositoryInterface $templateRepo,
+        SentMessageRepositoryInterface $sentMessageRepo,
         MessageRevisionRepositoryInterface $messageRevisionRepo
     ) {
+        $this->files = $files;
         $this->botRepo = $botRepo;
         $this->templateRepo = $templateRepo;
+        $this->sentMessageRepo = $sentMessageRepo;
         $this->messageRevisionRepo = $messageRevisionRepo;
     }
 
@@ -83,6 +114,16 @@ class MessageService
         $this->messageRevisions = [];
 
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
+        
+        $this->files->delete($this->delete['image_files']);
+        $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
+        $this->messageRevisionRepo->bulkDelete($this->delete['message_revisions']);
+        $this->delete = [
+            'image_files'       => [],
+            'sent_messages'     => [],
+            'message_revisions' => []
+
+        ];
 
         if ($this->versioning && $this->messageRevisions) {
 
@@ -106,11 +147,18 @@ class MessageService
         return $ret;
     }
 
-
+    /**
+     * @param array $input
+     * @param array $original
+     * @param       $botId
+     * @param bool  $allowReadOnly
+     * @param bool  $versioningEnabled
+     * @return array
+     */
     protected function makeMessages(array $input, array $original = [], $botId, $allowReadOnly = false, $versioningEnabled = false)
     {
         $original = (new Collection($original))->keyBy(function (Message $message) {
-            return $message->id->__toString();
+            return (string)$message->id;
         });
 
         $normalized = [];
@@ -180,9 +228,52 @@ class MessageService
             }
         }
 
+        $this->setModelsToBeDeleted($original->toArray(), new Collection());
         $this->moveReadonlyBlockToTheBottom($normalized);
 
         return $normalized;
+    }
+
+    /**
+     * @param array      $messages
+     * @param Collection $revisions
+     * @return array
+     */
+    private function setModelsToBeDeleted(array $messages, Collection $revisions)
+    {
+        foreach ($messages as $message) {
+            if ($message->readonly) {
+                continue;
+            }
+
+            if (in_array($message->type, ['text', 'image', 'card_container'])) {
+                $revisions = $this->messageRevisionRepo->getMessageRevisions($message->id);
+            }
+
+            if ($message->type == 'button' && $message->messages) {
+                $this->setModelsToBeDeleted($message->messages, new Collection());
+            }
+
+            if (in_array($message->type, ['image', 'card'])) {
+                $this->setImageFilesToBeDeleted($message, $revisions);
+            }
+
+            if ($message->type == 'card_container') {
+                $this->setModelsToBeDeleted($message->cards, $revisions);
+            }
+
+            if (in_array($message->type, ['text', 'card'])) {
+                $this->setModelsToBeDeleted($message->buttons, $revisions);
+            }
+
+            if (in_array($message->type, ['text', 'image', 'card_container'])) {
+                $this->setSentMessagesToBeDeleted($message);
+                $revisions = $revisions->map(function (MessageRevision $revision) {
+                    return $revision->_id;
+                })->toArray();
+                $this->delete['message_revisions'] = array_merge($this->delete['message_revisions'], $revisions);
+            }
+        }
     }
 
     /**
@@ -214,7 +305,7 @@ class MessageService
         if (! in_array($ext, ['png', 'jpg', 'gif'])) {
             $ext = 'png';
         }
-        
+
         $fileName = $this->randomFileName($ext);
 
         $image = ImageManagerStatic::make($message->file->encoded);
@@ -303,5 +394,43 @@ class MessageService
         $this->forMainMenuButtons = $value;
 
         return $this;
+    }
+
+    /**
+     * @param Card|Image $message
+     * @param Collection $revisions
+     */
+    private function setImageFilesToBeDeleted($message, Collection $revisions)
+    {
+        if ($message->type == 'image') {
+            /** @type MessageRevision $revision */
+            foreach ($revisions as $revision) {
+                $this->delete['image_files'][] = $revision->file->path;
+            }
+
+            return;
+        }
+
+        /** @type MessageRevision $revision */
+        foreach ($revisions as $revision) {
+            foreach ($revision->cards as $card) {
+                if ($card->id == $message->id) {
+                    $this->delete['image_files'][] = $card->file->path;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param $message
+     * @return array
+     */
+    private function setSentMessagesToBeDeleted($message)
+    {
+        $sentMessageIds = $this->sentMessageRepo->getAllForMessage($message->id)->map(function (SentMessage $sentMessage) {
+            return $sentMessage->_id;
+        })->toArray();
+
+        $this->delete['sent_messages'] = array_merge($this->delete['sent_messages'], $sentMessageIds);
     }
 }

@@ -39,7 +39,7 @@ class MessageRevisionService
      */
     public function getRevisionsWithStatsForMessage($messageId, Bot $bot)
     {
-        $revisions = $this->messageRevisionRepo->getMessageRevisions(new ObjectID($messageId), $bot);
+        $revisions = $this->messageRevisionRepo->getMessageRevisionsWithBot(new ObjectID($messageId), $bot);
         $this->associateRevisionStats($revisions);
 
         return $revisions;
@@ -84,7 +84,7 @@ class MessageRevisionService
             throw new NotFoundHttpException;
         }
 
-        $revisions = $this->messageRevisionRepo->getMessageRevisions(new ObjectID($buttonId), $bot);
+        $revisions = $this->messageRevisionRepo->getMessageRevisionsWithBot(new ObjectID($buttonId), $bot);
 
         return $this->normalizeMainMenuButtonRevisions($revisions);
     }

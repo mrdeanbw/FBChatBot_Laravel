@@ -20,10 +20,21 @@ class DBMessageRevisionRepository extends DBAssociatedWithBotRepository implemen
 
     /**
      * @param ObjectID $messageId
+     * @return Collection
+     */
+    public function getMessageRevisions(ObjectID $messageId)
+    {
+        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $messageId],];
+
+        return $this->getAll($filter);
+    }
+
+    /**
+     * @param ObjectID $messageId
      * @param Bot      $bot
      * @return Collection
      */
-    public function getMessageRevisions(ObjectID $messageId, Bot $bot)
+    public function getMessageRevisionsWithBot(ObjectID $messageId, Bot $bot)
     {
         $filter = [
             ['key' => 'message_id', 'operator' => '=', 'value' => $messageId],

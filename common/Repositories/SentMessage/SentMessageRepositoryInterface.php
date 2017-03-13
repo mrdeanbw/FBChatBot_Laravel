@@ -1,11 +1,12 @@
 <?php namespace Common\Repositories\SentMessage;
 
-use Common\Models\Bot;
-use Common\Models\SentMessage;
 use Carbon\Carbon;
-use Common\Models\Subscriber;
+use Common\Models\Bot;
 use MongoDB\BSON\ObjectID;
+use Common\Models\Subscriber;
 use MongoDB\BSON\UTCDatetime;
+use Common\Models\SentMessage;
+use Illuminate\Support\Collection;
 use Common\Repositories\AssociatedWithBotRepositoryInterface;
 
 interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInterface
@@ -162,4 +163,11 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @return int
      */
     public function perSubscriberMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null);
+
+    /**
+     * @param ObjectID $messageId
+     * @param array    $columns
+     * @return Collection
+     */
+    public function getAllForMessage(ObjectID $messageId, $columns = ['*']);
 }

@@ -7,6 +7,7 @@ use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
 use Common\Models\Subscriber;
 use Common\Models\SentMessage;
+use Illuminate\Support\Collection;
 use Common\Repositories\DBAssociatedWithBotRepository;
 
 class DBSentMessageRepository extends DBAssociatedWithBotRepository implements SentMessageRepositoryInterface
@@ -564,5 +565,17 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
         }
 
         return $this->count($filters);
+    }
+
+    /**
+     * @param ObjectID $messageId
+     * @param array    $columns
+     * @return Collection
+     */
+    public function getAllForMessage(ObjectID $messageId, $columns = ['*'])
+    {
+        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $messageId]];
+
+        return $this->getAll($filter, [], $columns);
     }
 }

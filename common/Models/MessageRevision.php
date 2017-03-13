@@ -1,13 +1,14 @@
 <?php namespace Common\Models;
 
-use MongoDB\BSON\ObjectID;
-
 /**
- * @property array    stats
- * @property ObjectID $message_id
+ * @property array                  $stats
+ * @property \MongoDB\BSON\ObjectID $message_id
+ * @property ImageFile              $file
+ * @property Card[]                 $cards
  */
 class MessageRevision extends BaseModel
 {
+
     use HasEmbeddedArrayModels;
 
     public $multiArrayModels = [
@@ -15,5 +16,7 @@ class MessageRevision extends BaseModel
         'buttons'  => Button::class,
         'messages' => Message::class . '::factory'
     ];
+
+    public $arrayModels = ['file' => ImageFile::class];
 
 }

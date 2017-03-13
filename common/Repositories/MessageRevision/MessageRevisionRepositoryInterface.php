@@ -1,8 +1,8 @@
 <?php namespace Common\Repositories\MessageRevision;
 
 use Common\Models\Bot;
-use Common\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
+use Common\Models\Subscriber;
 use Illuminate\Support\Collection;
 use Common\Repositories\AssociatedWithBotRepositoryInterface;
 
@@ -11,10 +11,16 @@ interface MessageRevisionRepositoryInterface extends AssociatedWithBotRepository
 
     /**
      * @param ObjectID $messageId
+     * @return Collection
+     */
+    public function getMessageRevisions(ObjectID $messageId);
+
+    /**
+     * @param ObjectID $messageId
      * @param Bot      $bot
      * @return Collection
      */
-    public function getMessageRevisions(ObjectID $messageId, Bot $bot);
+    public function getMessageRevisionsWithBot(ObjectID $messageId, Bot $bot);
     
     /**
      * @param ObjectID   $id
