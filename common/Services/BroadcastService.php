@@ -5,6 +5,7 @@ use Common\Models\Bot;
 use Common\Models\Broadcast;
 use Common\Models\AudienceFilter;
 use Common\Models\BroadcastSchedule;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -30,21 +31,32 @@ class BroadcastService
      * @type SentMessageService
      */
     private $sentMessages;
+    /**
+     * @type SubscriberRepositoryInterface
+     */
+    private $subscriberRepo;
 
     /**
      * BroadcastService constructor.
      *
-     * @param TemplateService              $templates
-     * @param TimezoneService              $timezones
-     * @param SentMessageService           $sentMessages
-     * @param BroadcastRepositoryInterface $broadcastRepo
+     * @param TemplateService               $templates
+     * @param TimezoneService               $timezones
+     * @param SentMessageService            $sentMessages
+     * @param BroadcastRepositoryInterface  $broadcastRepo
+     * @param SubscriberRepositoryInterface $subscriberRepo
      */
-    public function __construct(TemplateService $templates, TimezoneService $timezones, SentMessageService $sentMessages, BroadcastRepositoryInterface $broadcastRepo)
-    {
+    public function __construct(
+        TemplateService $templates,
+        TimezoneService $timezones,
+        SentMessageService $sentMessages,
+        BroadcastRepositoryInterface $broadcastRepo,
+        SubscriberRepositoryInterface $subscriberRepo
+    ) {
         $this->timezones = $timezones;
         $this->templates = $templates;
         $this->sentMessages = $sentMessages;
         $this->broadcastRepo = $broadcastRepo;
+        $this->subscriberRepo = $subscriberRepo;
     }
 
     /**
@@ -172,16 +184,22 @@ class BroadcastService
             throw new ValidationHttpException(['date' => ["The selected date & time is in the past."]]);
         }
 
+        $audienceFilter = new AudienceFilter($input['filter'], true);
+        $messageType = array_search($input['message_type'], BroadcastRepositoryInterface::_MESSAGE_MAP);
+        if (! $this->matchingSubscriberCount($messageType, $audienceFilter)) {
+            throw new ValidationHttpException(['filter' => ["This broadcast cannot be sent/scheduled because there is no matching subscribers at the moment."]]);
+        }
+
         $data = [
             'name'          => $input['name'],
             'date'          => $input['date'],
             'time'          => $input['time'],
-            'filter'        => new AudienceFilter($input['filter'], true),
+            'filter'        => $audienceFilter,
             'status'        => BroadcastRepositoryInterface::STATUS_PENDING,
             'send_now'      => $input['send_mode'] == 'now',
             'timezone'      => $timezone,
             'timezone_mode' => $timezoneMode,
-            'message_type'  => array_search($input['message_type'], BroadcastRepositoryInterface::_MESSAGE_MAP),
+            'message_type'  => $messageType,
             'notification'  => array_search($input['notification'], FacebookAPIAdapter::_NOTIFICATION_MAP),
             'schedules'     => [],
             'completed_at'  => null,
@@ -294,5 +312,36 @@ class BroadcastService
         $carbon->addMinutes(15);
 
         return $carbon->isPast();
+    }
+
+    /**
+     * @param $messageType
+     * @param $audienceFilter
+     * @return int
+     */
+    private function matchingSubscriberCount($messageType, $audienceFilter)
+    {
+        switch ($messageType) {
+            case BroadcastRepositoryInterface::MESSAGE_PROMOTIONAL:
+                $lastInteractionAtFilterValue = 'last_24_hours';
+                break;
+            case BroadcastRepositoryInterface::MESSAGE_FOLLOW_UP:
+                $lastInteractionAtFilterValue = 'not:last_24_hours';
+                break;
+            default:
+                $lastInteractionAtFilterValue = null;
+        }
+        $filter = [
+            ['operator' => 'subscriber', 'filter' => $audienceFilter],
+            ['key' => 'active', 'operator' => '=', 'value' => true],
+        ];
+
+        if ($lastInteractionAtFilterValue) {
+            $filter[] = ['key' => 'last_interaction_at', 'operator' => 'date', 'value' => $lastInteractionAtFilterValue];
+
+            return $filter;
+        }
+
+        return $this->subscriberRepo->count($filter);
     }
 }
