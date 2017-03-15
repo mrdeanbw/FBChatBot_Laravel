@@ -43,6 +43,7 @@ if (! function_exists('date_string_boundaries')) {
      */
     function date_string_boundaries($date)
     {
+        $now = Carbon::now();
         $today = Carbon::today();
         $tomorrow = Carbon::tomorrow();
         $thisMonthBeginning = (new Carbon('first day of this month midnight'));
@@ -52,6 +53,8 @@ if (! function_exists('date_string_boundaries')) {
                 return [$today, $tomorrow];
             case 'yesterday':
                 return [Carbon::yesterday(), $today];
+            case 'last_24_hours':
+                return [$now->copy()->subDay(1), $now];
             case 'last_seven_days':
                 return [(new Carbon('today'))->subDays(6), $tomorrow];
             case 'last_thirty_days':

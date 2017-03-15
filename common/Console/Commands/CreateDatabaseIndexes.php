@@ -57,7 +57,7 @@ class CreateDatabaseIndexes extends Command
         /** @type Collection $collection */
         $collection = \Common\Models\Broadcast::raw();
         $collection->createIndex(['bot_id' => 1]);
-        $collection->createIndex(['status' => 1, 'next_send_at' => 1]);
+        $collection->createIndex(['status' => 1, 'send_at' => 1, 'schedules.status' => 1, 'schedules.send_at' => 1]);
     }
 
     private function createMessageRevisionIndexes()
