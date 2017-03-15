@@ -108,13 +108,11 @@ class BroadcastController extends APIController
     private function validationRules()
     {
         return [
+            'template'                      => 'bail|required|array',
+            'template.messages'             => 'bail|required|array|max:10',
+            'template.messages.*'           => 'bail|required|message',
             'name'                          => 'bail|required|max:255',
-            'timezone'                      => 'bail|required|in:same_time,time_travel,limit_time',
-            'notification'                  => 'bail|required|in:REGULAR,SILENT_PUSH,NO_PUSH',
-            'date'                          => 'bail|required|date_format:Y-m-d',
-            'time'                          => 'bail|required|date_format:H:i',
-            'send_from'                     => 'bail|required_if:timezone,limit_time|integer|between:1,24',
-            'send_to'                       => 'bail|required_if:timezone,limit_time|integer|between:1,24',
+            'message_type'                  => 'bail|required|in:subscription,promotional,follow_up',
             'filter'                        => 'bail|required|array',
             'filter.enabled'                => 'bail|required',
             'filter.join_type'              => 'bail|required_if:filter.enabled,true|in:and,or',
@@ -124,9 +122,16 @@ class BroadcastController extends APIController
             'filter.groups.*.rules'         => 'bail|required|array',
             'filter.groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
             'filter.groups.*.rules.*.value' => 'bail|required',
-            'template'                      => 'bail|required|array',
-            'template.messages'             => 'bail|required|array|max:10',
-            'template.messages.*'           => 'bail|required|message',
+            'send_mode'                     => 'bail|required|in:now,later',
+            'date'                          => 'bail|required_if:send_mode,later|date_format:Y-m-d',
+            'time'                          => 'bail|required_if:send_mode,later|date_format:H:i',
+            'timezone_mode'                 => 'bail|required|in:bot,subscriber,custom',
+            'timezone'                      => 'bail|required_if:timezone_mode,custom|timezone',
+            'limit_time'                    => 'bail|required|array',
+            'limit_time.enabled'            => 'bail|required|boolean',
+            'limit_time.from'               => 'bail|required_if:limit_time.enabled,true|integer|between:1,24',
+            'limit_time.to'                 => 'bail|required_if:limit_time.enabled,true|integer|between:1,24',
+            'notification'                  => 'bail|required|in:REGULAR,SILENT_PUSH,NO_PUSH',
         ];
     }
 

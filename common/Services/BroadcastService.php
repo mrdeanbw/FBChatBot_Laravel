@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use Common\Models\Bot;
 use Common\Models\Broadcast;
 use Common\Models\AudienceFilter;
+use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -162,127 +163,127 @@ class BroadcastService
      */
     private function cleanInput(array $input, Bot $bot)
     {
-        $data = array_only($input, [
-            'name',
-            'notification',
-            'timezone',
-            'date',
-            'time',
-            'send_from',
-            'send_to',
-        ]);
+        $timezoneMode = array_search($input['timezone_mode'], BroadcastRepositoryInterface::_TIMEZONE_MAP);
+        $timezone = $this->cleanTimezone($bot, $timezoneMode, array_get($input, 'timezone'));
 
-        $data = array_merge(
-            $data,
-            [
-                'status'       => BroadcastRepositoryInterface::STATUS_PENDING,
-                'completed_at' => null,
-                'filter'       => new AudienceFilter($input['filter'], true),
+        if ($this->isDateTimeInThePast($input['date'], $input['time'], $timezone)) {
+            throw new ValidationHttpException(['date' => ["The selected date & time is in the past."]]);
+        }
+
+        $data = [
+            'name'          => $input['name'],
+            'date'          => $input['date'],
+            'time'          => $input['time'],
+            'filter'        => new AudienceFilter($input['filter'], true),
+            'status'        => BroadcastRepositoryInterface::STATUS_PENDING,
+            'send_now'      => $input['send_mode'] == 'now',
+            'timezone'      => $timezone,
+            'timezone_mode' => $timezoneMode,
+            'message_type'  => array_search($input['message_type'], BroadcastRepositoryInterface::_MESSAGE_MAP),
+            'notification'  => array_search($input['notification'], FacebookAPIAdapter::_NOTIFICATION_MAP),
+            'limit_time'    => [
+                'to'      => $input['limit_time']['to'],
+                'from'    => $input['limit_time']['from'],
+                'enabled' => $input['limit_time']['enabled'],
             ],
-            $this->calculateFirstScheduleDateTime($data, $bot)
-        );
+            'schedules'     => [],
+            'completed_at'  => null,
+        ];
 
-        $data['notification'] = $this->normalizeNotification($data['notification']);
+
+        if ($data['send_now']) {
+            $data['send_at'] = Carbon::now();
+        } else {
+            $data['send_at'] = $timezone? Carbon::createFromFormat('Y-m-d H:i', "{$input['date']} {$input['time']}", $timezone)->setTimezone('UTC') : null;
+        }
+
+        if (! $data['send_now'] && $timezoneMode != BroadcastRepositoryInterface::TIMEZONE_SUBSCRIBER) {
+            $data['schedules'] = $this->calculateRunSchedules($data);
+        }
 
         return $data;
     }
 
     /**
-     * Calculate the date/time when a specific timezone subscribers should receive the broadcast messages.
-     *
-     * @param array $data
-     * @param Bot   $bot
-     *
-     * @return array [Carbon, double|null]
+     * @param Bot    $bot
+     * @param int    $timezoneMode
+     * @param string $selectedTimezone
+     * @return string|null
      */
-    private function calculateFirstScheduleDateTime(array $data, Bot $bot)
+    private function cleanTimezone(Bot $bot, $timezoneMode, $selectedTimezone)
     {
-        // start by creating a copy from the original broadcast send at date/time.
-        $sendAt = $this->getTimeInUTC($data['date'], $data['time'], $bot->timezone_offset)->copy();
-
-        // If the timezone mode is "same time", then we will send it exactly the same time.
-        if ($data['timezone'] == 'same_time') {
-            return ['next_send_at' => $sendAt];
+        if ($timezoneMode == BroadcastRepositoryInterface::TIMEZONE_CUSTOM) {
+            return $selectedTimezone;
         }
 
-        // Otherwise, we will send it in the first timezone (-12)
-        $offset = TimezoneService::UTC_OFFSETS[0];
-
-        $sendAt->setTimezone($this->getPrettyTimezoneOffset($offset));
-
-
-        // If the timezone mode is limit time, then we will make sure that the send date / time falls in this limit.
-        if ($data['timezone'] == 'limit_time') {
-            $sendAt = $this->applyLimitTime($sendAt, $data['send_from'], $data['send_to']);
+        if ($timezoneMode == BroadcastRepositoryInterface::TIMEZONE_BOT) {
+            return $bot->timezone;
         }
 
-        return [
-            'next_send_at'    => $sendAt,
-            'next_utc_offset' => $offset
-        ];
+        return null;
     }
 
     /**
-     * @param Broadcast $broadcast
-     *
+     * @param array $broadcast
      * @return array
      */
-    public function calculateNextScheduleDateTime(Broadcast $broadcast)
+    public function calculateRunSchedules(array $broadcast)
     {
-        if ($broadcast->timezone == 'same_time') {
-            return ['next_send_at' => null];
+        $schedule = [];
+        foreach (TimezoneService::UTC_OFFSETS as $offset) {
+            $sendAt = $broadcast['send_at']->copy();
+            if ($broadcast['limit_time']['enabled']) {
+                $sendAt = $this->applyLimitTime($sendAt, $offset, $broadcast);
+            }
+            $schedule[] = [
+                'timezone' => $offset,
+                'send_at'  => $sendAt,
+            ];
         }
 
-        $sendAt = null;
+        return $schedule;
+    }
 
-        if ($nextTimezone = $this->timezones->getNext($broadcast->next_utc_offset)) {
+    /**
+     * Calculate the date/time when a specific timezone subscribers should receive the broadcast messages.
+     * @param Carbon $sendAt
+     * @param double $offset
+     * @param array  $data
+     * @return Carbon
+     */
+    protected function applyLimitTime(Carbon $sendAt, $offset, array $data)
+    {
+        $hour = (int)$offset;
+        $minutes = (int)(($offset - $hour) * 60);
+        $lowerBound = Carbon::createFromFormat('Y-m-d', $data['date'])->setTime($data['limit_time']['from'] - $hour, $minutes, 0);
+        $upperBound = Carbon::createFromFormat('Y-m-d', $data['date'])->setTime($data['limit_time']['to'] - $hour, $minutes, 0);
 
-            $minutes = 60.0 * ($nextTimezone - $broadcast->next_utc_offset);
+        // If the upper bound date is less than the lower bound, then add 1 day to the upper bound to fix it.
+        if ($upperBound->lt($lowerBound)) {
+            $upperBound->addDay(1);
+        }
 
-            $sendAt = $broadcast->next_send_at->addMinutes((int)$minutes);
-
-            if ($broadcast->timezone == 'limit_time') {
-                $sendAt = $this->applyLimitTime($sendAt, $broadcast->send_from, $broadcast->send_to);
+        if ($lowerBound->isPast()) {
+            if ($upperBound->isPast()) {
+                $lowerBound->addDay(1);
+                $upperBound->addDay(1);
+            } else {
+                $lowerBound = Carbon::now();
             }
         }
 
+        // If the send at date/time is less than the lower bound. Send it at the lower bound date/time.
+        if ($sendAt->lt($lowerBound)) {
+            $sendAt = $lowerBound;
+        }
 
-        return [
-            'next_send_at'    => $sendAt,
-            'next_utc_offset' => $nextTimezone
-        ];
-    }
+        // If the send at date/time is greater than the upper bound. Send it at the upper bound date/time.
+        if ($sendAt->gt($upperBound)) {
+            $sendAt = $upperBound;
+        }
 
-    /**
-     * @param string $date
-     * @param string $time
-     * @param string $timezoneOffset
-     *
-     * @return Carbon
-     */
-    private function getTimeInUTC($date, $time, $timezoneOffset)
-    {
-        $dateTime = "{$date} {$time}";
-        $timezoneOffset = $this->getPrettyTimezoneOffset($timezoneOffset);
-
-        return Carbon::createFromFormat('Y-m-d H:i', $dateTime, $timezoneOffset)->setTimezone('UTC');
-    }
-
-    /**
-     * Convert a decimal value of UTC offset to the HH:MM format accepted b
-     * Carbon::createFromFormat static constructor.
-     * I/O: Examples
-     * 2 => "+02:00"
-     * -9.5 => "-09:30"
-     * 5.75 => "+05:45"
-     *
-     * @param double $timezoneOffset
-     *
-     * @return string
-     */
-    private function getPrettyTimezoneOffset($timezoneOffset)
-    {
-        return ($timezoneOffset >= 0? '+' : '-') . date("H:i", abs($timezoneOffset) * 3600);
+        // Otherwise, it falls between lower and upper bound. Don't change it.
+        return $sendAt;
     }
 
     /**
@@ -293,39 +294,6 @@ class BroadcastService
     {
         $broadcast = $this->findByIdAndStatusOrFail($id, BroadcastRepositoryInterface::STATUS_PENDING, $bot);
         $this->broadcastRepo->delete($broadcast);
-    }
-
-    /**
-     * If the timezone mode is limit time, then we will make sure that the send date / time falls in this limit.
-     *
-     * @param Carbon $dateTime
-     * @param int    $from
-     * @param int    $to
-     *
-     * @return Carbon
-     */
-    private function applyLimitTime(Carbon $dateTime, $from, $to)
-    {
-        $lowerBound = $dateTime->copy()->hour($from);
-        $upperBound = $dateTime->copy()->hour($to);
-
-        // If the upper bound date is less than the lower bound, then add 1 day to the upper bound to fix it.
-        if ($upperBound->lt($lowerBound)) {
-            $upperBound->addDay(1);
-        }
-
-        // If the send at date/time is less than the lower bound. Send it at the lower bound date/time.
-        if ($dateTime->lt($lowerBound)) {
-            $dateTime = $lowerBound;
-        }
-
-        // If the send at date/time is greater than the upper bound. Send it at the upper bound date/time.
-        if ($dateTime->gt($upperBound)) {
-            $dateTime = $upperBound;
-        }
-
-        // Otherwise, it falls between lower and upper bound. Don't change it.
-        return $dateTime;
     }
 
     /**
@@ -349,18 +317,21 @@ class BroadcastService
     }
 
     /**
-     * @param $notification
-     * @return int
+     * @param string      $date
+     * @param string      $time
+     * @param string|null $timezone
+     * @return bool
      */
-    private function normalizeNotification($notification)
+    private function isDateTimeInThePast($date, $time, $timezone)
     {
-        switch (strtoupper($notification)) {
-            case 'NO_PUSH':
-                return FacebookAPIAdapter::NOTIFICATION_NO_PUSH;
-            case 'SILENT_PUSH':
-                return FacebookAPIAdapter::NOTIFICATION_SILENT_PUSH;
-            default:
-                return FacebookAPIAdapter::NOTIFICATION_REGULAR;
-        }
+        $dateTime = "{$date} {$time}";
+        $carbon = $timezone?
+            Carbon::createFromFormat('Y-m-d H:i', $dateTime, $timezone) :
+            Carbon::createFromFormat('Y-m-d H:i', $dateTime)->addHours(-TimezoneService::UTC_OFFSETS[0]);
+
+        // For filling in the form
+        $carbon->addMinutes(15);
+
+        return $carbon->isPast();
     }
 }
