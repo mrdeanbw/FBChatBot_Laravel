@@ -8,9 +8,14 @@ interface AutoReplyRuleRepositoryInterface extends AssociatedWithBotRepositoryIn
 {
 
     // (the lower value, the higher priority)
-    CONST MATCH_MODE_IS = 10;
-    CONST MATCH_MODE_PREFIX = 20;
-    CONST MATCH_MODE_CONTAINS = 30;
+    const MATCH_MODE_IS = 10;
+    const MATCH_MODE_PREFIX = 20;
+    const MATCH_MODE_CONTAINS = 30;
+    const _MATCH_MODE_MAP = [
+        self::MATCH_MODE_IS       => 'is',
+        self::MATCH_MODE_PREFIX   => 'begins_with',
+        self::MATCH_MODE_CONTAINS => 'contains',
+    ];
 
     /**
      * Get the first matching auto reply rule.

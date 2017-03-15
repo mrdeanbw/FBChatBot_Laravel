@@ -10,11 +10,6 @@ use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 class AutoReplyRuleService
 {
 
-    protected $matchModeMap = [
-        'is'          => AutoReplyRuleRepositoryInterface::MATCH_MODE_IS,
-        'begins_with' => AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX,
-        'contains'    => AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS,
-    ];
     /**
      * @type AutoReplyRuleRepositoryInterface
      */
@@ -78,7 +73,7 @@ class AutoReplyRuleService
     {
         $data = [
             'action'      => 'send',
-            'mode'        => $this->matchModeMap[$input['mode']],
+            'mode'        => array_search($input['mode'], AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP),
             'keyword'     => $input['keyword'],
             'template_id' => $input['template']['id'],
             'bot_id'      => $bot->_id,
@@ -104,7 +99,7 @@ class AutoReplyRuleService
         }
 
         $data = [
-            'mode'        => $this->matchModeMap[$input['mode']],
+            'mode'        => array_search($input['mode'], AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP),
             'keyword'     => $input['keyword'],
             'template_id' => $input['template']['id'],
         ];
@@ -149,7 +144,7 @@ class AutoReplyRuleService
         $bot_id = $bot->_id;
 
         // Exact Match
-        $mode = 'is';
+        $mode = AutoReplyRuleRepositoryInterface::MATCH_MODE_IS;
 
         // Non-editable
         $readonly = true;
