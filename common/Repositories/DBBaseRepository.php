@@ -1,6 +1,7 @@
 <?php namespace Common\Repositories;
 
 use Carbon\Carbon;
+use Common\Models\ArrayModel;
 use MongoDB\BSON\ObjectID;
 use Common\Models\BaseModel;
 use MongoDB\BSON\UTCDatetime;
@@ -107,6 +108,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
     {
         /** @type string|BaseModel $model */
         $model = $this->model();
+        $data = $this->normalizeArrayModels($data);
 
         return $model::create($data);
     }
@@ -155,6 +157,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
             if ($set = array_get($data, '$set', [])) {
                 $data['$set'] = $this->normalizeCarbonDates($data['$set']);
+                $data['$set'] = $this->normalizeArrayModels($data['$set']);
             }
 
             return $class::where('_id', $model->_id)->getQuery()->update($data);
@@ -163,6 +166,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
         $model->fill($data);
 
         $data = $this->normalizeCarbonDates($data);
+        $data = $this->normalizeArrayModels($data);
 
         return $class::where('_id', $model->_id)->update($data);
     }
@@ -213,7 +217,6 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
             default:
                 $query->where($filter['key'], $filter['operator'], $filter['value']);
-
         }
 
         return $query;
@@ -254,10 +257,9 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * @param array $data
-     *
      * @return array
      */
-    private function normalizeCarbonDates(array $data)
+    protected function normalizeCarbonDates(array $data)
     {
         foreach ($data as $key => &$value) {
             if (is_a($value, Carbon::class)) {
@@ -266,5 +268,41 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
         }
 
         return $data;
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    protected function normalizeArrayModels(array $data)
+    {
+        foreach ($data as $key => &$value) {
+            if (is_array($value) && isset($value[0]) && is_a($value[0], ArrayModel::class)) {
+                $value = array_map(function ($item) {
+                    return $this->serializeArrayModel($item);
+                }, $value);
+            }
+            if (is_a($value, ArrayModel::class)) {
+                $value = $this->serializeArrayModel($value);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param ArrayModel $model
+     * @return array
+     */
+    protected function serializeArrayModel(ArrayModel $model)
+    {
+        $ret = get_object_vars($model);
+        foreach ($ret as $key => &$value) {
+            if ($value && $model->isDate($key)) {
+                $value = mongo_date($value);
+            }
+        }
+
+        return $ret;
     }
 }
