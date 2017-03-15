@@ -99,7 +99,7 @@ class SendDueBroadcast extends BaseJob
         $ret = [];
         $now = Carbon::now();
         foreach ($this->broadcast->schedules as $schedule) {
-            if ($schedule->status == BroadcastRepositoryInterface::STATUS_PENDING && $schedule->send_at->lte($now)) {
+            if ($schedule->status == BroadcastRepositoryInterface::STATUS_PENDING && carbon_date($schedule->send_at)->lte($now)) {
                 $ret[] = $schedule->utc_offset;
             }
         }

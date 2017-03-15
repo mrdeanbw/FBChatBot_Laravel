@@ -13,9 +13,9 @@ abstract class ArrayModel
             }
 
             if ($value && $this->isDate($key)) {
-                $value = carbon_date($value);
+                $value = mongo_date($value);
             }
-            
+
             $this->{$key} = $value;
         }
     }

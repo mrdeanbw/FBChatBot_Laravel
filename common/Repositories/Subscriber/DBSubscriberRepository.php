@@ -29,7 +29,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     public function create(array $data)
     {
         if ($data['active']) {
-            $history = ['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => mongo_date()];
+            $history = ['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => new Carbon()];
             $data['history'] = [new SubscriptionHistory($history)];
         }
 
@@ -48,11 +48,11 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
             $history = null;
 
             if ($model->active && ! $data['active']) {
-                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED, 'action_at' => mongo_date()]);
+                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED, 'action_at' => new Carbon()]);
             }
 
             if (! $model->active && $data['active']) {
-                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => mongo_date()]);
+                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => new Carbon()]);
             }
 
             if ($history) {
