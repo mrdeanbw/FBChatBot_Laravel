@@ -4,7 +4,7 @@ use Common\Models\Broadcast;
 use Common\Models\Subscriber;
 use Common\Services\FacebookAPIAdapter;
 
-class SendBroadcast extends BaseJob
+class SendBroadcastToSubscriber extends BaseJob
 {
 
     /**

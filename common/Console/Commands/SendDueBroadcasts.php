@@ -1,13 +1,9 @@
 <?php namespace Common\Console\Commands;
 
-use Carbon\Carbon;
 use Common\Models\Broadcast;
-use Common\Jobs\SendBroadcast;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
-use Common\Services\BroadcastService;
+use Common\Jobs\SendDueBroadcast;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
-use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 
 class SendDueBroadcasts extends Command
 {
@@ -29,32 +25,16 @@ class SendDueBroadcasts extends Command
      * @type BroadcastRepositoryInterface
      */
     private $broadcastRepo;
-    /**
-     * @type BroadcastService
-     */
-    private $broadcasts;
-    /**
-     * @type SubscriberRepositoryInterface
-     */
-    private $subscriberRepo;
-
-
+    
     /**
      * SendDueBroadcasts constructor.
      *
-     * @param BroadcastRepositoryInterface  $broadcastRepo
-     * @param BroadcastService              $broadcasts
-     * @param SubscriberRepositoryInterface $subscriberRepo
+     * @param BroadcastRepositoryInterface $broadcastRepo
      */
-    public function __construct(
-        BroadcastService $broadcasts,
-        BroadcastRepositoryInterface $broadcastRepo,
-        SubscriberRepositoryInterface $subscriberRepo
-    ) {
+    public function __construct(BroadcastRepositoryInterface $broadcastRepo)
+    {
         parent::__construct();
-        $this->broadcasts = $broadcasts;
         $this->broadcastRepo = $broadcastRepo;
-        $this->subscriberRepo = $subscriberRepo;
     }
 
     /**
@@ -66,77 +46,10 @@ class SendDueBroadcasts extends Command
 
         /** @var Broadcast $broadcast */
         foreach ($broadcasts as $broadcast) {
-            $this->processBroadcast($broadcast);
+            $job = (new SendDueBroadcast($broadcast))->onQueue('onetry');
+            dispatch($job);
         }
 
         $this->info("Done");
-    }
-
-    /**
-     * @param Broadcast $broadcast
-     */
-    private function processBroadcast(Broadcast $broadcast)
-    {
-        $this->markAsRunning($broadcast);
-
-        $this->send($broadcast);
-
-        $this->scheduleNextRunAndMarkAsCompleted($broadcast);
-    }
-
-    /**
-     * @param Broadcast $broadcast
-     */
-    protected function markAsRunning(Broadcast $broadcast)
-    {
-        $this->broadcastRepo->update($broadcast, ['status' => BroadcastRepositoryInterface::STATUS_RUNNING]);
-    }
-
-    public function send(Broadcast $broadcast)
-    {
-        $subscribers = $this->getTargetAudience($broadcast);
-
-        foreach ($subscribers as $subscriber) {
-            $job = (new SendBroadcast($broadcast, $subscriber))->onQueue('onetry');
-            dispatch($job);
-        }
-    }
-
-    /**
-     * @param Broadcast $broadcast
-     */
-    private function scheduleNextRunAndMarkAsCompleted(Broadcast $broadcast)
-    {
-        $data = $this->broadcasts->calculateNextScheduleDateTime($broadcast);
-
-        if (is_null($data['next_send_at'])) {
-            $data['status'] = BroadcastRepositoryInterface::STATUS_COMPLETED;
-            $data['completed_at'] = Carbon::now();
-        } else {
-            $data['status'] = BroadcastRepositoryInterface::STATUS_PENDING;
-        }
-
-        $this->broadcastRepo->update($broadcast, $data);
-    }
-
-    /**
-     * @param $broadcast
-     *
-     * @return Collection
-     */
-    protected function getTargetAudience(Broadcast $broadcast)
-    {
-        $filters = [];
-        if ($broadcast->timezone != 'same_time') {
-            $filters[] = [
-                'operator' => '=',
-                'key'      => 'timezone',
-                'value'    => $broadcast->next_utc_offset
-            ];
-        }
-
-        $audience = $this->subscriberRepo->getActiveTargetAudience($broadcast, $filters);
-
-        return $audience;
     }
 }
