@@ -5,6 +5,7 @@ use Common\Jobs\AddGetStartedButtonOnFacebook;
 use Common\Jobs\UpdateGreetingTextOnFacebook;
 use Common\Jobs\UpdateMainMenuOnFacebook;
 use Common\Models\Bot;
+use Common\Models\DefaultReply;
 use Common\Models\Page;
 use Common\Models\User;
 use Common\Models\WelcomeMessage;
@@ -221,10 +222,10 @@ class BotService
     }
 
     /**
-     * @param $botId
-     * @return mixed
+     * @param ObjectID $botId
+     * @return DefaultReply
      */
-    private function getDefaultDefaultReply($botId)
+    private function getDefaultDefaultReply(ObjectID $botId)
     {
         return $this->defaultReplies->defaultDefaultReply($botId);
     }

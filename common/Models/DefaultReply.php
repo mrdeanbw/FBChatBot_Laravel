@@ -7,4 +7,5 @@
 class DefaultReply extends ArrayModel
 {
 
+    public $template_id;
 }

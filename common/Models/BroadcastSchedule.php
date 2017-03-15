@@ -3,8 +3,6 @@
 class BroadcastSchedule extends ArrayModel
 {
 
-    protected $dates = ['send_at'];
-
     /**
      * @type int
      */
@@ -19,4 +17,9 @@ class BroadcastSchedule extends ArrayModel
      * @type \Carbon\Carbon
      */
     public $send_at;
+
+    public function isDate($key)
+    {
+        return $key == 'send_at';
+    }
 }

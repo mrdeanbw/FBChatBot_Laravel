@@ -2,9 +2,11 @@
 
 abstract class ArrayModel
 {
-
-    protected $dates = [];
-
+    /**
+     * ArrayModel constructor.
+     * @param array $data
+     * @param bool  $strict
+     */
     public function __construct($data = [], $strict = false)
     {
         foreach ($data as $key => $value) {
@@ -26,6 +28,6 @@ abstract class ArrayModel
      */
     public function isDate($key)
     {
-        return in_array($key, $this->dates);
+        return false;
     }
 }

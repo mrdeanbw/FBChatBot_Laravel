@@ -178,12 +178,10 @@ class TemplateService
      * @param array     $messages
      * @param Message[] $original
      * @param           $botId
-     *
      * @param bool      $allowReadOnly
-     *
      * @return \Common\Models\Message[]
      */
-    private function normalizeMessages(array $messages, array $original = [], $botId, $allowReadOnly = false)
+    private function normalizeMessages(array $messages, array $original, ObjectID $botId, $allowReadOnly = false)
     {
         $messages = $this->messages->normalizeMessages($messages);
 

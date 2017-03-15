@@ -3,6 +3,7 @@
 use Common\Models\Bot;
 use Common\Models\DefaultReply;
 use Common\Repositories\Bot\BotRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 class DefaultReplyService
 {
@@ -50,7 +51,7 @@ class DefaultReplyService
      * @param $botId
      * @return DefaultReply
      */
-    public function defaultDefaultReply($botId)
+    public function defaultDefaultReply(ObjectID $botId)
     {
         return new DefaultReply([
             'template_id' => $this->templates->createImplicit([], $botId)->_id

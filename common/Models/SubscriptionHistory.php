@@ -5,9 +5,12 @@ use Carbon\Carbon;
 class SubscriptionHistory extends ArrayModel
 {
 
-    protected $dates = ['action_at'];
-    
     public $action;
     /** @type Carbon */
     public $action_at;
+
+    public function isDate($key)
+    {
+        return $key == 'action_at';
+    }
 }
