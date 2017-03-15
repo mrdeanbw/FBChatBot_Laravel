@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use Common\Models\Bot;
 use Common\Models\Broadcast;
 use Common\Models\AudienceFilter;
+use Common\Models\BroadcastSchedule;
 use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -119,6 +120,7 @@ class BroadcastService
             'bot_id'            => $bot->_id,
             'template_id'       => $template->_id,
             'stats'             => [
+                'target'  => 0,
                 'clicked' => [
                     'total'          => 0,
                     'per_subscriber' => 0
@@ -181,11 +183,6 @@ class BroadcastService
             'timezone_mode' => $timezoneMode,
             'message_type'  => array_search($input['message_type'], BroadcastRepositoryInterface::_MESSAGE_MAP),
             'notification'  => array_search($input['notification'], FacebookAPIAdapter::_NOTIFICATION_MAP),
-            'limit_time'    => [
-                'to'      => $input['limit_time']['to'],
-                'from'    => $input['limit_time']['from'],
-                'enabled' => $input['limit_time']['enabled'],
-            ],
             'schedules'     => [],
             'completed_at'  => null,
         ];
@@ -197,8 +194,9 @@ class BroadcastService
             $data['send_at'] = $timezone? Carbon::createFromFormat('Y-m-d H:i', "{$input['date']} {$input['time']}", $timezone)->setTimezone('UTC') : null;
         }
 
-        if (! $data['send_now'] && $timezoneMode != BroadcastRepositoryInterface::TIMEZONE_SUBSCRIBER) {
+        if (! $data['send_at']) {
             $data['schedules'] = $this->calculateRunSchedules($data);
+            $data['send_at'] = $data['schedules'][0]->send_at;
         }
 
         return $data;
@@ -229,61 +227,24 @@ class BroadcastService
      */
     public function calculateRunSchedules(array $broadcast)
     {
+        $dateTime = "{$broadcast['date']} {$broadcast['time']}";
         $schedule = [];
         foreach (TimezoneService::UTC_OFFSETS as $offset) {
-            $sendAt = $broadcast['send_at']->copy();
-            if ($broadcast['limit_time']['enabled']) {
-                $sendAt = $this->applyLimitTime($sendAt, $offset, $broadcast);
+            $sendAt = Carbon::createFromFormat('Y-m-d H:i', $dateTime)->addHours(-$offset);
+            // For filling in the form
+            $copy = $sendAt->copy()->addMinutes(15);
+
+            if ($copy->isPast()) {
+                $sendAt->addDay(1);
             }
-            $schedule[] = [
-                'timezone' => $offset,
-                'send_at'  => $sendAt,
-            ];
+            $schedule[] = new BroadcastSchedule([
+                'utc_offset' => $offset,
+                'send_at'    => $sendAt,
+                'status'     => BroadcastRepositoryInterface::STATUS_PENDING
+            ]);
         }
 
         return $schedule;
-    }
-
-    /**
-     * Calculate the date/time when a specific timezone subscribers should receive the broadcast messages.
-     * @param Carbon $sendAt
-     * @param double $offset
-     * @param array  $data
-     * @return Carbon
-     */
-    protected function applyLimitTime(Carbon $sendAt, $offset, array $data)
-    {
-        $hour = (int)$offset;
-        $minutes = (int)(($offset - $hour) * 60);
-        $lowerBound = Carbon::createFromFormat('Y-m-d', $data['date'])->setTime($data['limit_time']['from'] - $hour, $minutes, 0);
-        $upperBound = Carbon::createFromFormat('Y-m-d', $data['date'])->setTime($data['limit_time']['to'] - $hour, $minutes, 0);
-
-        // If the upper bound date is less than the lower bound, then add 1 day to the upper bound to fix it.
-        if ($upperBound->lt($lowerBound)) {
-            $upperBound->addDay(1);
-        }
-
-        if ($lowerBound->isPast()) {
-            if ($upperBound->isPast()) {
-                $lowerBound->addDay(1);
-                $upperBound->addDay(1);
-            } else {
-                $lowerBound = Carbon::now();
-            }
-        }
-
-        // If the send at date/time is less than the lower bound. Send it at the lower bound date/time.
-        if ($sendAt->lt($lowerBound)) {
-            $sendAt = $lowerBound;
-        }
-
-        // If the send at date/time is greater than the upper bound. Send it at the upper bound date/time.
-        if ($sendAt->gt($upperBound)) {
-            $sendAt = $upperBound;
-        }
-
-        // Otherwise, it falls between lower and upper bound. Don't change it.
-        return $sendAt;
     }
 
     /**

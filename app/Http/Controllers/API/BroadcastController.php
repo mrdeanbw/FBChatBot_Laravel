@@ -1,6 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
 use Illuminate\Http\Request;
+use Common\Models\Broadcast;
+use Common\Jobs\SendDueBroadcast;
 use Common\Services\BroadcastService;
 use Common\Transformers\BroadcastTransformer;
 use Common\Services\Validation\FilterAudienceRuleValidator;
@@ -17,7 +19,6 @@ class BroadcastController extends APIController
 
     /**
      * BroadcastController constructor.
-     *
      * @param BroadcastService $broadcasts
      */
     public function __construct(BroadcastService $broadcasts)
@@ -27,7 +28,6 @@ class BroadcastController extends APIController
 
     /**
      * Retrieve the list of broadcasts.
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function index()
@@ -39,9 +39,7 @@ class BroadcastController extends APIController
 
     /**
      * Return the details of a broadcast.
-     *
-     * @param         $id
-     *
+     * @param $id
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function show($id)
@@ -53,9 +51,7 @@ class BroadcastController extends APIController
 
     /**
      * Create a broadcast.
-     *
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function store(Request $request)
@@ -66,15 +62,17 @@ class BroadcastController extends APIController
 
         $broadcast = $this->broadcasts->create($request->all(), $bot);
 
+        if ($broadcast->send_now) {
+            $this->sendBroadcast($broadcast);
+        }
+
         return $this->itemResponse($broadcast);
     }
 
     /**
      * Update a broadcast.
-     *
      * @param         $id
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
@@ -85,14 +83,16 @@ class BroadcastController extends APIController
 
         $broadcast = $this->broadcasts->update($id, $request->all(), $bot);
 
+        if ($broadcast->send_now) {
+            $this->sendBroadcast($broadcast);
+        }
+
         return $this->itemResponse($broadcast);
     }
 
     /**
      * Delete a broadcast.
-     *
-     * @param         $id
-     *
+     * @param $id
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function destroy($id)
@@ -127,17 +127,21 @@ class BroadcastController extends APIController
             'time'                          => 'bail|required_if:send_mode,later|date_format:H:i',
             'timezone_mode'                 => 'bail|required|in:bot,subscriber,custom',
             'timezone'                      => 'bail|required_if:timezone_mode,custom|timezone',
-            'limit_time'                    => 'bail|required|array',
-            'limit_time.enabled'            => 'bail|required|boolean',
-            'limit_time.from'               => 'bail|required_if:limit_time.enabled,true|integer|between:1,24',
-            'limit_time.to'                 => 'bail|required_if:limit_time.enabled,true|integer|between:1,24',
             'notification'                  => 'bail|required|in:REGULAR,SILENT_PUSH,NO_PUSH',
         ];
+    }
+
+    /**
+     * @param Broadcast $broadcast
+     */
+    private function sendBroadcast(Broadcast $broadcast)
+    {
+        $job = (new SendDueBroadcast($broadcast))->onQueue('onetry');
+        dispatch($job);
     }
 
     protected function transformer()
     {
         return new BroadcastTransformer();
     }
-
 }

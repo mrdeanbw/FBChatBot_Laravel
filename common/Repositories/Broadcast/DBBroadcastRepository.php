@@ -1,11 +1,12 @@
 <?php namespace Common\Repositories\Broadcast;
 
-use Common\Models\Bot;
 use Carbon\Carbon;
+use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Common\Models\Broadcast;
 use Illuminate\Support\Collection;
+use Common\Models\BroadcastSchedule;
 use Common\Repositories\DBAssociatedWithBotRepository;
-use MongoDB\BSON\ObjectID;
 
 class DBBroadcastRepository extends DBAssociatedWithBotRepository implements BroadcastRepositoryInterface
 {
@@ -21,12 +22,13 @@ class DBBroadcastRepository extends DBAssociatedWithBotRepository implements Bro
      */
     public function getDueBroadcasts()
     {
-        $filter = [
-            ['operator' => '=', 'key' => 'status', 'value' => BroadcastRepositoryInterface::STATUS_PENDING],
-            ['operator' => '<=', 'key' => 'next_send_at', 'value' => Carbon::now()],
-        ];
+        $now = Carbon::now();
 
-        return $this->getAll($filter);
+        return Broadcast::where(function ($query) use ($now) {
+            $query->where('status', BroadcastRepositoryInterface::STATUS_PENDING)->where('send_at', '<=', $now);
+        })->orWhere(function ($query) use ($now) {
+            $query->where('schedules.status', BroadcastRepositoryInterface::STATUS_PENDING)->where('schedules.send_at', '<=', $now);
+        })->get();
     }
 
     /**
@@ -51,5 +53,66 @@ class DBBroadcastRepository extends DBAssociatedWithBotRepository implements Bro
         ];
 
         Broadcast::raw()->updateOne($filter, $update);
+    }
+
+    /**
+     * @param Broadcast $broadcast
+     * @return mixed
+     */
+    public function markAsRunning(Broadcast $broadcast)
+    {
+        $this->update($broadcast, ['status' => BroadcastRepositoryInterface::STATUS_RUNNING]);
+    }
+
+    /**
+     * @param Broadcast $broadcast
+     * @param int       $count
+     */
+    public function setTargetAudienceAndMarkAsCompleted(Broadcast $broadcast, $count)
+    {
+        $this->update($broadcast, [
+            'stats.target' => $count,
+            'status'       => BroadcastRepositoryInterface::STATUS_COMPLETED,
+            'completed_at' => Carbon::now(),
+        ]);
+    }
+
+    /**
+     * @param array     $dueSchedules
+     * @param Broadcast $broadcast
+     * @param int       $count
+     * @return mixed
+     */
+    public function incrementTargetAudienceAndMarkSchedulesAsCompleted(array $dueSchedules, Broadcast $broadcast, $count)
+    {
+        $update = [];
+        foreach ($broadcast->schedules as $i => $schedule) {
+            if (in_array($schedule->utc_offset, $dueSchedules)) {
+                $update["schedules.{$i}.status"] = BroadcastRepositoryInterface::STATUS_COMPLETED;
+            }
+        }
+
+        if ($this->allBroadcastSchedulesAreProcessed($broadcast, $dueSchedules)) {
+            $update['status'] = BroadcastRepositoryInterface::STATUS_COMPLETED;
+            $update['completed_at'] = Carbon::now();
+        }
+
+        $this->update($broadcast, [
+            '$inc' => ['stats.target' => $count],
+            '$set' => $update
+        ]);
+
+    }
+
+    /**
+     * @param Broadcast $broadcast
+     * @param array     $dueSchedules
+     * @return bool
+     */
+    private function allBroadcastSchedulesAreProcessed(Broadcast $broadcast, array $dueSchedules)
+    {
+        return ! array_first($broadcast->schedules, function (BroadcastSchedule $schedule) use ($dueSchedules) {
+            return ! in_array($schedule->utc_offset, $dueSchedules) && $schedule->status != BroadcastRepositoryInterface::STATUS_COMPLETED;
+        });
     }
 }

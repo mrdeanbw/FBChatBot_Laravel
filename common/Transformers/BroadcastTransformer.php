@@ -2,6 +2,7 @@
 
 use Common\Models\Message;
 use Common\Models\Broadcast;
+use Common\Services\FacebookAPIAdapter;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
@@ -19,22 +20,23 @@ class BroadcastTransformer extends BaseTransformer
         }
 
         return [
-            'id'           => $broadcast->id,
-            'name'         => $broadcast->name,
-            'timezone'     => $broadcast->timezone,
-            'notification' => $broadcast->notification,
-            'date'         => $broadcast->date,
-            'time'         => $broadcast->time,
-            'send_from'    => $broadcast->send_from,
-            'send_to'      => $broadcast->send_to,
-            'status'       => $this->getStatus($broadcast->status),
-            'created_at'   => $broadcast->created_at->toAtomString(),
-            'completed_at' => $broadcast->completed_at? $broadcast->completed_at->toAtomString() : null,
-            'stats'        => $stats,
+            'id'            => $broadcast->id,
+            'name'          => $broadcast->name,
+            'date'          => $broadcast->date,
+            'time'          => $broadcast->time,
+            'status'        => BroadcastRepositoryInterface::_STATUS_MAP[$broadcast->status],
+            'send_mode'     => $broadcast->send_now? 'now' : 'later',
+            'timezone'      => $broadcast->timezone,
+            'timezone_mode' => BroadcastRepositoryInterface::_TIMEZONE_MAP[$broadcast->timezone_mode],
+            'notification'  => FacebookAPIAdapter::_NOTIFICATION_MAP[$broadcast->notification],
+            'message_type'  => BroadcastRepositoryInterface::_MESSAGE_MAP[$broadcast->message_type],
+            'completed_at'  => $broadcast->completed_at? $broadcast->completed_at->toAtomString() : null,
+            'stats'         => $stats,
+            'send_at'       => $broadcast->send_at? $broadcast->send_at->toAtomString() : null
         ];
     }
 
-    /**
+    /**\
      * @param Broadcast $broadcast
      * @return \League\Fractal\Resource\Item
      */
@@ -57,26 +59,5 @@ class BroadcastTransformer extends BaseTransformer
             'delivered' => $sentMessageRepo->totalDeliveredForMessage($message->id),
             'read'      => $sentMessageRepo->totalReadForMessage($message->id),
         ];
-    }
-
-    /**
-     * @param $status
-     * @return string
-     */
-    protected function getStatus($status)
-    {
-        switch ($status) {
-            case BroadcastRepositoryInterface::STATUS_PENDING:
-                return 'pending';
-
-            case BroadcastRepositoryInterface::STATUS_RUNNING:
-                return 'running';
-
-            case BroadcastRepositoryInterface::STATUS_COMPLETED:
-                return 'completed';
-
-            default:
-                return null;
-        }
     }
 }

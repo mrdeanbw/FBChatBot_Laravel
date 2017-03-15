@@ -9,9 +9,9 @@ use Illuminate\Pagination\Paginator;
 use Common\Services\Facebook\FacebookUser;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\Sequence\SequenceRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Common\Repositories\Sequence\SequenceScheduleRepositoryInterface;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class SubscriberService
 {
