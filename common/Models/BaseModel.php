@@ -22,8 +22,16 @@ abstract class BaseModel extends Model
      */
     public function scopeDate($query, $columnName, $value)
     {
-        $boundaries = date_boundaries($value);
+        if (starts_with($value, 'not:')) {
+            $boundaries = date_boundaries(substr($value, 4));
+            $query->where(function ($subQuery) use ($columnName, $boundaries) {
+                $subQuery->whereNull($columnName)->orWhere($columnName, '<', $boundaries[0])->orWhere($columnName, '>=', $boundaries[1]);
+            });
 
+            return $query;
+        }
+
+        $boundaries = date_boundaries($value);
         $query->where($columnName, '>=', $boundaries[0])->where($columnName, '<', $boundaries[1]);
 
         return $query;
