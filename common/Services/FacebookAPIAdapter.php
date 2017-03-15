@@ -23,6 +23,11 @@ class FacebookAPIAdapter
     const NOTIFICATION_REGULAR = 0;
     const NOTIFICATION_SILENT_PUSH = 1;
     const NOTIFICATION_NO_PUSH = 2;
+    const _NOTIFICATION_MAP = [
+        self::NOTIFICATION_REGULAR     => 'REGULAR',
+        self::NOTIFICATION_SILENT_PUSH => 'SILENT_PUSH',
+        self::NOTIFICATION_NO_PUSH     => 'NO_PUSH',
+    ];
 
     /**
      * @type Sender
@@ -172,9 +177,7 @@ class FacebookAPIAdapter
      */
     protected function addRecipientHeader(array $message, Subscriber $subscriber)
     {
-        $message['recipient'] = [
-            'id' => $subscriber->facebook_id
-        ];
+        $message['recipient'] = ['id' => $subscriber->facebook_id];
 
         return $message;
     }
@@ -187,18 +190,7 @@ class FacebookAPIAdapter
      */
     protected function addNotificationType($message, $notificationType)
     {
-        switch ($notificationType) {
-            case self::NOTIFICATION_REGULAR:
-                $message['notification'] = 'REGULAR';
-                break;
-            case self::NOTIFICATION_SILENT_PUSH:
-                $message['notification'] = 'SILENT_PUSH';
-                break;
-            case self::NOTIFICATION_NO_PUSH:
-                $message['notification'] = 'NO_PUSH';
-                break;
-        }
-        $message['notification'] = $notificationType;
+        $message['notification_type'] = self::_NOTIFICATION_MAP[$notificationType];
 
         return $message;
     }
