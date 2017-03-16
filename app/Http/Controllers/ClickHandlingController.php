@@ -2,6 +2,7 @@
 
 use Common\Services\WebAppAdapter;
 use Common\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 
 class ClickHandlingController extends Controller
 {
@@ -21,11 +22,18 @@ class ClickHandlingController extends Controller
     }
 
     /**
-     * @param $payload
+     * @param Request $request
+     * @param string  $payload
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Laravel\Lumen\Http\Redirector|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function handle($payload)
+    public function handle(Request $request, $payload)
     {
+        $data = [
+            'ip'      => $request->ip(),
+            'all'     => $request->all(),
+            'headers' => $request->header()
+        ];
+        \Log::debug("Someone is here", $data);
         if ($redirectTo = $this->adapter->handleUrlMessageClick(urldecode($payload))) {
             return redirect($redirectTo);
         }
