@@ -33,6 +33,7 @@ $app->bind('redirect', 'Laravel\Lumen\Http\Redirector');
  */
 $app->register(Jenssegers\Mongodb\MongodbServiceProvider::class);
 $app->register(Jenssegers\Mongodb\MongodbQueueServiceProvider::class);
+$app->register(Jaybizzle\LaravelCrawlerDetect\LaravelCrawlerDetectServiceProvider::class);
 
 
 $app->withEloquent();

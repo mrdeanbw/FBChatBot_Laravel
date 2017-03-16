@@ -44,7 +44,6 @@ class FacebookWebhookReceiver
         if ($this->data['object'] != 'page') {
             return;
         }
-        \Log::debug("Facebook incoming", $this->data);
 
         foreach ($this->data['entry'] as $entry) {
             $this->handleEntry($entry);

@@ -2,7 +2,7 @@
 
 use Common\Services\WebAppAdapter;
 use Common\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 class ClickHandlingController extends Controller
 {
@@ -11,29 +11,32 @@ class ClickHandlingController extends Controller
      * @type WebAppAdapter
      */
     private $adapter;
+    /**
+     * @type CrawlerDetect
+     */
+    private $crawlerDetector;
 
     /**
      * ClickHandlingController constructor.
      * @param WebAppAdapter $webAppAdapter
+     * @param CrawlerDetect $crawlerDetector
      */
-    public function __construct(WebAppAdapter $webAppAdapter)
+    public function __construct(WebAppAdapter $webAppAdapter, CrawlerDetect $crawlerDetector)
     {
         $this->adapter = $webAppAdapter;
+        $this->crawlerDetector = $crawlerDetector;
     }
 
     /**
-     * @param Request $request
-     * @param string  $payload
+     * @param string $payload
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Laravel\Lumen\Http\Redirector|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function handle(Request $request, $payload)
+    public function handle($payload)
     {
-        $data = [
-            'ip'      => $request->ip(),
-            'all'     => $request->all(),
-            'headers' => $request->header()
-        ];
-        \Log::debug("Someone is here", $data);
+        if ($this->crawlerDetector->isCrawler()) {
+            return response('');
+        }
+
         if ($redirectTo = $this->adapter->handleUrlMessageClick(urldecode($payload))) {
             return redirect($redirectTo);
         }
@@ -49,6 +52,10 @@ class ClickHandlingController extends Controller
      */
     public function mainMenuButton($botId, $buttonId, $revisionId)
     {
+        if ($this->crawlerDetector->isCrawler()) {
+            return response('');
+        }
+
         if ($redirectTo = $this->adapter->handleUrlMainMenuButtonClick($botId, $buttonId, $revisionId)) {
             return redirect($redirectTo);
         }
