@@ -103,7 +103,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      */
     public function totalSentForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
-        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $messageId]];
+        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $messageId],];
 
         if ($startDateTime) {
             $filter[] = ['key' => 'sent_at', 'operator' => '>=', 'value' => $startDateTime];
@@ -111,6 +111,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $filter[] = ['key' => 'sent_at', 'operator' => '<', 'value' => $endDateTime];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $filter[] = ['key' => 'sent_at', 'operator' => '!=', 'value' => null];
         }
 
         return $this->count($filter);
@@ -132,6 +136,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
         }
 
         $aggregate = [
@@ -163,6 +171,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $filter[] = ['key' => 'delivered_at', 'operator' => '<', 'value' => $endDateTime];
         }
 
+        if (! $startDateTime && ! $endDateTime) {
+            $filter[] = ['key' => 'delivered_at', 'operator' => '!=', 'value' => null];
+        }
+
         return $this->count($filter);
     }
 
@@ -182,6 +194,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $matchFilters['$and'][] = ['delivered_at' => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['delivered_at' => ['$ne' => null]];
         }
 
         $aggregate = [
@@ -213,6 +229,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $filter[] = ['key' => 'read_at', 'operator' => '<', 'value' => $endDateTime];
         }
 
+        if (! $startDateTime && ! $endDateTime) {
+            $filter[] = ['key' => 'read_at', 'operator' => '!=', 'value' => null];
+        }
+
         return $this->count($filter);
     }
 
@@ -232,6 +252,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $matchFilters['$and'][] = ['read_at' => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['read_at' => ['$ne' => null]];
         }
 
         $aggregate = [
@@ -267,6 +291,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
         }
 
         $aggregate = [
@@ -343,6 +371,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
         }
 
         $filter = [
@@ -425,6 +457,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
         }
 
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
+        }
+
         $aggregate = [
             ['$match' => $matchFilters],
             ['$project' => ['cards' => 1]],
@@ -498,6 +534,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
         }
 
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
+        }
+
         $filter = [
             ['$match' => $matchFilters],
             ['$project' => ['buttons' => 1]],
@@ -562,6 +602,10 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         if ($endDateTime) {
             $filters[] = ['key' => 'sent_at', 'operator' => '<', 'value' => $endDateTime];
+        }
+
+        if (! $startDateTime && ! $endDateTime) {
+            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
         }
 
         return $this->count($filters);
