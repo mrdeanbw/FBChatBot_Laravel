@@ -66,7 +66,7 @@ class MessageRevisionService
     private function setRevisionStats(MessageRevision $revision, $nextRevision)
     {
         $end = $nextRevision? $nextRevision->created_at : null;
-        $this->sentMessages->setMessageStat($revision, $revision->message_id, $revision->created_at, $end);
+        $this->sentMessages->setFullMessageStats($revision, $revision->message_id, $revision->created_at, $end);
     }
 
     /**

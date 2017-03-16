@@ -49,12 +49,4 @@ interface BroadcastRepositoryInterface extends AssociatedWithBotRepositoryInterf
      * @param int       $count
      */
     public function setTargetAudienceAndMarkAsCompleted(Broadcast $broadcast, $count);
-
-    /**
-     * @param array     $dueSchedules
-     * @param Broadcast $broadcast
-     * @param int       $count
-     * @return mixed
-     */
-    public function incrementTargetAudienceAndMarkSchedulesAsCompleted(array $dueSchedules, Broadcast $broadcast, $count);
 }

@@ -2,8 +2,10 @@
 
 use Carbon\Carbon;
 use Common\Models\Broadcast;
+use Common\Models\BroadcastSchedule;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Services\BroadcastService;
 
 class SendDueBroadcast extends BaseJob
 {
@@ -17,6 +19,10 @@ class SendDueBroadcast extends BaseJob
      * @type SubscriberRepositoryInterface
      */
     protected $subscriberRepo;
+    /**
+     * @type BroadcastService
+     */
+    protected $broadcasts;
 
     /**
      * @type Broadcast
@@ -37,9 +43,11 @@ class SendDueBroadcast extends BaseJob
      *
      * @param BroadcastRepositoryInterface  $broadcastRepo
      * @param SubscriberRepositoryInterface $subscriberRepo
+     * @param BroadcastService              $broadcasts
      */
-    public function handle(BroadcastRepositoryInterface $broadcastRepo, SubscriberRepositoryInterface $subscriberRepo)
+    public function handle(BroadcastRepositoryInterface $broadcastRepo, SubscriberRepositoryInterface $subscriberRepo, BroadcastService $broadcasts)
     {
+        $this->broadcasts = $broadcasts;
         $this->broadcastRepo = $broadcastRepo;
         $this->subscriberRepo = $subscriberRepo;
 
@@ -85,7 +93,7 @@ class SendDueBroadcast extends BaseJob
         $subscriberCount = count($subscribers);
 
         if ($hasSchedules) {
-            $this->broadcastRepo->incrementTargetAudienceAndMarkSchedulesAsCompleted($dueSchedules, $this->broadcast, $subscriberCount);
+            $this->incrementTargetAudienceAndMarkSchedulesAsCompleted($dueSchedules, $subscriberCount);
         } else {
             $this->broadcastRepo->setTargetAudienceAndMarkAsCompleted($this->broadcast, $subscriberCount);
         }
@@ -107,4 +115,59 @@ class SendDueBroadcast extends BaseJob
         return $ret;
     }
 
+    /**
+     * @param array $dueSchedules
+     * @param int   $targetCount
+     */
+    protected function incrementTargetAudienceAndMarkSchedulesAsCompleted(array $dueSchedules, $targetCount)
+    {
+        $update = [];
+
+        $pendingScheduleTimezones = [];
+        $pendingSchedules = $this->pendingSchedules($this->broadcast, $dueSchedules);
+        foreach ($pendingSchedules as $schedule) {
+            $pendingScheduleTimezones[] = $schedule->utc_offset;
+        }
+
+        if ($pendingSchedules) {
+            $pendingSubscribers = $this->broadcasts->matchingSubscriberCount($this->broadcast->message_type, $this->broadcast->filter, $pendingScheduleTimezones);
+        } else {
+            $pendingSubscribers = 0;
+        }
+
+        if (! $pendingSubscribers) {
+            $update['remaining_target'] = 0;
+            $update['completed_at'] = Carbon::now();
+            $update['status'] = BroadcastRepositoryInterface::STATUS_COMPLETED;
+            foreach ($this->broadcast->schedules as $i => $schedule) {
+                if ($schedule->status != BroadcastRepositoryInterface::STATUS_COMPLETED) {
+                    $update["schedules.{$i}.status"] = BroadcastRepositoryInterface::STATUS_COMPLETED;
+                }
+            }
+        } else {
+            foreach ($this->broadcast->schedules as $i => $schedule) {
+                if (in_array($schedule->utc_offset, $dueSchedules)) {
+                    $update["schedules.{$i}.status"] = BroadcastRepositoryInterface::STATUS_COMPLETED;
+                }
+            }
+            $update['remaining_target'] = $pendingSubscribers;
+        }
+
+        $this->broadcastRepo->update($this->broadcast, [
+            '$inc' => ['stats.target' => $targetCount],
+            '$set' => $update
+        ]);
+    }
+
+    /**
+     * @param Broadcast $broadcast
+     * @param array     $dueSchedules
+     * @return BroadcastSchedule[]
+     */
+    private function pendingSchedules(Broadcast $broadcast, array $dueSchedules)
+    {
+        return array_filter($broadcast->schedules, function (BroadcastSchedule $schedule) use ($dueSchedules) {
+            return ! in_array($schedule->utc_offset, $dueSchedules) && $schedule->status != BroadcastRepositoryInterface::STATUS_COMPLETED;
+        });
+    }
 }

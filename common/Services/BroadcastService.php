@@ -132,7 +132,6 @@ class BroadcastService
             'bot_id'            => $bot->_id,
             'template_id'       => $template->_id,
             'stats'             => [
-                'target'  => 0,
                 'clicked' => [
                     'total'          => 0,
                     'per_subscriber' => 0
@@ -186,25 +185,26 @@ class BroadcastService
 
         $audienceFilter = new AudienceFilter($input['filter'], true);
         $messageType = array_search($input['message_type'], BroadcastRepositoryInterface::_MESSAGE_MAP);
-        if (! $this->matchingSubscriberCount($messageType, $audienceFilter)) {
+        $targetAudienceCount = $this->matchingSubscriberCount($messageType, $audienceFilter);
+        if (! $targetAudienceCount) {
             throw new ValidationHttpException(['filter' => ["This broadcast cannot be sent/scheduled because there is no matching subscribers at the moment."]]);
         }
 
         $data = [
-            'name'          => $input['name'],
-            'date'          => $input['date'],
-            'time'          => $input['time'],
-            'filter'        => $audienceFilter,
-            'status'        => BroadcastRepositoryInterface::STATUS_PENDING,
-            'send_now'      => $input['send_mode'] == 'now',
-            'timezone'      => $timezone,
-            'timezone_mode' => $timezoneMode,
-            'message_type'  => $messageType,
-            'notification'  => array_search($input['notification'], FacebookAPIAdapter::_NOTIFICATION_MAP),
-            'schedules'     => [],
-            'completed_at'  => null,
+            'name'             => $input['name'],
+            'date'             => $input['date'],
+            'time'             => $input['time'],
+            'filter'           => $audienceFilter,
+            'status'           => BroadcastRepositoryInterface::STATUS_PENDING,
+            'send_now'         => $input['send_mode'] == 'now',
+            'timezone'         => $timezone,
+            'timezone_mode'    => $timezoneMode,
+            'message_type'     => $messageType,
+            'notification'     => array_search($input['notification'], FacebookAPIAdapter::_NOTIFICATION_MAP),
+            'schedules'        => [],
+            'completed_at'     => null,
+            'remaining_target' => $targetAudienceCount,
         ];
-
 
         if ($data['send_now']) {
             $data['send_at'] = Carbon::now();
@@ -243,7 +243,7 @@ class BroadcastService
      * @param array $broadcast
      * @return array
      */
-    public function calculateRunSchedules(array $broadcast)
+    protected function calculateRunSchedules(array $broadcast)
     {
         $dateTime = "{$broadcast['date']} {$broadcast['time']}";
         $schedule = [];
@@ -288,8 +288,12 @@ class BroadcastService
         }
 
         $this->loadModelsIfNotLoaded($broadcast, ['template']);
-        foreach ($broadcast->template->messages as $message) {
-            $this->sentMessages->setMessageStat($message, $message->id);
+        foreach ($broadcast->template->messages as $i => $message) {
+            if (! $i) {
+                $this->sentMessages->setFullMessageStats($message, $message->id);
+            } else {
+                $this->sentMessages->setMessageClickableStats($message, $message->id);
+            }
         }
 
         return $broadcast;
@@ -315,11 +319,12 @@ class BroadcastService
     }
 
     /**
-     * @param $messageType
-     * @param $audienceFilter
+     * @param int            $messageType
+     * @param AudienceFilter $audienceFilter
+     * @param array          $timezones
      * @return int
      */
-    private function matchingSubscriberCount($messageType, $audienceFilter)
+    public function matchingSubscriberCount($messageType, AudienceFilter $audienceFilter, $timezones = [])
     {
         switch ($messageType) {
             case BroadcastRepositoryInterface::MESSAGE_PROMOTIONAL:
@@ -331,6 +336,7 @@ class BroadcastService
             default:
                 $lastInteractionAtFilterValue = null;
         }
+
         $filter = [
             ['operator' => 'subscriber', 'filter' => $audienceFilter],
             ['key' => 'active', 'operator' => '=', 'value' => true],
@@ -338,8 +344,10 @@ class BroadcastService
 
         if ($lastInteractionAtFilterValue) {
             $filter[] = ['key' => 'last_interaction_at', 'operator' => 'date', 'value' => $lastInteractionAtFilterValue];
+        }
 
-            return $filter;
+        if ($timezones) {
+            $filter[] = ['key' => 'timezone', 'operator' => 'in', 'value' => $timezones];
         }
 
         return $this->subscriberRepo->count($filter);

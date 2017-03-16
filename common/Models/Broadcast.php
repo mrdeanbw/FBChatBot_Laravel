@@ -20,6 +20,7 @@
  * @property array               $limit_time
  * @property BroadcastSchedule[] $schedules
  * @property \Carbon\Carbon|null $send_at
+ * @property int                 $remaining_target
  */
 class Broadcast extends BaseModel
 {

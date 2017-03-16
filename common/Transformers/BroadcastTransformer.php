@@ -20,19 +20,20 @@ class BroadcastTransformer extends BaseTransformer
         }
 
         return [
-            'id'            => $broadcast->id,
-            'name'          => $broadcast->name,
-            'date'          => $broadcast->date,
-            'time'          => $broadcast->time,
-            'status'        => BroadcastRepositoryInterface::_STATUS_MAP[$broadcast->status],
-            'send_mode'     => $broadcast->send_now? 'now' : 'later',
-            'timezone'      => $broadcast->timezone,
-            'timezone_mode' => BroadcastRepositoryInterface::_TIMEZONE_MAP[$broadcast->timezone_mode],
-            'notification'  => FacebookAPIAdapter::_NOTIFICATION_MAP[$broadcast->notification],
-            'message_type'  => BroadcastRepositoryInterface::_MESSAGE_MAP[$broadcast->message_type],
-            'completed_at'  => $broadcast->completed_at? $broadcast->completed_at->toAtomString() : null,
-            'stats'         => $stats,
-            'send_at'       => $broadcast->send_at? $broadcast->send_at->toAtomString() : null
+            'id'               => $broadcast->id,
+            'name'             => $broadcast->name,
+            'date'             => $broadcast->date,
+            'time'             => $broadcast->time,
+            'status'           => BroadcastRepositoryInterface::_STATUS_MAP[$broadcast->status],
+            'send_mode'        => $broadcast->send_now? 'now' : 'later',
+            'timezone'         => $broadcast->timezone,
+            'timezone_mode'    => BroadcastRepositoryInterface::_TIMEZONE_MAP[$broadcast->timezone_mode],
+            'notification'     => FacebookAPIAdapter::_NOTIFICATION_MAP[$broadcast->notification],
+            'message_type'     => BroadcastRepositoryInterface::_MESSAGE_MAP[$broadcast->message_type],
+            'completed_at'     => $broadcast->completed_at? $broadcast->completed_at->toAtomString() : null,
+            'stats'            => $stats,
+            'send_at'          => $broadcast->send_at? $broadcast->send_at->toAtomString() : null,
+            'remaining_target' => $broadcast->remaining_target
         ];
     }
 

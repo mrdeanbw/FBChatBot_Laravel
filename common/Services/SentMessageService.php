@@ -31,7 +31,7 @@ class SentMessageService
      * @param Carbon|null             $startDateTime
      * @param Carbon|null             $endDateTime
      */
-    public function setMessageStat($message, $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    public function setFullMessageStats($message, $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
     {
         $message->stats = [
             'sent' => [
@@ -49,6 +49,18 @@ class SentMessageService
                 'per_subscriber' => $this->sentMessageRepo->perSubscriberReadForMessage($messageId, $startDateTime, $endDateTime),
             ],
         ];
+
+        $this->setMessageClickableStats($message, $messageId, $startDateTime, $endDateTime);
+    }
+
+    /**
+     * @param Message|MessageRevision $message
+     * @param ObjectID                $messageId
+     * @param Carbon|null             $startDateTime
+     * @param Carbon|null             $endDateTime
+     */
+    public function setMessageClickableStats($message, $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    {
 
         if ($message->type == 'text') {
             /** @type \Common\Models\Text $message */
@@ -120,5 +132,4 @@ class SentMessageService
             ]
         ];
     }
-
 }
