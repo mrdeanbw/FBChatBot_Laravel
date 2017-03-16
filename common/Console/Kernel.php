@@ -33,8 +33,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('broadcast:process')->everyMinute();
-        $schedule->command('sequence:process')->everyFiveMinutes();
-        $schedule->command('sequence:clear')->everyThirtyMinutes();
-        $schedule->command('monitor:alert')->everyFiveMinutes();
+//        $schedule->command('sequence:process')->everyFiveMinutes();
+//        $schedule->command('sequence:clean')->everyThirtyMinutes();
+//        $schedule->command('monitor:alert')->everyFiveMinutes();
     }
 }
