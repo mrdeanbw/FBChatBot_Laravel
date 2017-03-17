@@ -23,13 +23,13 @@ class UserService
     }
 
     /**
-     * Whether or not the user has all the sufficient permissions to manage pages.
-     * @param User $user
+     * Whether or not $permissions has all the sufficient permissions to manage pages.
+     * @param array $permissions
      * @return bool
      */
-    public function hasAllManagingPagePermissions(User $user)
+    public function hasAllManagingPagePermissions(array $permissions)
     {
-        return ! array_diff(self::PAGE_MANAGING_PERMISSIONS, $user->granted_permissions);
+        return ! array_diff(self::PAGE_MANAGING_PERMISSIONS, $permissions);
     }
 
     /**
