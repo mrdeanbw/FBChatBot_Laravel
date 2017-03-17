@@ -1,18 +1,18 @@
 <?php namespace Common\Services;
 
 use Carbon\Carbon;
-use Common\Jobs\AddGetStartedButtonOnFacebook;
-use Common\Jobs\UpdateGreetingTextOnFacebook;
-use Common\Jobs\UpdateMainMenuOnFacebook;
 use Common\Models\Bot;
-use Common\Models\DefaultReply;
 use Common\Models\Page;
 use Common\Models\User;
-use Common\Models\WelcomeMessage;
 use MongoDB\BSON\ObjectID;
+use Common\Models\DefaultReply;
+use Common\Models\WelcomeMessage;
 use Illuminate\Support\Collection;
-use Common\Services\Facebook\MessengerThread;
+use Common\Jobs\UpdateMainMenuOnFacebook;
 use Common\Jobs\SubscribeAppToFacebookPage;
+use Common\Jobs\UpdateGreetingTextOnFacebook;
+use Common\Services\Facebook\MessengerThread;
+use Common\Jobs\AddGetStartedButtonOnFacebook;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\User\UserRepositoryInterface;
 use Common\Services\Facebook\PageService as FacebookPage;
@@ -146,12 +146,10 @@ class BotService
 
             // If the user doesn't already manages the bot, append the bot id to the list.
             if (! $this->userRepo->managesBotForFacebookPage($user, $bot)) {
-                $createdBots[] = $bot;
+                $this->botRepo->addUserToBot($bot, $user->_id, $page->access_token);
             }
-        }
 
-        if ($createdBots) {
-            $this->botRepo->addUserToBots(array_pluck($createdBots, 'id'), $user);
+            $createdBots[] = $bot;
         }
 
         return new Collection($createdBots);
@@ -177,7 +175,10 @@ class BotService
             'welcome_message' => $this->getDefaultWelcomeMessage($id),
             'main_menu'       => $this->getDefaultMainMenu($id),
             'default_reply'   => $this->getDefaultDefaultReply($id),
-            'users'           => []
+            'access_token'    => $page->access_token,
+            'users'           => [
+                ['user_id' => $user->_id, 'subscriber_id' => null, 'access_token' => $page->access_token]
+            ]
         ];
 
         /** @type Bot $bot */

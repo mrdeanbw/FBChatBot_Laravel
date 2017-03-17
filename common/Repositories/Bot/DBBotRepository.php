@@ -6,6 +6,7 @@ use Common\Models\Button;
 use Common\Models\Subscriber;
 use Illuminate\Support\Collection;
 use Common\Repositories\DBBaseRepository;
+use MongoDB\BSON\ObjectID;
 
 class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
 {
@@ -74,15 +75,20 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
     }
 
     /**
-     * @param array $botIds
-     * @param User  $user
+     * @param Bot      $bot
+     * @param ObjectID $userId
+     * @param string   $accessToken
      */
-    public function addUserToBots(array $botIds, User $user)
+    public function addUserToBot(Bot $bot, ObjectID $userId, $accessToken)
     {
-        Bot::whereIn('_id', $botIds)->push('users', [
-            'user_id'       => $user->_id,
-            'subscriber_id' => null,
-        ]);
+        $update = ['$push' => ['users' => ['user_id' => $userId, 'subscriber_id' => null, 'access_token' => $accessToken]]];
+
+        // If the bot doesn't have an active access token, then use the new one.
+        if (is_null($bot->access_token)) {
+            $update['$set'] = ['access_token' => $accessToken];
+        }
+
+        $this->update($bot, $update);
     }
 
     /**

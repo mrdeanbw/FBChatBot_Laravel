@@ -6,6 +6,7 @@ use Common\Models\Button;
 use Common\Models\Subscriber;
 use Illuminate\Support\Collection;
 use Common\Repositories\BaseRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 interface BotRepositoryInterface extends BaseRepositoryInterface
 {
@@ -40,10 +41,11 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
     public function getDisabledForUser(User $user);
 
     /**
-     * @param array $botIds
-     * @param User  $user
+     * @param Bot      $bot
+     * @param ObjectID $userId
+     * @param string   $accessToken
      */
-    public function addUserToBots(array $botIds, User $user);
+    public function addUserToBot(Bot $bot, ObjectID $userId, $accessToken);
 
     /**
      * @param User $user
@@ -51,7 +53,6 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
      * @return Subscriber
      */
     public function getSubscriberForUser(User $user, Bot $bot);
-
 
     /**
      * @param User       $user

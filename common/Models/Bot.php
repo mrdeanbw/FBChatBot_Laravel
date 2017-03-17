@@ -15,6 +15,7 @@ use Laravel\Cashier\Billable;
  * @property DefaultReply   $default_reply
  * @property array          $users
  * @property User           $current_user
+ * @property string         $access_token
  */
 class Bot extends BaseModel
 {
