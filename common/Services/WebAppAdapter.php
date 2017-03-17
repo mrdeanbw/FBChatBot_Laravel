@@ -32,9 +32,9 @@ class WebAppAdapter
      */
     private $subscribers;
     /**
-     * @type FacebookAPIAdapter
+     * @type FacebookMessageSender
      */
-    private $FacebookAdapter;
+    private $FacebookMessageSender;
     /**
      * @type MessageService
      */
@@ -80,7 +80,7 @@ class WebAppAdapter
      * @param SubscriberService                  $subscribers
      * @param BotRepositoryInterface             $botRepo
      * @param UserRepositoryInterface            $userRepo
-     * @param FacebookAPIAdapter                 $FacebookAdapter
+     * @param FacebookMessageSender              $FacebookMessageSender
      * @param TemplateRepositoryInterface        $templateRepo
      * @param BroadcastRepositoryInterface       $broadcastRepo
      * @param SubscriberRepositoryInterface      $subscriberRepo
@@ -94,9 +94,9 @@ class WebAppAdapter
         SubscriberService $subscribers,
         BotRepositoryInterface $botRepo,
         UserRepositoryInterface $userRepo,
-        FacebookAPIAdapter $FacebookAdapter,
         TemplateRepositoryInterface $templateRepo,
         BroadcastRepositoryInterface $broadcastRepo,
+        FacebookMessageSender $FacebookMessageSender,
         SubscriberRepositoryInterface $subscriberRepo,
         SentMessageRepositoryInterface $sentMessageRepo,
         AutoReplyRuleRepositoryInterface $autoReplyRuleRepo,
@@ -110,10 +110,10 @@ class WebAppAdapter
         $this->broadcastRepo = $broadcastRepo;
         $this->subscriberRepo = $subscriberRepo;
         $this->FacebookSender = $FacebookSender;
-        $this->FacebookAdapter = $FacebookAdapter;
         $this->sentMessageRepo = $sentMessageRepo;
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
         $this->messageRevisionRepo = $messageRevisionRepo;
+        $this->FacebookMessageSender = $FacebookMessageSender;
     }
 
     /**
@@ -138,7 +138,7 @@ class WebAppAdapter
                         'text' => 'You are already subscribed to the page.'
                     ],
                 ];
-                $this->FacebookAdapter->send($message, $subscriber, $bot->page);
+                $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
             }
 
             return $subscriber;
@@ -156,7 +156,7 @@ class WebAppAdapter
 
         // If not silent mode, send the welcome message!
         if (! $silentMode) {
-            $this->FacebookAdapter->sendFromContext($bot->welcome_message, $subscriber, $bot);
+            $this->FacebookMessageSender->sendFromContext($bot->welcome_message, $subscriber, $bot);
         }
 
         return $subscriber;
@@ -206,7 +206,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->FacebookAdapter->send($message, $subscriber, $bot->page);
+            $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
 
             return;
         }
@@ -231,7 +231,7 @@ class WebAppAdapter
             ]
         ];
 
-        $this->FacebookAdapter->send($message, $subscriber, $bot->page);
+        $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
     }
 
     /**
@@ -249,7 +249,7 @@ class WebAppAdapter
                     'text' => 'You have already unsubscribed from this page.'
                 ],
             ];
-            $this->FacebookAdapter->send($message, $subscriber, $bot->page);
+            $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
 
             return;
         }
@@ -262,7 +262,7 @@ class WebAppAdapter
             ],
         ];
 
-        $this->FacebookAdapter->send($message, $subscriber, $bot->page);
+        $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
     }
 
     /**
@@ -273,7 +273,7 @@ class WebAppAdapter
      */
     public function sendDefaultReply(Bot $bot, Subscriber $subscriber)
     {
-        $this->FacebookAdapter->sendFromContext($bot->default_reply, $subscriber, $bot);
+        $this->FacebookMessageSender->sendFromContext($bot->default_reply, $subscriber, $bot);
     }
 
     /**
@@ -403,7 +403,7 @@ class WebAppAdapter
         }
 
         if ($button->template_id || $button->messages) {
-            $this->FacebookAdapter->sendFromButton($button, $subscriber, $bot, $buttonTemplate, (array)$buttonPath);
+            $this->FacebookMessageSender->sendFromButton($button, $subscriber, $bot, $buttonTemplate, (array)$buttonPath);
         }
     }
 
@@ -454,7 +454,7 @@ class WebAppAdapter
     public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber)
     {
         $this->loadModelsIfNotLoaded($rule, ['template']);
-        $this->FacebookAdapter->sendTemplate($rule->template, $subscriber);
+        $this->FacebookMessageSender->sendTemplate($rule->template, $subscriber);
     }
 
     /**

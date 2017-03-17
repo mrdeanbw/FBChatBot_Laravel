@@ -17,9 +17,9 @@ class MessagePreviewService
      */
     private $templates;
     /**
-     * @type FacebookAPIAdapter
+     * @type FacebookMessageSender
      */
-    private $FacebookAdapter;
+    private $FacebookMessageSender;
     /**
      * @type MessagePreviewRepositoryInterface
      */
@@ -33,19 +33,19 @@ class MessagePreviewService
      * MessagePreviewService constructor.
      * @param TemplateService                   $templates
      * @param BotRepositoryInterface            $botRepo
-     * @param FacebookAPIAdapter                $FacebookAdapter
+     * @param FacebookMessageSender             $FacebookMessageSender
      * @param MessagePreviewRepositoryInterface $messagePreviewRepo
      */
     public function __construct(
         TemplateService $templates,
         BotRepositoryInterface $botRepo,
-        FacebookAPIAdapter $FacebookAdapter,
+        FacebookMessageSender $FacebookMessageSender,
         MessagePreviewRepositoryInterface $messagePreviewRepo
     ) {
         $this->botRepo = $botRepo;
         $this->templates = $templates;
-        $this->FacebookAdapter = $FacebookAdapter;
         $this->messagePreviewRepo = $messagePreviewRepo;
+        $this->FacebookMessageSender = $FacebookMessageSender;
     }
 
     /**

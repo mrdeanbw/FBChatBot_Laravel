@@ -222,7 +222,7 @@ class BroadcastService
             'timezone'         => $timezone,
             'timezone_mode'    => $timezoneMode,
             'message_type'     => $messageType,
-            'notification'     => array_search($input['notification'], FacebookAPIAdapter::_NOTIFICATION_MAP),
+            'notification'     => array_search($input['notification'], FacebookMessageSender::_NOTIFICATION_MAP),
             'schedules'        => [],
             'completed_at'     => null,
             'remaining_target' => $targetAudienceCount,

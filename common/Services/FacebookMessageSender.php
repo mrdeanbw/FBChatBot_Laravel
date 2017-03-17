@@ -15,7 +15,7 @@ use Common\Models\CardContainer;
 use Common\Services\Facebook\Sender;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
-class FacebookAPIAdapter
+class FacebookMessageSender
 {
 
     use LoadsAssociatedModels;

@@ -6,7 +6,7 @@ use Common\Models\Subscriber;
 use Common\Models\SequenceMessage;
 use Common\Models\SequenceSchedule;
 use Common\Services\SequenceService;
-use Common\Services\FacebookAPIAdapter;
+use Common\Services\FacebookMessageSender;
 use Common\Repositories\Sequence\SequenceRepositoryInterface;
 use Common\Repositories\Template\TemplateRepositoryInterface;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
@@ -21,8 +21,8 @@ class SendScheduledSequenceMessage extends BaseJob
     protected $sequenceRepo;
     /** @var  SubscriberRepositoryInterface */
     protected $subscriberRepo;
-    /** @var  FacebookAPIAdapter */
-    protected $FacebookAdapter;
+    /** @var  FacebookMessageSender */
+    protected $FacebookMessageSender;
     /** @var  SequenceService */
     protected $sequenceService;
     /** @var  SequenceScheduleRepositoryInterface */
@@ -50,16 +50,16 @@ class SendScheduledSequenceMessage extends BaseJob
     /**
      * Execute the job.
      *
-     * @param FacebookAPIAdapter                  $FacebookAdapter
+     * @param FacebookMessageSender               $FacebookMessageSender
      * @param TemplateRepositoryInterface         $templateRepo
      * @param SequenceRepositoryInterface         $sequenceRepo
      * @param SubscriberRepositoryInterface       $subscriberRepo
      * @param SequenceScheduleRepositoryInterface $sequenceScheduleRepo
      */
     public function handle(
-        FacebookAPIAdapter $FacebookAdapter,
         TemplateRepositoryInterface $templateRepo,
         SequenceRepositoryInterface $sequenceRepo,
+        FacebookMessageSender $FacebookMessageSender,
         SubscriberRepositoryInterface $subscriberRepo,
         SequenceScheduleRepositoryInterface $sequenceScheduleRepo
     ) {
@@ -67,8 +67,8 @@ class SendScheduledSequenceMessage extends BaseJob
         $this->templateRepo = $templateRepo;
         $this->sequenceRepo = $sequenceRepo;
         $this->subscriberRepo = $subscriberRepo;
-        $this->FacebookAdapter = $FacebookAdapter;
         $this->sequenceScheduleRepo = $sequenceScheduleRepo;
+        $this->FacebookMessageSender = $FacebookMessageSender;
 
         $this->setSequence();
 
@@ -98,7 +98,7 @@ class SendScheduledSequenceMessage extends BaseJob
         if (! $this->message->deleted_at && $this->message->live) {
             $sentAt = Carbon::now();
             $template = $this->templateRepo->findById($this->message->template_id);
-            $this->FacebookAdapter->sendTemplate($template, $this->subscriber);
+            $this->FacebookMessageSender->sendTemplate($template, $this->subscriber);
 
             return $sentAt;
         }

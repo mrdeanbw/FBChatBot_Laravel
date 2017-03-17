@@ -3,7 +3,7 @@
 use Common\Models\Broadcast;
 use Common\Models\Subscriber;
 use Common\Models\Template;
-use Common\Services\FacebookAPIAdapter;
+use Common\Services\FacebookMessageSender;
 
 class SendTemplate extends BaseJob
 {
@@ -32,11 +32,11 @@ class SendTemplate extends BaseJob
     /**
      * Execute the job.
      *
-     * @param FacebookAPIAdapter $FacebookAdapter
+     * @param FacebookMessageSender $FacebookMessageSender
      * @throws \Exception
      */
-    public function handle(FacebookAPIAdapter $FacebookAdapter)
+    public function handle(FacebookMessageSender $FacebookMessageSender)
     {
-        $FacebookAdapter->sendTemplate($this->template, $this->subscriber);
+        $FacebookMessageSender->sendTemplate($this->template, $this->subscriber);
     }
 }

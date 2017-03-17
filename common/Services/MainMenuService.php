@@ -22,9 +22,9 @@ class MainMenuService
      */
     private $FacebookThread;
     /**
-     * @type FacebookAPIAdapter
+     * @type FacebookMessageSender
      */
-    private $FacebookAdapter;
+    private $FacebookMessageSender;
     /**
      * @type DBBotRepository
      */
@@ -33,21 +33,21 @@ class MainMenuService
     /**
      * MainMenuService constructor.
      *
-     * @param MessageService     $messages
-     * @param MessengerThread    $facebookThread
-     * @param FacebookAPIAdapter $FacebookAdapter
-     * @param DBBotRepository    $botRepo
+     * @param MessageService        $messages
+     * @param MessengerThread       $facebookThread
+     * @param FacebookMessageSender $FacebookMessageSender
+     * @param DBBotRepository       $botRepo
      */
     public function __construct(
+        DBBotRepository $botRepo,
         MessageService $messages,
         MessengerThread $facebookThread,
-        FacebookAPIAdapter $FacebookAdapter,
-        DBBotRepository $botRepo
+        FacebookMessageSender $FacebookMessageSender
     ) {
         $this->botRepo = $botRepo;
-        $this->messages = $messages->forMainMenuButtons();
         $this->FacebookThread = $facebookThread;
-        $this->FacebookAdapter = $FacebookAdapter;
+        $this->messages = $messages->forMainMenuButtons();
+        $this->FacebookMessageSender = $FacebookMessageSender;
     }
 
     /**

@@ -2,7 +2,7 @@
 
 use Common\Models\Message;
 use Common\Models\Broadcast;
-use Common\Services\FacebookAPIAdapter;
+use Common\Services\FacebookMessageSender;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
@@ -28,7 +28,7 @@ class BroadcastTransformer extends BaseTransformer
             'send_mode'        => $broadcast->send_now? 'now' : 'later',
             'timezone'         => $broadcast->timezone,
             'timezone_mode'    => BroadcastRepositoryInterface::_TIMEZONE_MAP[$broadcast->timezone_mode],
-            'notification'     => FacebookAPIAdapter::_NOTIFICATION_MAP[$broadcast->notification],
+            'notification'     => FacebookMessageSender::_NOTIFICATION_MAP[$broadcast->notification],
             'message_type'     => BroadcastRepositoryInterface::_MESSAGE_MAP[$broadcast->message_type],
             'completed_at'     => $broadcast->completed_at? $broadcast->completed_at->toAtomString() : null,
             'stats'            => $stats,

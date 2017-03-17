@@ -2,7 +2,7 @@
 
 use Common\Models\Broadcast;
 use Common\Models\Subscriber;
-use Common\Services\FacebookAPIAdapter;
+use Common\Services\FacebookMessageSender;
 
 class SendBroadcastToSubscriber extends BaseJob
 {
@@ -31,11 +31,11 @@ class SendBroadcastToSubscriber extends BaseJob
     /**
      * Execute the job.
      *
-     * @param FacebookAPIAdapter $FacebookAdapter
+     * @param FacebookMessageSender $FacebookMessageSender
      * @throws \Exception
      */
-    public function handle(FacebookAPIAdapter $FacebookAdapter)
+    public function handle(FacebookMessageSender $FacebookMessageSender)
     {
-        $FacebookAdapter->sendBroadcastMessages($this->broadcast, $this->subscriber);
+        $FacebookMessageSender->sendBroadcastMessages($this->broadcast, $this->subscriber);
     }
 }
