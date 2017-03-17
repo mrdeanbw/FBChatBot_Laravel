@@ -40,7 +40,7 @@ class SubscriberController extends APIController
 
         $paginator = $this->audience->paginate(
             $this->bot(),
-            $request->get('page'),
+            (int)$request->get('page', 1),
             $filter,
             $request->get('sorting', []),
             $request->get('count')

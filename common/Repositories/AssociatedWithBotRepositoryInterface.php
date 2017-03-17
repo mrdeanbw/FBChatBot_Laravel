@@ -1,8 +1,8 @@
 <?php namespace Common\Repositories;
 
 use Common\Models\Bot;
-use Common\Models\BaseModel;
 use MongoDB\BSON\ObjectID;
+use Common\Models\BaseModel;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 
@@ -33,7 +33,6 @@ interface AssociatedWithBotRepositoryInterface extends BaseRepositoryInterface
      * @return Paginator
      */
     public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage);
-
 
     /**
      * @param array    $models

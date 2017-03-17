@@ -36,7 +36,7 @@ class AutoReplyRuleController extends APIController
     {
         $paginator = $this->autoReplies->paginate(
             $this->bot(),
-            $request->get('page'),
+            (int)$request->get('page', 1),
             ['keyword' => $request->get('keyword')]
         );
 

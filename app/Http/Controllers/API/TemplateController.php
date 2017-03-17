@@ -16,7 +16,6 @@ class TemplateController extends APIController
 
     /**
      * TemplateController constructor.
-     *
      * @param TemplateService $templates
      */
     public function __construct(TemplateService $templates)
@@ -26,16 +25,14 @@ class TemplateController extends APIController
 
     /**
      * Return a list of message trees.
-     *
      * @param Request $request
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function index(Request $request)
     {
         $paginator = $this->templates->paginateExplicit(
             $this->bot(),
-            $request->get('page'),
+            (int)$request->get('page', 1),
             ['name' => $request->get('name')]
         );
 
@@ -45,9 +42,7 @@ class TemplateController extends APIController
 
     /**
      * Return the details of a message tree.
-     *
-     * @param         $id
-     *
+     * @param  $id
      * @return \Dingo\Api\Http\Response
      */
     public function show($id)
@@ -59,9 +54,7 @@ class TemplateController extends APIController
 
     /**
      * Create a new message tree.
-     *
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function store(Request $request)
@@ -75,10 +68,8 @@ class TemplateController extends APIController
 
     /**
      * Update a message tree.
-     *
      * @param         $id
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
@@ -92,10 +83,8 @@ class TemplateController extends APIController
 
     /**
      * Make the validator for message trees.
-     *
      * @param     $id
      * @param Bot $bot
-     *
      * @return array
      */
     protected function validationRules($id, Bot $bot)
@@ -111,8 +100,9 @@ class TemplateController extends APIController
         return $rules;
     }
 
-
-    /** @return BaseTransformer */
+    /**
+     * @return BaseTransformer
+     */
     protected function transformer()
     {
         return new TemplateTransformer();

@@ -37,7 +37,7 @@ class SequenceController extends APIController
     {
         $paginator = $this->sequences->paginate(
             $this->bot(),
-            $request->get('page'),
+            (int)$request->get('page', 1),
             ['name' => $request->get('name')],
             [],
             8
