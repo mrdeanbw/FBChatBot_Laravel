@@ -81,7 +81,7 @@ class BroadcastService
 
         return $this->broadcastRepo->paginateForBot($bot, $page, $filter, $order, $perPage);
     }
-
+    
     /**
      * @param Bot $bot
      * @param int $page

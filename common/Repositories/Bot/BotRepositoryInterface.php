@@ -1,8 +1,8 @@
 <?php namespace Common\Repositories\Bot;
 
 use Common\Models\Bot;
-use Common\Models\Button;
 use Common\Models\User;
+use Common\Models\Button;
 use Common\Models\Subscriber;
 use Illuminate\Support\Collection;
 use Common\Repositories\BaseRepositoryInterface;
