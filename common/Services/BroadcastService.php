@@ -61,7 +61,6 @@ class BroadcastService
 
     /**
      * @param Bot $bot
-     *
      * @return \Illuminate\Support\Collection
      */
     public function all(Bot $bot)
@@ -70,9 +69,36 @@ class BroadcastService
     }
 
     /**
+     * @param Bot $bot
+     * @param int $page
+     * @param int $perPage
+     * @return \Illuminate\Pagination\Paginator
+     */
+    public function paginatePending(Bot $bot, $page, $perPage = 10)
+    {
+        $filter = [['key' => 'status', 'operator' => '=', 'value' => BroadcastRepositoryInterface::STATUS_PENDING]];
+        $order = ['_id' => 'desc'];
+
+        return $this->broadcastRepo->paginateForBot($bot, $page, $filter, $order, $perPage);
+    }
+
+    /**
+     * @param Bot $bot
+     * @param int $page
+     * @param int $perPage
+     * @return \Illuminate\Pagination\Paginator
+     */
+    public function paginateNonPending(Bot $bot, $page, $perPage = 10)
+    {
+        $filter = [['key' => 'status', 'operator' => '!=', 'value' => BroadcastRepositoryInterface::STATUS_PENDING]];
+        $order = ['_id' => 'desc'];
+
+        return $this->broadcastRepo->paginateForBot($bot, $page, $filter, $order, $perPage);
+    }
+
+    /**
      * @param      $id
      * @param Bot  $bot
-     *
      * @return Broadcast|null
      */
     public function findById($id, Bot $bot)
@@ -82,10 +108,8 @@ class BroadcastService
 
     /**
      * Find a broadcast by ID, throw exception if it doesn't exist.
-     *
      * @param      $id
      * @param Bot  $bot
-     *
      * @return Broadcast|null
      */
     public function findByIdOrFail($id, Bot $bot)
@@ -98,11 +122,9 @@ class BroadcastService
 
     /**
      * Find a broadcast by ID and status, throw exception if it doesn't exist.
-     *
-     * @param      $id
-     * @param Bot  $bot
-     * @param      $status
-     *
+     * @param     $id
+     * @param Bot $bot
+     * @param int $status
      * @return Broadcast
      */
     public function findByIdAndStatusOrFail($id, $status, Bot $bot)

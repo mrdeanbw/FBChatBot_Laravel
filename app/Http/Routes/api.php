@@ -88,7 +88,8 @@ $api->version('v1', $options, function (Router $api) {
         $api->delete('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
 
         // Broadcasts
-        $api->get('/bots/{botId}/broadcasts', 'BroadcastController@index');
+        $api->get('/bots/{botId}/broadcasts/pending', 'BroadcastController@pending');
+        $api->get('/bots/{botId}/broadcasts/non-pending', 'BroadcastController@nonPending');
         $api->post('/bots/{botId}/broadcasts', 'BroadcastController@store');
         $api->get('/bots/{botId}/broadcasts/{id}', 'BroadcastController@show');
         $api->put('/bots/{botId}/broadcasts/{id}', 'BroadcastController@update');

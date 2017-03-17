@@ -27,14 +27,29 @@ class BroadcastController extends APIController
     }
 
     /**
-     * Retrieve the list of broadcasts.
+     * Retrieve the list of pending broadcasts.
+     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function index()
+    public function pending(Request $request)
     {
-        $broadcasts = $this->broadcasts->all($this->bot());
+        $page = (int)$request->get('page', 1);
+        $broadcasts = $this->broadcasts->paginatePending($this->bot(), $page);
 
-        return $this->collectionResponse($broadcasts);
+        return $this->paginatorResponse($broadcasts);
+    }
+
+    /**
+     * Retrieve the list of non pending broadcasts.
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function nonPending(Request $request)
+    {
+        $page = (int)$request->get('page', 1);
+        $broadcasts = $this->broadcasts->paginateNonPending($this->bot(), $page);
+        
+        return $this->paginatorResponse($broadcasts);
     }
 
     /**
