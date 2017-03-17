@@ -13,7 +13,7 @@ class PageService extends API
     {
         $url = $this->url('/me/accounts', [
             'access_token' => $accessToken,
-            'fields'       => 'id,name,picture{url},link,access_token',
+            'fields'       => 'id,name,picture{url},link,access_token,perms',
             'limit'        => $limit
         ]);
 

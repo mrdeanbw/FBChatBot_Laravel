@@ -37,6 +37,18 @@ class PageService
         $this->FacebookPages = $FacebookPages;
     }
 
+    /**
+     * @param User $user
+     * @return array
+     */
+    public function getAdministratedFacebookPages(User $user)
+    {
+        $pages = (array)$this->FacebookPages->getManagePageList($user->access_token);
+
+        return array_filter($pages, function ($page) {
+            return in_array('ADMINISTER', $page->perms);
+        });
+    }
 
     /**
      * Return a list of all Facebook pages for user.
@@ -45,9 +57,9 @@ class PageService
      */
     public function getAllPages(User $user)
     {
-        $remotePages = $this->FacebookPages->getManagePageList($user->access_token);
+        $remotePages = $this->getAdministratedFacebookPages($user);
 
-        return $this->normalizePages($user, (array)$remotePages, false);
+        return $this->normalizePages($user, $remotePages, false);
     }
 
     /**
@@ -57,9 +69,9 @@ class PageService
      */
     public function getUnmanagedPages(User $user)
     {
-        $remotePages = $this->FacebookPages->getManagePageList($user->access_token);
+        $remotePages = $this->getAdministratedFacebookPages($user);
 
-        return $this->normalizePages($user, (array)$remotePages, true);
+        return $this->normalizePages($user, $remotePages, true);
     }
 
     /**
