@@ -3,9 +3,13 @@
 use Exception;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Level;
+use Raven_Client;
+use Rollbar;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Laravel\Lumen\Exceptions\Handler as ExceptionHandler;
 
@@ -34,17 +38,40 @@ class Handler extends ExceptionHandler
      */
     public function report(Exception $e)
     {
-        parent::report($e);
+        if ($this->shouldntReport($e)) {
+            return;
+        }
+
+        if (! config('sentry.dsn')) {
+            if (is_a($e, ClientException::class)) {
+                /** @type ClientException $e */
+                $message = $this->getFormattedGuzzleExceptionMessage($e);
+                try {
+                    /** @type \Psr\Log\LoggerInterface $logger */
+                    $logger = app('Psr\Log\LoggerInterface');
+                } catch (Exception $ex) {
+                    throw $e; // throw the original exception
+                }
+
+                /** @noinspection PhpInconsistentReturnPointsInspection */
+                return $logger->error($message);
+            }
+
+            /** @noinspection PhpInconsistentReturnPointsInspection */
+            return parent::report($e);
+        }
+
+        $lastTraceId = app('sentry')->captureException($e);
+
         if (is_a($e, ClientException::class)) {
             /** @type ClientException $e */
-            try {
-                /** @type \Psr\Log\LoggerInterface $logger */
-                $logger = app('Psr\Log\LoggerInterface');
-            } catch (Exception $ex) {
-                throw $e; // throw the original exception
-            }
-            $logger->debug("Full Response: " . $e->getResponse()->getBody()->getContents() . "\n");
+            /** @noinspection PhpInconsistentReturnPointsInspection */
+            app('sentry')->captureMessage($this->getGuzzleFullRequestAndResponse($e), [], [
+                'level' => Raven_Client::INFO,
+                'extra' => ['event_id' => $lastTraceId]
+            ]);
         }
+
     }
 
     /**
@@ -57,5 +84,35 @@ class Handler extends ExceptionHandler
     public function render($request, Exception $e)
     {
         return parent::render($request, $e);
+    }
+
+    /**
+     * @param ClientException $e
+     * @return string
+     */
+    protected function getFormattedGuzzleExceptionMessage(ClientException $e)
+    {
+        $fullRequestAndResponse = $this->getGuzzleFullRequestAndResponse($e);
+
+        return
+            '[' . date('Y-m-d H:i:s') . '] ' .
+            get_class($e) . ': ' .
+            $e->getMessage() .
+            $fullRequestAndResponse .
+            "in " . $e->getFile() . ':' . $e->getLine() .
+            "\nStack trace:\n" . $e->getTraceAsString() . "\n";
+    }
+
+    /**
+     * @param ClientException $e
+     * @return string
+     */
+    protected function getGuzzleFullRequestAndResponse(ClientException $e)
+    {
+        $fullRequest = $e->getRequest()->getMethod() . ' ' . $e->getRequest()->getUri() . "\n";
+        $fullRequest .= "Request: " . $e->getRequest()->getBody()->getContents() . "\n";
+        $fullResponse = "Response: " . $e->getResponse()->getBody()->getContents() . "\n";
+
+        return $fullRequest . $fullResponse;
     }
 }

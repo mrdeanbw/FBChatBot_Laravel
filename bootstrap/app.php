@@ -118,6 +118,7 @@ app('Dingo\Api\Transformer\Factory')->setAdapter(function ($app) {
 });
 
 $app->register(Common\Providers\DingoApiExceptionHandler::class);
+$app->register(Sentry\SentryLaravel\SentryLumenServiceProvider::class);
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
