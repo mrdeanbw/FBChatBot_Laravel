@@ -4,6 +4,7 @@ use Common\Models\BaseModel;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use MongoDB\BSON\ObjectID;
 
 interface BaseRepositoryInterface
 {
@@ -50,10 +51,17 @@ interface BaseRepositoryInterface
 
     /**
      * Find resource by ID.
-     * @param string $id
-     * @return array|BaseModel|null
+     * @param string|ObjectID $id
+     * @return BaseModel|null
      */
     public function findById($id);
+
+    /**
+     * Find resource by ID.
+     * @param array $ids
+     * @return Collection
+     */
+    public function findByIds($ids);
 
     /**
      * Find resource by ID or throw an exception if it doesn't exist.

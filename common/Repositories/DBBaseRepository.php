@@ -72,12 +72,22 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
     /**
      * @param string|ObjectID $id
-     *
      * @return BaseModel
      */
     public function findById($id)
     {
         $filter = [['operator' => '=', 'key' => '_id', 'value' => $id]];
+
+        return $this->getOne($filter);
+    }
+
+    /**
+     * @param array $ids
+     * @return Collection
+     */
+    public function findByIds($ids)
+    {
+        $filter = [['operator' => 'in', 'key' => '_id', 'value' => $ids]];
 
         return $this->getOne($filter);
     }
