@@ -1,10 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
-use Common\Models\User;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Http\Request;
 use Common\Services\AuthService;
-use Common\Services\ReferralService;
 use Common\Transformers\UserTransformer;
 use Common\Transformers\BaseTransformer;
 use Common\Repositories\User\UserRepositoryInterface;
@@ -26,21 +24,18 @@ class UserController extends APIController
      */
     private $JWTAuth;
     private $userRepository;
-    private $refService;
 
     /**
      * AuthController constructor.
      *
      * @param AuthService             $account
      * @param UserRepositoryInterface $userRepo
-     * @param ReferralService         $refService
      */
-    public function __construct(AuthService $account, UserRepositoryInterface $userRepo, ReferralService $refService)
+    public function __construct(AuthService $account, UserRepositoryInterface $userRepo)
     {
         $this->account = $account;
         $this->JWTAuth = app('tymon.jwt.auth');
         $this->userRepository = $userRepo;
-        $this->refService = $refService;
     }
 
     /**
@@ -93,12 +88,6 @@ class UserController extends APIController
         $user = $this->user();
 
         return $this->itemResponse($user);
-    }
-
-    public function getReferralCode(Request $request)
-    {
-        $user = !is_null($request->input('id')) ? User::find($request->input('id')) : 1;
-        return $user->referral_code;
     }
 
     /** @return BaseTransformer */
