@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Common\Services\BotService;
-use Common\Services\TimezoneService;
 use Common\Transformers\BotTransformer;
 
 class BotController extends APIController

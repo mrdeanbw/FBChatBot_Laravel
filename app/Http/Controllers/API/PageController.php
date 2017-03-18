@@ -1,11 +1,10 @@
 <?php namespace App\Http\Controllers\API;
 
 use Common\Models\User;
-use Common\Transformers\PageTransformer;
 use Illuminate\Http\Request;
 use Common\Services\PageService;
-use Common\Services\UserService;
 use Common\Services\TimezoneService;
+use Common\Transformers\PageTransformer;
 
 class PageController extends APIController
 {
@@ -18,21 +17,15 @@ class PageController extends APIController
      * @type TimezoneService
      */
     private $timezones;
-    /**
-     * @type UserService
-     */
-    private $users;
 
     /**
      * PageController constructor.
      *
-     * @param UserService     $users
      * @param PageService     $pages
      * @param TimezoneService $timezones
      */
-    public function __construct(UserService $users, PageService $pages, TimezoneService $timezones)
+    public function __construct(PageService $pages, TimezoneService $timezones)
     {
-        $this->users = $users;
         $this->pages = $pages;
         $this->timezones = $timezones;
     }
@@ -47,15 +40,14 @@ class PageController extends APIController
         /** @type User $user */
         $user = $this->user();
 
-        if (! $this->users->hasAllManagingPagePermissions($user->granted_permissions)) {
-            $this->response->error("missing_permissions", 403);
-        }
-
         $pages = $request->get('notManagedByUser')? $this->pages->getUnmanagedPages($user) : $this->pages->getAllPages($user);
 
         return $this->collectionResponse($pages);
     }
 
+    /**
+     * @return PageTransformer
+     */
     protected function transformer()
     {
         return new PageTransformer();

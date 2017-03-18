@@ -18,7 +18,7 @@ class SubscribeAppToFacebookPage extends BaseJob
      * @param $bot
      * @param $userId
      */
-    public function __construct($bot, $userId)
+    public function __construct(Bot $bot, $userId)
     {
         $this->bot = $bot;
         $this->userId = $userId;

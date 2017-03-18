@@ -2,14 +2,12 @@
 
 use Common\Models\Bot;
 use Illuminate\Http\Request;
-use Dingo\Api\Routing\Helpers;
 use Common\Services\BotService;
 use Common\Http\Controllers\APIController as BaseAPIController;
 
 abstract class APIController extends BaseAPIController
 {
 
-    use Helpers;
     /**
      * @type Bot
      */
@@ -21,9 +19,7 @@ abstract class APIController extends BaseAPIController
      */
     protected function bot()
     {
-        /**
-         * If the bot has been already fetched, return it.
-         */
+        // If the bot has been already fetched, return it.
         if ($this->bot) {
             return $this->bot;
         }
