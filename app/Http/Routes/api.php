@@ -1,6 +1,7 @@
 <?php
 
 use Dingo\Api\Routing\Router;
+use Common\Http\Middleware\AuthorizedMiddleware;
 
 /** @type Router $api */
 $api = app(Router::class);
@@ -25,7 +26,7 @@ $api->version('v1', $options, function (Router $api) {
     $api->post('/users/login', 'UserController@login');
     $api->post('/users/refresh-token', 'UserController@refreshToken');
 
-    $api->group(['middleware' => 'api.auth'], function (Router $api) {
+    $api->group(['middleware' => ['api.auth', AuthorizedMiddleware::class]], function (Router $api) {
 
         $api->get('/users/current', 'UserController@current');
 
