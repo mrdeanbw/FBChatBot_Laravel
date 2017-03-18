@@ -109,9 +109,10 @@ class Handler extends ExceptionHandler
      */
     protected function getGuzzleFullRequestAndResponse(ClientException $e)
     {
-        $fullRequest = $e->getRequest()->getMethod() . ' ' . $e->getRequest()->getUri() . "\n";
-        $fullRequest .= "Request: " . $e->getRequest()->getBody()->getContents() . "\n";
-        $fullResponse = "Response: " . $e->getResponse()->getBody()->getContents() . "\n";
+        $request = $e->getRequest();
+        $fullRequest = $request->getMethod() . ' ' . $request->getUri() . "\n";
+        $fullRequest .= "Request: " . $request->getBody() . "\n";
+        $fullResponse = "Response: " . $e->getResponse()->getBody() . "\n";
 
         return $fullRequest . $fullResponse;
     }
