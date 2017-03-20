@@ -1,7 +1,6 @@
 <?php namespace Common\Services\Facebook;
 
-
-class Sender extends Base
+class MessengerSender extends Base
 {
 
     /**

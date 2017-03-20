@@ -1,7 +1,8 @@
 <?php namespace Common\Jobs;
 
 use Common\Models\Bot;
-use Common\Services\Facebook;
+use Common\Services\FacebookAdapter;
+use Common\Exceptions\DisallowedBotOperation;
 
 class SubscribeAppToFacebookPage extends BaseJob
 {
@@ -26,10 +27,13 @@ class SubscribeAppToFacebookPage extends BaseJob
 
     /**
      * Execute the job.
-     * @param Facebook\Subscription    $FacebookSubscriptions
+     * @param FacebookAdapter $FacebookAdapter
      */
-    public function handle(Facebook\Subscription $FacebookSubscriptions)
+    public function handle(FacebookAdapter $FacebookAdapter)
     {
-        $FacebookSubscriptions->subscribe($this->bot->page->access_token);
+        try {
+            $FacebookAdapter->subscribeToPage($this->bot);
+        } catch (DisallowedBotOperation $e) {
+        }
     }
 }

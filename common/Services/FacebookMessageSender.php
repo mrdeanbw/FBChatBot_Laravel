@@ -4,7 +4,6 @@ use Exception;
 use Carbon\Carbon;
 use Common\Models\Bot;
 use Common\Models\Text;
-use Common\Models\Page;
 use Common\Models\Button;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Message;
@@ -12,7 +11,6 @@ use Common\Models\Template;
 use Common\Models\Broadcast;
 use Common\Models\Subscriber;
 use Common\Models\CardContainer;
-use Common\Services\Facebook\Sender;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class FacebookMessageSender
@@ -30,24 +28,24 @@ class FacebookMessageSender
     ];
 
     /**
-     * @type Sender
-     */
-    private $FacebookSender;
-    /**
      * @type SentMessageRepositoryInterface
      */
     private $sentMessageRepo;
+    /**
+     * @type FacebookAdapter
+     */
+    private $FacebookAdapter;
 
     /**
      * FacebookAPIAdapter constructor.
      *
-     * @param Sender                         $FacebookSender
+     * @param FacebookAdapter                $FacebookAdapter
      * @param SentMessageRepositoryInterface $sentMessageRepo
      */
-    public function __construct(Sender $FacebookSender, SentMessageRepositoryInterface $sentMessageRepo)
+    public function __construct(FacebookAdapter $FacebookAdapter, SentMessageRepositoryInterface $sentMessageRepo)
     {
-        $this->FacebookSender = $FacebookSender;
         $this->sentMessageRepo = $sentMessageRepo;
+        $this->FacebookAdapter = $FacebookAdapter;
     }
 
     /**
@@ -141,7 +139,7 @@ class FacebookMessageSender
 
             $mappedMessage = $mapper->toFacebookMessage($message);
 
-            $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot->page, $notificationType);
+            $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot, $notificationType);
 
             $ret[] = $this->sentMessageRepo->create(
                 array_merge($data, ['facebook_id' => $facebookMessageId])
@@ -152,19 +150,31 @@ class FacebookMessageSender
     }
 
     /**
+     * @param int        $messageIndex
+     * @param Bot        $bot
+     * @param Subscriber $subscriber
+     */
+    public function sendBotMessage($messageIndex, Bot $bot, Subscriber $subscriber)
+    {
+        $context = $bot->messages[$messageIndex];
+        $this->sendFromContext($context, $subscriber, $bot);
+    }
+
+    /**
      * Add recipient header, notification type and send the message through Facebook API.
      * @param array      $message
      * @param Subscriber $subscriber
-     * @param Page       $page
+     * @param Bot        $bot
      * @param int        $notificationType
      * @return \object[]
+     * @throws Exception
      */
-    public function send(array $message, Subscriber $subscriber, Page $page, $notificationType = self::NOTIFICATION_REGULAR)
+    protected function send(array $message, Subscriber $subscriber, Bot $bot, $notificationType = self::NOTIFICATION_REGULAR)
     {
         $message = $this->addRecipientHeader($message, $subscriber);
         $message = $this->addNotificationType($message, $notificationType);
 
-        $response = $this->FacebookSender->send($page->access_token, $message, false);
+        $response = $this->FacebookAdapter->sendMessage($bot, $message);
 
         return $response->message_id;
     }

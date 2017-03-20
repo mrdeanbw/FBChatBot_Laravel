@@ -1,8 +1,8 @@
 <?php namespace Common\Repositories\Broadcast;
 
 use Common\Models\Bot;
-use Common\Models\Broadcast;
 use MongoDB\BSON\ObjectID;
+use Common\Models\Broadcast;
 use Illuminate\Support\Collection;
 use Common\Repositories\AssociatedWithBotRepositoryInterface;
 
@@ -12,7 +12,8 @@ interface BroadcastRepositoryInterface extends AssociatedWithBotRepositoryInterf
     const STATUS_PENDING = 0;
     const STATUS_RUNNING = 1;
     const STATUS_COMPLETED = 2;
-    const _STATUS_MAP = ['pending', 'running', 'completed'];
+    const STATUS_CANCELLED = 3;
+    const _STATUS_MAP = ['pending', 'running', 'completed', 'cancelled'];
 
     const MESSAGE_SUBSCRIPTION = 0;
     const MESSAGE_PROMOTIONAL = 1;

@@ -6,7 +6,7 @@ use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
 use Common\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
-use Common\Services\Facebook\FacebookUser;
+use Common\Services\Facebook\Users;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\Sequence\SequenceRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -29,7 +29,7 @@ class SubscriberService
     ];
 
     /**
-     * @type FacebookUser
+     * @type Users
      */
     private $FacebookUsers;
     /**
@@ -52,30 +52,35 @@ class SubscriberService
      * @var SequenceScheduleRepositoryInterface
      */
     private $sequenceScheduleRepo;
+    /**
+     * @type FacebookAdapter
+     */
+    private $FacebookAdapter;
 
     /**
      * AudienceService constructor.
      *
-     * @param SubscriberRepositoryInterface       $subscriberRepo
-     * @param SequenceRepositoryInterface         $sequenceRepo
-     * @param FacebookUser                        $FacebookUsers
      * @param SequenceService                     $sequences
      * @param BotRepositoryInterface              $botRepo
+     * @param FacebookAdapter                     $FacebookAdapter
+     * @param SequenceRepositoryInterface         $sequenceRepo
+     * @param SubscriberRepositoryInterface       $subscriberRepo
      * @param SequenceScheduleRepositoryInterface $sequenceScheduleRepo
+     * @internal param FacebookUser $FacebookUsers
      */
     public function __construct(
-        SubscriberRepositoryInterface $subscriberRepo,
-        SequenceRepositoryInterface $sequenceRepo,
-        FacebookUser $FacebookUsers,
         SequenceService $sequences,
         BotRepositoryInterface $botRepo,
+        FacebookAdapter $FacebookAdapter,
+        SequenceRepositoryInterface $sequenceRepo,
+        SubscriberRepositoryInterface $subscriberRepo,
         SequenceScheduleRepositoryInterface $sequenceScheduleRepo
     ) {
-        $this->FacebookUsers = $FacebookUsers;
-        $this->subscriberRepo = $subscriberRepo;
-        $this->sequenceRepo = $sequenceRepo;
-        $this->sequences = $sequences;
         $this->botRepo = $botRepo;
+        $this->sequences = $sequences;
+        $this->sequenceRepo = $sequenceRepo;
+        $this->subscriberRepo = $subscriberRepo;
+        $this->FacebookAdapter = $FacebookAdapter;
         $this->sequenceScheduleRepo = $sequenceScheduleRepo;
     }
 
@@ -118,7 +123,7 @@ class SubscriberService
             return $subscriber;
         }
 
-        $publicProfile = $this->FacebookUsers->publicProfile($id, $bot->page->access_token);
+        $publicProfile = $this->FacebookAdapter->publicUserProfile($bot, $id);
 
         $data = [
             'facebook_id'          => $id,

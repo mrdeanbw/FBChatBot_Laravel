@@ -1,11 +1,10 @@
 <?php namespace Common\Repositories\Sequence;
 
-use Common\Models\SequenceSchedule;
-use Common\Models\Subscriber;
-use Common\Repositories\DBBaseRepository;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 use MongoDB\BSON\ObjectID;
+use Illuminate\Support\Collection;
+use Common\Models\SequenceSchedule;
+use Common\Repositories\DBBaseRepository;
 
 class DBSequenceScheduleRepository extends DBBaseRepository implements SequenceScheduleRepositoryInterface
 {

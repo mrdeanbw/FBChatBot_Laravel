@@ -3,12 +3,15 @@
 use Carbon\Carbon;
 use Common\Models\Broadcast;
 use Common\Models\BroadcastSchedule;
+use Common\Services\BroadcastService;
+use Common\Services\LoadsAssociatedModels;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
-use Common\Services\BroadcastService;
 
 class SendDueBroadcast extends BaseJob
 {
+
+    use LoadsAssociatedModels;
 
     /**
      * @type BroadcastRepositoryInterface
@@ -51,7 +54,12 @@ class SendDueBroadcast extends BaseJob
         $this->broadcastRepo = $broadcastRepo;
         $this->subscriberRepo = $subscriberRepo;
 
-        $this->process();
+        $this->loadModelsIfNotLoaded($this->broadcast, ['bot']);
+        if (! $this->broadcast->bot->enabled) {
+            return $this->cancelBroadcast();
+        }
+
+        return $this->process();
     }
 
     /**
@@ -169,5 +177,19 @@ class SendDueBroadcast extends BaseJob
         return array_filter($broadcast->schedules, function (BroadcastSchedule $schedule) use ($dueSchedules) {
             return ! in_array($schedule->utc_offset, $dueSchedules) && $schedule->status != BroadcastRepositoryInterface::STATUS_COMPLETED;
         });
+    }
+
+    /**
+     * 
+     */
+    protected function cancelBroadcast()
+    {
+        $update = ['status' => BroadcastRepositoryInterface::STATUS_CANCELLED];
+        foreach ($this->broadcast->schedules as $i => $schedule) {
+            if ($schedule->status != BroadcastRepositoryInterface::STATUS_COMPLETED) {
+                $update["schedules.{$i}.status"] = BroadcastRepositoryInterface::STATUS_COMPLETED;
+            }
+        }
+        $this->broadcastRepo->update($this->broadcast, $update);
     }
 }

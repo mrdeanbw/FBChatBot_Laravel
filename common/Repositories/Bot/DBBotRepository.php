@@ -3,10 +3,10 @@
 use Common\Models\Bot;
 use Common\Models\User;
 use Common\Models\Button;
+use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
 use Illuminate\Support\Collection;
 use Common\Repositories\DBBaseRepository;
-use MongoDB\BSON\ObjectID;
 
 class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
 {
@@ -89,6 +89,29 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
         }
 
         $this->update($bot, $update);
+    }
+
+    /**
+     * @param Bot      $bot
+     * @param ObjectID $userId
+     * @param string   $accessToken
+     * @return bool
+     * @throws \Exception
+     */
+    public function updateBotUser(Bot $bot, ObjectID $userId, $accessToken)
+    {
+        foreach ($bot->users as $i => $user) {
+            if ($user['user_id'] == $userId) {
+                $update = ["users.{$i}.access_token" => $accessToken];
+                if (is_null($bot->access_token)) {
+                    $update['access_token'] = $accessToken;
+                }
+
+                return $this->update($bot, $update);
+            }
+        }
+
+        throw new \Exception("User not found");
     }
 
     /**

@@ -1,10 +1,10 @@
 <?php namespace Common\Jobs;
 
+use Exception;
 use Common\Models\Bot;
-use Common\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
-use Common\Services\FacebookAPIAdapter;
-use Common\Services\Facebook\MessengerThread;
+use Common\Services\FacebookAdapter;
 use Common\Services\FacebookMessageMapper;
+use Common\Exceptions\DisallowedBotOperation;
 
 class UpdateMainMenuOnFacebook extends BaseJob
 {
@@ -30,20 +30,23 @@ class UpdateMainMenuOnFacebook extends BaseJob
 
     /**
      * Execute the job.
-     *
-     * @param MessengerThread $MessengerThreads
-     * @throws \Exception
+     * @param FacebookAdapter $FacebookAdapter
+     * @throws Exception
      */
-    public function handle(MessengerThread $MessengerThreads)
+    public function handle(FacebookAdapter $FacebookAdapter)
     {
         $messages = (new FacebookMessageMapper($this->bot))->mapMainMenuButtons();
-        
-        $response = $MessengerThreads->setPersistentMenu($this->bot->page->access_token, $messages);
 
+        try {
+            $response = $FacebookAdapter->setPersistentMenu($this->bot, $messages);
+        } catch (DisallowedBotOperation $e) {
+            return;
+        }
+        
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 
         if (! $success) {
-            throw new \Exception("{$this->frontendFailMessageBody}. Facebook response: " . $response->result);
+            throw new Exception("{$this->frontendFailMessageBody}. Facebook response: {$response->result}");
         }
     }
 }

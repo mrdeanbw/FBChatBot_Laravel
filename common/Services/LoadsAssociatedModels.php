@@ -13,6 +13,14 @@ trait LoadsAssociatedModels
     public function loadModelsIfNotLoaded(&$model, array $modelsToLoad)
     {
         foreach ($modelsToLoad as $modelToLoad) {
+            if (is_array($model)) {
+                if (isset($model[$modelToLoad])) {
+                    continue;
+                }
+                $model[$modelToLoad] = $this->loadModel($model, $modelToLoad);
+                continue;
+            }
+            
             if (isset($model->{$modelToLoad})) {
                 continue;
             }
@@ -37,6 +45,7 @@ trait LoadsAssociatedModels
 
             case 'sequences':
                 $filter = [['operator' => 'in', 'key' => '_id', 'value' => $model->sequences]];
+
                 return $this->getRepo('sequence')->getAll($filter);
 
             default:

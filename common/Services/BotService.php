@@ -3,6 +3,7 @@
 use Carbon\Carbon;
 use Common\Models\Bot;
 use Common\Models\Page;
+use Common\Models\Text;
 use Common\Models\User;
 use MongoDB\BSON\ObjectID;
 use Common\Models\DefaultReply;
@@ -14,8 +15,8 @@ use Common\Jobs\UpdateGreetingTextOnFacebook;
 use Common\Services\Facebook\MessengerThread;
 use Common\Jobs\AddGetStartedButtonOnFacebook;
 use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Services\Facebook\Pages as FacebookPage;
 use Common\Repositories\User\UserRepositoryInterface;
-use Common\Services\Facebook\PageService as FacebookPage;
 
 class BotService
 {
@@ -60,6 +61,10 @@ class BotService
      * @type DefaultReplyService
      */
     private $defaultReplies;
+    /**
+     * @type TemplateService
+     */
+    private $templates;
 
     /**
      * BotService constructor.
@@ -73,30 +78,33 @@ class BotService
      * @param AutoReplyRuleService    $autoReplyRules
      * @param UserRepositoryInterface $userRepo
      * @param PageService             $pages
+     * @param TemplateService         $templates
      * @param BotRepositoryInterface  $botRepo
      */
     public function __construct(
-        FacebookPage $FacebookPages,
-        MessengerThread $FacebookThreads,
-        WelcomeMessageService $welcomeMessages,
-        DefaultReplyService $defaultReplies,
-        GreetingTextService $greetingTexts,
-        MainMenuService $mainMenus,
-        AutoReplyRuleService $autoReplyRules,
-        UserRepositoryInterface $userRepo,
         PageService $pages,
-        BotRepositoryInterface $botRepo
+        MainMenuService $mainMenus,
+        TemplateService $templates,
+        FacebookPage $FacebookPages,
+        BotRepositoryInterface $botRepo,
+        MessengerThread $FacebookThreads,
+        UserRepositoryInterface $userRepo,
+        GreetingTextService $greetingTexts,
+        DefaultReplyService $defaultReplies,
+        AutoReplyRuleService $autoReplyRules,
+        WelcomeMessageService $welcomeMessages
     ) {
         $this->pages = $pages;
         $this->botRepo = $botRepo;
         $this->userRepo = $userRepo;
         $this->mainMenus = $mainMenus;
+        $this->templates = $templates;
         $this->FacebookPages = $FacebookPages;
         $this->greetingTexts = $greetingTexts;
         $this->autoReplyRules = $autoReplyRules;
+        $this->defaultReplies = $defaultReplies;
         $this->FacebookThreads = $FacebookThreads;
         $this->welcomeMessages = $welcomeMessages;
-        $this->defaultReplies = $defaultReplies;
     }
 
     /**
@@ -144,8 +152,9 @@ class BotService
             // If the bot doesn't exist in our system, create it.
             $bot = isset($page->bot)? $page->bot : $this->createBot($page, $user);
 
-            // If the user doesn't already manages the bot, append the bot id to the list.
-            if (! $this->userRepo->managesBotForFacebookPage($user, $bot)) {
+            if ($this->userRepo->managesBotForFacebookPage($user, $bot)) {
+                $this->botRepo->updateBotUser($bot, $user->_id, $page->access_token);
+            } else {
                 $this->botRepo->addUserToBot($bot, $user->_id, $page->access_token);
             }
 
@@ -178,7 +187,8 @@ class BotService
             'access_token'    => $page->access_token,
             'users'           => [
                 ['user_id' => $user->_id, 'subscriber_id' => null, 'access_token' => $page->access_token]
-            ]
+            ],
+            'messages'        => $this->getDefaultMessages($id)
         ];
 
         /** @type Bot $bot */
@@ -310,5 +320,31 @@ class BotService
     public function findByIdForUser($botId, User $user)
     {
         return $this->botRepo->findByIdForUser($botId, $user);
+    }
+
+    /**
+     * @param ObjectID $botId
+     * @return array
+     */
+    private function getDefaultMessages(ObjectID $botId)
+    {
+        $alreadySubscribed = new Text(['text' => 'You are already subscribed to the page.']);
+        $alreadyUnsubscribed = new Text(['text' => 'You have already unsubscribed from this page.']);
+        $successfullyUnsubscribed = new Text(['text' => 'You have successfully unsubscribed. Use "start" to subscribe again.']);
+        $unsubscriptionConfirmation = new Text([
+            'text'    => 'Do you really want to unsubscribe from {{page_name}}?',
+            'buttons' => [['type' => 'postback', 'title' => 'Unsubscribe', 'payload' => WebAppAdapter::UNSUBSCRIBE_PAYLOAD]]
+        ]);
+
+        $ret = [
+            BotRepositoryInterface::MESSAGE_ALREADY_SUBSCRIBED        => ['template_id' => $this->templates->createImplicit([$alreadySubscribed], $botId, true)->_id],
+            BotRepositoryInterface::MESSAGE_ALREADY_UNSUBSCRIBED      => ['template_id' => $this->templates->createImplicit([$alreadyUnsubscribed], $botId, true)->_id],
+            BotRepositoryInterface::MESSAGE_SUCCESSFUL_UNSUBSCRIPTION => ['template_id' => $this->templates->createImplicit([$successfullyUnsubscribed], $botId, true)->_id],
+            BotRepositoryInterface::MESSAGE_CONFIRM_UNSUBSCRIPTION    => ['template_id' => $this->templates->createImplicit([$unsubscriptionConfirmation], $botId, true)->_id],
+        ];
+
+        ksort($ret);
+
+        return $ret;
     }
 }

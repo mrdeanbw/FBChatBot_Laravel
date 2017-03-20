@@ -69,9 +69,9 @@ class FacebookWebhookReceiver
     private function handleEvent($event)
     {
         $bot = $this->adapter->bot($event['recipient']['id']);
-        
-        // If the page is not in our system, then do nothing.
-        if (! $bot) {
+
+        // If the page is not in our system, not active, or doesn't have a valid access token then do nothing.
+        if (! $bot || ! $bot->enabled || is_null($bot->access_token)) {
             return;
         }
 
@@ -106,7 +106,7 @@ class FacebookWebhookReceiver
 
             // Find a matching auto reply rule.
             $rule = $this->adapter->matchingAutoReplyRule($text, $bot);
-            
+
             // If found
             if ($rule) {
 

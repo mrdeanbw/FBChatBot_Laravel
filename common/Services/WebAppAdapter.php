@@ -8,7 +8,7 @@ use Common\Models\AutoReplyRule;
 use Common\Models\Template;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\User\UserRepositoryInterface;
-use Common\Services\Facebook\Sender as FacebookSender;
+use Common\Services\Facebook\MessengerSender as FacebookSender;
 use Common\Repositories\Template\TemplateRepositoryInterface;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
@@ -71,6 +71,10 @@ class WebAppAdapter
      * @type MessageRevisionRepositoryInterface
      */
     private $messageRevisionRepo;
+    /**
+     * @type FacebookAdapter
+     */
+    private $FacebookAdapter;
 
     /**
      * WebAppAdapter constructor.
@@ -80,12 +84,13 @@ class WebAppAdapter
      * @param SubscriberService                  $subscribers
      * @param BotRepositoryInterface             $botRepo
      * @param UserRepositoryInterface            $userRepo
-     * @param FacebookMessageSender              $FacebookMessageSender
      * @param TemplateRepositoryInterface        $templateRepo
      * @param BroadcastRepositoryInterface       $broadcastRepo
+     * @param FacebookMessageSender              $FacebookMessageSender
      * @param SubscriberRepositoryInterface      $subscriberRepo
      * @param SentMessageRepositoryInterface     $sentMessageRepo
      * @param AutoReplyRuleRepositoryInterface   $autoReplyRuleRepo
+     * @param FacebookAdapter                    $FacebookAdapter
      * @param MessageRevisionRepositoryInterface $messageRevisionRepo
      */
     public function __construct(
@@ -93,6 +98,7 @@ class WebAppAdapter
         FacebookSender $FacebookSender,
         SubscriberService $subscribers,
         BotRepositoryInterface $botRepo,
+        FacebookAdapter $FacebookAdapter,
         UserRepositoryInterface $userRepo,
         TemplateRepositoryInterface $templateRepo,
         BroadcastRepositoryInterface $broadcastRepo,
@@ -111,6 +117,7 @@ class WebAppAdapter
         $this->subscriberRepo = $subscriberRepo;
         $this->FacebookSender = $FacebookSender;
         $this->sentMessageRepo = $sentMessageRepo;
+        $this->FacebookAdapter = $FacebookAdapter;
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
         $this->messageRevisionRepo = $messageRevisionRepo;
         $this->FacebookMessageSender = $FacebookMessageSender;
@@ -133,12 +140,7 @@ class WebAppAdapter
         if ($subscriber && $subscriber->active) {
 
             if (! $silentMode) {
-                $message = [
-                    'message' => [
-                        'text' => 'You are already subscribed to the page.'
-                    ],
-                ];
-                $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
+                $this->FacebookMessageSender->sendBotMessage(BotRepositoryInterface::MESSAGE_ALREADY_SUBSCRIBED, $bot, $subscriber);
             }
 
             return $subscriber;
@@ -194,44 +196,18 @@ class WebAppAdapter
                     'id' => $facebookId,
                 ]
             ];
-            $this->FacebookSender->send($bot->page->access_token, $message, false);
+            $this->FacebookAdapter->sendMessage($bot, $message, false);
 
             return;
         }
 
         // already unsubscribed
         if (! $subscriber->active) {
-            $message = [
-                'message' => [
-                    'text' => 'You have already unsubscribed from this page.'
-                ],
-            ];
-            $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
+            $this->FacebookMessageSender->sendBotMessage(BotRepositoryInterface::MESSAGE_ALREADY_UNSUBSCRIBED, $bot, $subscriber);
 
             return;
         }
-
-        // Send asking for confirmation message
-        $message = [
-            'message' => [
-                'attachment' => [
-                    'type'    => 'template',
-                    'payload' => [
-                        'template_type' => 'button',
-                        'text'          => "Do you really want to unsubscribe from {$bot->page->name}?",
-                        'buttons'       => [
-                            [
-                                'type'    => "postback",
-                                'title'   => "Unsubscribe",
-                                'payload' => self::UNSUBSCRIBE_PAYLOAD,
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
+        $this->FacebookMessageSender->sendBotMessage(BotRepositoryInterface::MESSAGE_CONFIRM_UNSUBSCRIPTION, $bot, $subscriber);
     }
 
     /**
@@ -244,25 +220,13 @@ class WebAppAdapter
     {
         // already unsubscribed
         if (! $subscriber || ! $subscriber->active) {
-            $message = [
-                'message' => [
-                    'text' => 'You have already unsubscribed from this page.'
-                ],
-            ];
-            $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
+            $this->FacebookMessageSender->sendBotMessage(BotRepositoryInterface::MESSAGE_ALREADY_UNSUBSCRIBED, $bot, $subscriber);
 
             return;
         }
 
         $this->subscribers->unsubscribe($subscriber);
-
-        $message = [
-            'message' => [
-                'text' => 'You have successfully unsubscribed. Use "start" to subscribe again.'
-            ],
-        ];
-
-        $this->FacebookMessageSender->send($message, $subscriber, $bot->page);
+        $this->FacebookMessageSender->sendBotMessage(BotRepositoryInterface::MESSAGE_SUCCESSFUL_UNSUBSCRIPTION, $bot, $subscriber);
     }
 
     /**
@@ -294,7 +258,7 @@ class WebAppAdapter
 
         /** @type Bot $bot */
         $bot = $this->botRepo->findById($botId);
-        if (! $bot) {
+        if (! $bot || ! $bot->enabled || is_null($bot->access_token)) {
             return null;
         }
 
@@ -325,6 +289,11 @@ class WebAppAdapter
     public function handleUrlMessageClick($payload)
     {
         $decoder = MessagePayloadDecoder::factory($payload);
+        $bot = $decoder->getBot();
+        if (! $bot || ! $bot->enabled || is_null($bot->access_token)) {
+            return null;
+        }
+        
         $message = $decoder->getClickedMessage();
         if (! $message || ! $message->url) {
             return null;

@@ -11,6 +11,11 @@ use MongoDB\BSON\ObjectID;
 interface BotRepositoryInterface extends BaseRepositoryInterface
 {
 
+    const MESSAGE_ALREADY_SUBSCRIBED = 0;
+    const MESSAGE_ALREADY_UNSUBSCRIBED = 1;
+    const MESSAGE_CONFIRM_UNSUBSCRIPTION = 2;
+    const MESSAGE_SUCCESSFUL_UNSUBSCRIPTION = 3;
+
     /**
      * Find a page by its Facebook id.
      * @param      $botId
@@ -46,6 +51,15 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
      * @param string   $accessToken
      */
     public function addUserToBot(Bot $bot, ObjectID $userId, $accessToken);
+
+    /**
+     * @param Bot      $bot
+     * @param ObjectID $userId
+     * @param string   $accessToken
+     * @return bool
+     * @throws \Exception
+     */
+    public function updateBotUser(Bot $bot, ObjectID $userId, $accessToken);
 
     /**
      * @param User $user

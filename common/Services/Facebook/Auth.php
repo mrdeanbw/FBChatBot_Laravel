@@ -1,6 +1,6 @@
 <?php namespace Common\Services\Facebook;
 
-class AuthService extends API
+class Auth extends API
 {
 
     /**

@@ -1,8 +1,8 @@
 <?php namespace Common\Jobs;
 
-use Common\Models\Broadcast;
-use Common\Models\Subscriber;
+use Common\Exceptions\DisallowedBotOperation;
 use Common\Models\Template;
+use Common\Models\Subscriber;
 use Common\Services\FacebookMessageSender;
 
 class SendTemplate extends BaseJob
@@ -37,6 +37,10 @@ class SendTemplate extends BaseJob
      */
     public function handle(FacebookMessageSender $FacebookMessageSender)
     {
-        $FacebookMessageSender->sendTemplate($this->template, $this->subscriber);
+        try {
+            $FacebookMessageSender->sendTemplate($this->template, $this->subscriber);
+        } catch (DisallowedBotOperation $e) {
+            return;
+        }
     }
 }

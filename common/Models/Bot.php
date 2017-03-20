@@ -1,6 +1,5 @@
 <?php namespace Common\Models;
 
-
 use Laravel\Cashier\Billable;
 
 /**
@@ -16,16 +15,15 @@ use Laravel\Cashier\Billable;
  * @property array          $users
  * @property User           $current_user
  * @property string         $access_token
+ * @property array          $messages
  */
 class Bot extends BaseModel
 {
 
     use HasEmbeddedArrayModels;
-
     use Billable {
         subscriptions as relationSubscribtion; //overwrite the original relation subscription
     }
-
 
     public $arrayModels = [
         'page'            => Page::class,
@@ -35,15 +33,12 @@ class Bot extends BaseModel
         'welcome_message' => WelcomeMessage::class,
     ];
 
-
     /**
      * Get all of the subscriptions for the Stripe model.
-     *
      * @return \Jenssegers\Mongodb\Eloquent\Model
      */
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class, $this->getForeignKey())->orderBy('created_at', 'desc');
     }
-    
 }

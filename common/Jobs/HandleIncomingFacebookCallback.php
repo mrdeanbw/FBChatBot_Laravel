@@ -2,6 +2,7 @@
 
 use Common\Services\Facebook;
 use Common\Services\FacebookWebhookReceiver;
+use Common\Exceptions\DisallowedBotOperation;
 
 class HandleIncomingFacebookCallback extends BaseJob
 {
@@ -22,7 +23,11 @@ class HandleIncomingFacebookCallback extends BaseJob
 
     public function handle(FacebookWebhookReceiver $FacebookReceiver)
     {
-        $FacebookReceiver->setData($this->data);
-        $FacebookReceiver->handle();
+        try {
+            $FacebookReceiver->setData($this->data);
+            $FacebookReceiver->handle();
+        } catch (DisallowedBotOperation $e) {
+            return;
+        }
     }
 }

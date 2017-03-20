@@ -1,6 +1,6 @@
 <?php namespace Common\Services\Facebook;
 
-class FacebookUser extends Base
+class Users extends Base
 {
 
     public function publicProfile($id, $accessToken)

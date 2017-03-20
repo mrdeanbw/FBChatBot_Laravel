@@ -1,7 +1,10 @@
 <?php namespace Common\Jobs;
 
+use Exception;
 use Common\Models\Bot;
 use Common\Services\Facebook;
+use Common\Services\FacebookAdapter;
+use Common\Exceptions\DisallowedBotOperation;
 
 class AddGetStartedButtonOnFacebook extends BaseJob
 {
@@ -21,14 +24,24 @@ class AddGetStartedButtonOnFacebook extends BaseJob
     public function __construct($bot, $userId)
     {
         $this->bot = $bot;
+        $this->userId = $userId;
     }
 
     /**
      * Execute the job.
-     * @param Facebook\MessengerThread $MessengerThreads
+     * @param FacebookAdapter $FacebookAdapter
+     * @throws Exception
      */
-    public function handle(Facebook\MessengerThread $MessengerThreads)
+    public function handle(FacebookAdapter $FacebookAdapter)
     {
-        $MessengerThreads->addGetStartedButton($this->bot->page->access_token);
+        try {
+            $response = $FacebookAdapter->addGetStartedButton($this->bot);
+        } catch (DisallowedBotOperation $e) {
+            return;
+        }
+        $success = isset($response->result) && starts_with($response->result, "Successfully");
+        if (! $success) {
+            throw new Exception("{$this->frontendFailMessageBody}. Facebook response: {$response->result}");
+        }
     }
 }

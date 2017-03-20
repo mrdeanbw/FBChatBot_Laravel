@@ -1,12 +1,14 @@
 <?php namespace Common\Jobs;
 
 use Carbon\Carbon;
+use Common\Models\Template;
 use Common\Models\Sequence;
 use Common\Models\Subscriber;
 use Common\Models\SequenceMessage;
 use Common\Models\SequenceSchedule;
 use Common\Services\SequenceService;
 use Common\Services\FacebookMessageSender;
+use Common\Exceptions\DisallowedBotOperation;
 use Common\Repositories\Sequence\SequenceRepositoryInterface;
 use Common\Repositories\Template\TemplateRepositoryInterface;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
@@ -76,7 +78,11 @@ class SendScheduledSequenceMessage extends BaseJob
 
         $this->setSubscriber();
 
-        $sentAt = $this->sendMessage();
+        try {
+            $sentAt = $this->sendMessage();
+        } catch (DisallowedBotOperation $e) {
+            $sentAt = null;
+        }
 
         $nextMessage = $this->scheduleNextMessage($sentAt);
 
@@ -97,6 +103,7 @@ class SendScheduledSequenceMessage extends BaseJob
         // Send the template if the message is not deleted, and is not marked as draft.
         if (! $this->message->deleted_at && $this->message->live) {
             $sentAt = Carbon::now();
+            /** @type Template $template */
             $template = $this->templateRepo->findById($this->message->template_id);
             $this->FacebookMessageSender->sendTemplate($template, $this->subscriber);
 
@@ -123,7 +130,6 @@ class SendScheduledSequenceMessage extends BaseJob
 
     /**
      * @param Carbon|null $sentAt
-     *
      * @return SequenceMessage|null
      */
     private function scheduleNextMessage($sentAt)
@@ -132,7 +138,7 @@ class SendScheduledSequenceMessage extends BaseJob
 
             $this->sequenceScheduleRepo->update($this->schedule, [
                 'message_id' => $newMessage->id,
-                'status'     => ScheduleRepositoryInter,
+                'status'     => SequenceScheduleRepositoryInterface::STATUS_PENDING,
                 'send_at'    => change_date($sentAt?: Carbon::now(), $newMessage->conditions['wait_for'])
             ]);
 

@@ -1,8 +1,10 @@
 <?php namespace Common\Jobs;
 
+use Exception;
 use Common\Models\Bot;
 use Common\Services\Facebook;
-use Common\Services\Facebook\MessengerThread;
+use Common\Services\FacebookAdapter;
+use Common\Exceptions\DisallowedBotOperation;
 
 class UpdateGreetingTextOnFacebook extends BaseJob
 {
@@ -29,19 +31,23 @@ class UpdateGreetingTextOnFacebook extends BaseJob
     /**
      * Execute the job.
      *
-     * @param MessengerThread $MessengerThreads
-     * @throws \Exception
+     * @param FacebookAdapter $FacebookAdapter
+     * @throws Exception
      */
-    public function handle(MessengerThread $MessengerThreads)
+    public function handle(FacebookAdapter $FacebookAdapter)
     {
         $text = $this->normaliseGreetingText($this->bot->greeting_text);
 
-        $response = $MessengerThreads->addGreetingText($this->bot->page->access_token, $text);
+        try {
+            $response = $FacebookAdapter->addGreetingText($this->bot, $text);
+        } catch (DisallowedBotOperation $e) {
+            return;
+        }
 
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 
         if (! $success) {
-            throw new \Exception("{$this->frontendFailMessageBody}. Facebook response: " . $response->result);
+            throw new Exception("{$this->frontendFailMessageBody}. Facebook response: " . $response->result);
         }
     }
 

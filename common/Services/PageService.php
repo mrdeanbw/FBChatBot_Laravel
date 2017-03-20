@@ -1,11 +1,13 @@
 <?php namespace Common\Services;
 
+use HttpException;
 use Common\Models\Page;
 use Common\Models\User;
 use Illuminate\Support\Collection;
 use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Services\Facebook\Pages as FacebookPage;
 use Common\Repositories\User\UserRepositoryInterface;
-use Common\Services\Facebook\PageService as FacebookPage;
+use Common\Exceptions\InvalidBotAccessTokenException;
 
 class PageService
 {
@@ -22,6 +24,10 @@ class PageService
      * @type FacebookPage
      */
     private $FacebookPages;
+    /**
+     * @type FacebookAdapter
+     */
+    private $FacebookAdapter;
 
     /**
      * PageService constructor.
@@ -29,23 +35,34 @@ class PageService
      * @param FacebookPage            $FacebookPages
      * @param UserRepositoryInterface $userRepo
      * @param BotRepositoryInterface  $botRepo
+     * @param FacebookAdapter         $FacebookAdapter
      */
-    public function __construct(FacebookPage $FacebookPages, UserRepositoryInterface $userRepo, BotRepositoryInterface $botRepo)
-    {
+    public function __construct(
+        FacebookPage $FacebookPages,
+        FacebookAdapter $FacebookAdapter,
+        UserRepositoryInterface $userRepo,
+        BotRepositoryInterface $botRepo
+    ) {
         $this->botRepo = $botRepo;
         $this->userRepo = $userRepo;
         $this->FacebookPages = $FacebookPages;
+        $this->FacebookAdapter = $FacebookAdapter;
     }
 
     /**
      * @param User $user
      * @return array
+     * @throws HttpException
      */
     public function getAdministratedFacebookPages(User $user)
     {
-        $pages = (array)$this->FacebookPages->getManagePageList($user->access_token);
+        try {
+            $pages = $this->FacebookAdapter->getManagedPageList($user);
+        } catch (InvalidBotAccessTokenException $e) {
+            throw new HttpException(403, "missing_permissions");
+        }
 
-        return array_filter($pages, function ($page) {
+        return array_filter((array)$pages, function ($page) {
             return in_array('ADMINISTER', $page->perms);
         });
     }

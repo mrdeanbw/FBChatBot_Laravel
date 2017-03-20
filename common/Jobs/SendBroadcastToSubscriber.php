@@ -3,6 +3,7 @@
 use Common\Models\Broadcast;
 use Common\Models\Subscriber;
 use Common\Services\FacebookMessageSender;
+use Common\Exceptions\DisallowedBotOperation;
 
 class SendBroadcastToSubscriber extends BaseJob
 {
@@ -36,6 +37,9 @@ class SendBroadcastToSubscriber extends BaseJob
      */
     public function handle(FacebookMessageSender $FacebookMessageSender)
     {
-        $FacebookMessageSender->sendBroadcastMessages($this->broadcast, $this->subscriber);
+        try {
+            $FacebookMessageSender->sendBroadcastMessages($this->broadcast, $this->subscriber);
+        } catch (DisallowedBotOperation $e) {
+        }
     }
 }

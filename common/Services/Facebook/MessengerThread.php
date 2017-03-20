@@ -69,6 +69,4 @@ class MessengerThread extends Base
 
         return json_decode($response->getBody());
     }
-
-
 }
