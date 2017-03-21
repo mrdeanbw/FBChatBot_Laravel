@@ -163,8 +163,9 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
                 array_set($data, '$set.updated_at', Carbon::now());
             }
 
-            if ($set = array_get($data, '$set', [])) {
+            if (array_get($data, '$set', [])) {
                 $data['$set'] = $this->normalizeCarbonDates($data['$set']);
+                $model->fill($data['$set']);
             }
 
             return $class::where('_id', $model->_id)->getQuery()->update($data);
