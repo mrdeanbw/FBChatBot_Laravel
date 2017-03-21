@@ -106,4 +106,16 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
      * @param Button $button
      */
     public function incrementMainMenuButtonClicks(Bot $bot, Button $button);
+
+    /**
+     * @param User $user
+     * @return int
+     */
+    public function countEnabledForUser(User $user);
+    
+    /**
+     * @param User $user
+     * @return int
+     */
+    public function countDisabledForUser(User $user);
 }

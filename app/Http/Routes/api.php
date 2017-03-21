@@ -34,13 +34,18 @@ $api->version('v1', $options, function (Router $api) {
         $api->get('/pages', 'PageController@index');
 
         // Bot
-        $api->post('/bots', 'BotController@store');
-        $api->get('/bots/{id}', 'BotController@show');
-        $api->patch('/bots/{id}', 'BotController@update');
+        // Enabled Bots
+        $api->post('/bots/enabled', 'BotController@store');
+        $api->get('/bots/enabled/count', 'BotController@countEnabled');
+        $api->get('/bots/enabled/{id}', 'BotController@show');
+        $api->patch('/bots/enabled/{id}', 'BotController@update');
         $api->get('/bots/enabled', 'BotController@enabledBots');
+        $api->post('/bots/enabled/{id}/disable', 'BotController@disable');
+        // Disabled Bots
         $api->get('/bots/disabled', 'BotController@disabledBots');
+        $api->get('/bots/disabled/count', 'BotController@countDisabled');
         $api->post('/bots/disabled/{id}/enable', 'BotController@enable');
-        $api->delete('/bots/enabled/{id}/disable', 'BotController@disable');
+
 
         // Greeting Text.
         $api->put('/bots/enabled/{botId}/greeting-text', 'GreetingTextController@update');

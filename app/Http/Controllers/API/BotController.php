@@ -49,6 +49,26 @@ class BotController extends APIController
     }
 
     /**
+     * @return \Dingo\Api\Http\Response
+     */
+    public function countEnabled()
+    {
+        return $this->arrayResponse([
+            'count' => $this->bots->countEnabledForUser($this->user())
+        ]);
+    }
+
+    /**
+     * @return \Dingo\Api\Http\Response
+     */
+    public function countDisabled()
+    {
+        return $this->arrayResponse([
+            'count' => $this->bots->countDisabledForUser($this->user())
+        ]);
+    }
+
+    /**
      * Create a bot for Facebook page(s).
      * @param Request $request
      * @return \Dingo\Api\Http\Response
@@ -66,7 +86,7 @@ class BotController extends APIController
      */
     public function show()
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
         $bot->current_user = $this->user();
 
         return $this->itemResponse($bot);

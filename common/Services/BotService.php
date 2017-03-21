@@ -329,10 +329,10 @@ class BotService
      */
     public function findByIdAndStatusForUser($botId, User $user, $enabled)
     {
-        if (is_null($enabled)){
+        if (is_null($enabled)) {
             return $this->botRepo->findByIdForUser($botId, $user);
         }
-        
+
         if ($enabled) {
             return $this->botRepo->findEnabledByIdForUser($botId, $user);
         }
@@ -387,5 +387,23 @@ class BotService
         dispatch(new RemoveMainMenuFromFacebook($bot));
         dispatch(new RemoveGreetingTextFromFacebook($bot));
         dispatch(new RemoveGetStartedButtonFromFacebook($bot));
+    }
+
+    /**
+     * @param User $user
+     * @return int
+     */
+    public function countEnabledForUser(User $user)
+    {
+        return $this->botRepo->countEnabledForUser($user);
+    }
+
+    /**
+     * @param User $user
+     * @return int
+     */
+    public function countDisabledForUser(User $user)
+    {
+        return $this->botRepo->countDisabledForUser($user);
     }
 }

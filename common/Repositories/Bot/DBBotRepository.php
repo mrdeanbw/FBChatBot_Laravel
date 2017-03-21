@@ -3,10 +3,9 @@
 use Common\Models\Bot;
 use Common\Models\User;
 use Common\Models\Button;
-use Illuminate\Pagination\Paginator;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
-use Illuminate\Support\Collection;
+use Illuminate\Pagination\Paginator;
 use Common\Repositories\DBBaseRepository;
 
 class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
@@ -199,5 +198,33 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
     public function incrementMainMenuButtonClicks(Bot $bot, Button $button)
     {
         Bot::where('_id', $bot->_id)->where('main_menu.buttons.id', $button->id)->increment('main_menu.buttons.$.clicks.total');
+    }
+
+    /**
+     * @param User $user
+     * @return int
+     */
+    public function countEnabledForUser(User $user)
+    {
+        $filter = [
+            ['operator' => '=', 'key' => 'enabled', 'value' => true],
+            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
+        ];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param User $user
+     * @return int
+     */
+    public function countDisabledForUser(User $user)
+    {
+        $filter = [
+            ['operator' => '=', 'key' => 'enabled', 'value' => false],
+            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
+        ];
+
+        return $this->count($filter);
     }
 }
