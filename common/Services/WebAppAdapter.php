@@ -1,6 +1,7 @@
 <?php namespace Common\Services;
 
 use Carbon\Carbon;
+use Common\Exceptions\MessageNotSentException;
 use Common\Models\Bot;
 use Common\Models\Button;
 use Common\Models\Subscriber;
@@ -196,7 +197,11 @@ class WebAppAdapter
                     'id' => $facebookId,
                 ]
             ];
-            $this->FacebookAdapter->sendMessage($bot, $message, false);
+
+            try {
+                $this->FacebookAdapter->sendMessage($bot, $message, false);
+            } catch (MessageNotSentException $e) {
+            }
 
             return;
         }
@@ -293,7 +298,7 @@ class WebAppAdapter
         if (! $bot || ! $bot->enabled || is_null($bot->access_token)) {
             return null;
         }
-        
+
         $message = $decoder->getClickedMessage();
         if (! $message || ! $message->url) {
             return null;

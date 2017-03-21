@@ -1,5 +1,6 @@
 <?php namespace Common\Services;
 
+use Common\Exceptions\MessageNotSentException;
 use Exception;
 use Carbon\Carbon;
 use Common\Models\Bot;
@@ -139,11 +140,12 @@ class FacebookMessageSender
 
             $mappedMessage = $mapper->toFacebookMessage($message);
 
-            $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot, $notificationType);
-
-            $ret[] = $this->sentMessageRepo->create(
-                array_merge($data, ['facebook_id' => $facebookMessageId])
-            );
+            try {
+                $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot, $notificationType);
+                $ret[] = $this->sentMessageRepo->create(array_merge($data, ['facebook_id' => $facebookMessageId]));
+            } catch (MessageNotSentException $e) {
+                // do nothing
+            }
         }
 
         return $ret;

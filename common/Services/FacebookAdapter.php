@@ -12,6 +12,7 @@ use Common\Exceptions\InactiveBotException;
 use Common\Services\Facebook\MessengerThread;
 use Common\Exceptions\DisallowedBotOperation;
 use Common\Services\Facebook\MessengerSender;
+use Common\Exceptions\MessageNotSentException;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\User\UserRepositoryInterface;
 use Common\Exceptions\InvalidBotAccessTokenException;
@@ -236,21 +237,26 @@ class FacebookAdapter
      * @return object
      * @throws InactiveBotException
      * @throws InvalidBotAccessTokenException
+     * @throws MessageNotSentException
      */
     protected function makeHttpRequestToFacebook(Closure $FacebookCallback, Closure $retryCallback, Bot $bot, $message = null)
     {
         if (! $bot->access_token) {
             throw new InvalidBotAccessTokenException;
         }
-       
-        if (!$bot->enabled){
+
+        if (! $bot->enabled) {
             throw new InactiveBotException;
         }
-        
+
         try {
             $response = $FacebookCallback($bot->access_token);
         } catch (ClientException $e) {
             $response = $e->getResponse();
+
+            if ($this->hasFailedToSendMessage($response)) {
+                throw new MessageNotSentException;
+            }
 
             if ($this->isRevokedAccess($response)) {
 
@@ -319,13 +325,13 @@ class FacebookAdapter
      */
     private function isRevokedAccess(ResponseInterface $response)
     {
-        if (! in_array($response->getStatusCode(), [400, 403])) {
-            return false;
-        }
-
         $body = json_decode($response->getBody());
 
-        return $body && isset($body->error->type) && $body->error->type === 'OAuthException';
+        if ($body && isset($body->error) && isset($body->error->error_subcode) && $body->error->error_subcode == 2018065) {
+            return true;
+        }
+
+        return $body && isset($body->error->type) && isset($body->error->code) && $body->error->type === 'OAuthException' && in_array($body->error->code, [190, 230]);
     }
 
     /**
@@ -337,5 +343,16 @@ class FacebookAdapter
         $ids = array_pluck($bot->users, 'user_id');
 
         return $this->userRepo->findByIds($ids);
+    }
+
+    /**
+     * @param ResponseInterface $response
+     * @return bool
+     */
+    protected function hasFailedToSendMessage($response)
+    {
+        $body = json_decode($response->getBody());
+
+        return $body && isset($body->error) && isset($body->error->error_subcode) && in_array($body->error->error_subcode, [2018108, 2018028, 1545041, 2018027]);
     }
 }
