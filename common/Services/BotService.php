@@ -165,6 +165,7 @@ class BotService
                 $this->botRepo->updateBotUser($bot, $user->_id, $page->access_token);
             } else {
                 $this->botRepo->addUserToBot($bot, $user->_id, $page->access_token);
+                $this->initializeBotOnFacebook($user, $bot);
             }
 
             $createdBots[] = $bot;
