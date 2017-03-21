@@ -123,7 +123,10 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
 
         // If the bot doesn't have an active access token, then use the new one.
         if (is_null($bot->access_token)) {
-            $update['$set'] = ['access_token' => $accessToken];
+            $update['$set'] = [
+                'enabled'      => true,
+                'access_token' => $accessToken
+            ];
         }
 
         $this->update($bot, $update);
