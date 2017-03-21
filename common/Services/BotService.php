@@ -1,10 +1,15 @@
 <?php namespace Common\Services;
 
 use Carbon\Carbon;
+use Common\Jobs\RemoveGetStartedButtonFromFacebook;
+use Common\Jobs\RemoveGreetingTextFromFacebook;
+use Common\Jobs\RemoveMainMenuFromFacebook;
+use Common\Jobs\UnsubscribeAppFromFacebookPage;
 use Common\Models\Bot;
 use Common\Models\Page;
 use Common\Models\Text;
 use Common\Models\User;
+use Illuminate\Pagination\Paginator;
 use MongoDB\BSON\ObjectID;
 use Common\Models\DefaultReply;
 use Common\Models\WelcomeMessage;
@@ -109,20 +114,24 @@ class BotService
 
     /**
      * @param User $user
-     * @return Collection
+     * @param int  $page
+     * @param int  $perPage
+     * @return Paginator
      */
-    public function enabledBots(User $user)
+    public function enabledBots(User $user, $page = 1, $perPage = 20)
     {
-        return $this->botRepo->getEnabledForUser($user);
+        return $this->botRepo->paginateEnabledForUser($user, $page, $perPage);
     }
 
     /**
      * @param User $user
-     * @return Collection
+     * @param int  $page
+     * @param int  $perPage
+     * @return Paginator
      */
-    public function disabledBots($user)
+    public function disabledBots($user, $page = 1, $perPage = 12)
     {
-        return $this->botRepo->getDisabledForUser($user);
+        return $this->botRepo->paginateDisabledForUser($user, $page, $perPage);
     }
 
     /**
@@ -196,10 +205,7 @@ class BotService
 
         $this->createDefaultAutoReplyRules($bot);
 
-        dispatch(new SubscribeAppToFacebookPage($bot, $user->id));
-        dispatch(new AddGetStartedButtonOnFacebook($bot, $user->id));
-        dispatch(new UpdateMainMenuOnFacebook($bot, $user->id));
-        dispatch(new UpdateGreetingTextOnFacebook($bot, $user->id));
+        $this->initializeBotOnFacebook($user, $bot);
 
         return $bot;
     }
@@ -260,12 +266,14 @@ class BotService
     }
 
     /**
-     * @param Bot $bot
+     * @param Bot  $bot
+     * @param User $user
      * @return Bot
      */
-    public function enableBot(Bot $bot)
+    public function enableBot(Bot $bot, User $user)
     {
-        return $this->botRepo->update($bot, ['enabled' => true]);
+        $this->botRepo->update($bot, ['enabled' => true]);
+        $this->initializeBotOnFacebook($user, $bot);
     }
 
     /**
@@ -274,7 +282,8 @@ class BotService
      */
     public function disableBot(Bot $bot)
     {
-        return $this->botRepo->update($bot, ['enabled' => false]);
+        $this->terminateBotOnFacebook($bot);
+        $this->botRepo->update($bot, ['enabled' => false]);
     }
 
     /**
@@ -313,13 +322,22 @@ class BotService
     }
 
     /**
-     * @param      $botId
-     * @param User $user
-     * @return mixed
+     * @param string    $botId
+     * @param User      $user
+     * @param bool|null $enabled
+     * @return Bot|null
      */
-    public function findByIdForUser($botId, User $user)
+    public function findByIdAndStatusForUser($botId, User $user, $enabled)
     {
-        return $this->botRepo->findByIdForUser($botId, $user);
+        if (is_null($enabled)){
+            return $this->botRepo->findByIdForUser($botId, $user);
+        }
+        
+        if ($enabled) {
+            return $this->botRepo->findEnabledByIdForUser($botId, $user);
+        }
+
+        return $this->botRepo->findDisabledByIdForUser($botId, $user);
     }
 
     /**
@@ -346,5 +364,28 @@ class BotService
         ksort($ret);
 
         return $ret;
+    }
+
+    /**
+     * @param User $user
+     * @param Bot  $bot
+     */
+    protected function initializeBotOnFacebook(User $user, Bot $bot)
+    {
+        dispatch(new SubscribeAppToFacebookPage($bot, $user->id));
+        dispatch(new AddGetStartedButtonOnFacebook($bot, $user->id));
+        dispatch(new UpdateMainMenuOnFacebook($bot, $user->id));
+        dispatch(new UpdateGreetingTextOnFacebook($bot, $user->id));
+    }
+
+    /**
+     * @param Bot $bot
+     */
+    public function terminateBotOnFacebook(Bot $bot)
+    {
+        dispatch(new UnsubscribeAppFromFacebookPage($bot));
+        dispatch(new RemoveMainMenuFromFacebook($bot));
+        dispatch(new RemoveGreetingTextFromFacebook($bot));
+        dispatch(new RemoveGetStartedButtonFromFacebook($bot));
     }
 }

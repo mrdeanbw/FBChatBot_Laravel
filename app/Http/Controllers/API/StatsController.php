@@ -44,7 +44,7 @@ class StatsController extends APIController
      */
     public function index(Request $request)
     {
-        $page = $this->bot();
+        $page = $this->enabledBot();
         $dateString = $request->get('graph_date', 'last_seven_days');
 
         $ret = [];

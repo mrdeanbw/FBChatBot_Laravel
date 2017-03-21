@@ -30,7 +30,7 @@ class GreetingTextController extends APIController
      */
     public function update(Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $this->validate(
             $request,

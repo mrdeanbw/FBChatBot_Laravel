@@ -32,7 +32,7 @@ class WelcomeMessageController extends APIController
         $rules = $this->validationRules();
         $this->validate($request, $rules);
 
-        $welcomeMessage = $this->welcomeMessages->update($request->all(), $this->bot());
+        $welcomeMessage = $this->welcomeMessages->update($request->all(), $this->enabledBot());
 
         return $this->itemResponse($welcomeMessage);
     }

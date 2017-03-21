@@ -30,6 +30,21 @@ class MessengerThread extends Base
 
     /**
      * @param $accessToken
+     * @return object
+     */
+    public function removeGreetingText($accessToken)
+    {
+        $postData = ['setting_type' => 'greeting',];
+
+        $url = $this->url('/me/thread_settings', ['access_token' => $accessToken]);
+
+        $response = $this->guzzle->delete($url, array_merge($this->requestOptions(), ['form_params' => $postData]));
+
+        return json_decode($response->getBody());
+    }
+
+    /**
+     * @param $accessToken
      * @return mixed
      */
     public function addGetStartedButton($accessToken)
@@ -52,8 +67,26 @@ class MessengerThread extends Base
 
     /**
      * @param $accessToken
+     * @return object
+     */
+    public function removeGetStartedButton($accessToken)
+    {
+        $postData = [
+            'setting_type' => 'call_to_actions',
+            'thread_state' => 'new_thread',
+        ];
+
+        $url = $this->url('/me/thread_settings', ['access_token' => $accessToken]);
+
+        $response = $this->guzzle->delete($url, array_merge($this->requestOptions(), ['form_params' => $postData]));
+
+        return json_decode($response->getBody());
+    }
+
+    /**
+     * @param $accessToken
      * @param $buttons
-     * @return mixed
+     * @return object
      */
     public function setPersistentMenu($accessToken, $buttons)
     {
@@ -66,6 +99,24 @@ class MessengerThread extends Base
         $url = $this->url('/me/thread_settings', ['access_token' => $accessToken]);
 
         $response = $this->guzzle->post($url, array_merge($this->requestOptions(), ['form_params' => $postData]));
+
+        return json_decode($response->getBody());
+    }
+
+    /**
+     * @param $accessToken
+     * @return object
+     */
+    public function removePersistentMenu($accessToken)
+    {
+        $postData = [
+            'setting_type' => 'call_to_actions',
+            'thread_state' => 'existing_thread',
+        ];
+
+        $url = $this->url('/me/thread_settings', ['access_token' => $accessToken]);
+
+        $response = $this->guzzle->delete($url, array_merge($this->requestOptions(), ['form_params' => $postData]));
 
         return json_decode($response->getBody());
     }

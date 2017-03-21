@@ -31,7 +31,7 @@ class TemplateController extends APIController
     public function index(Request $request)
     {
         $paginator = $this->templates->paginateExplicit(
-            $this->bot(),
+            $this->enabledBot(),
             (int)$request->get('page', 1),
             ['name' => $request->get('name')]
         );
@@ -47,7 +47,7 @@ class TemplateController extends APIController
      */
     public function show($id)
     {
-        $template = $this->templates->findExplicitOrFail($id, $this->bot());
+        $template = $this->templates->findExplicitOrFail($id, $this->enabledBot());
 
         return $this->itemResponse($template);
     }
@@ -59,7 +59,7 @@ class TemplateController extends APIController
      */
     public function store(Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
         $this->validate($request, $this->validationRules(null, $bot));
         $template = $this->templates->createExplicit($request->all(), $bot);
 
@@ -74,7 +74,7 @@ class TemplateController extends APIController
      */
     public function update($id, Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
         $this->validate($request, $this->validationRules($id, $bot));
         $template = $this->templates->updateExplicit($id, $request->all(), $bot);
 

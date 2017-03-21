@@ -35,7 +35,7 @@ class AutoReplyRuleController extends APIController
     public function index(Request $request)
     {
         $paginator = $this->autoReplies->paginate(
-            $this->bot(),
+            $this->enabledBot(),
             (int)$request->get('page', 1),
             ['keyword' => $request->get('keyword')]
         );
@@ -53,7 +53,7 @@ class AutoReplyRuleController extends APIController
      */
     public function create(Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $this->validate($request, $this->validationRules($bot));
 
@@ -72,7 +72,7 @@ class AutoReplyRuleController extends APIController
      */
     public function update($id, Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $this->validate($request, $this->validationRules($bot, $id));
 
@@ -90,7 +90,7 @@ class AutoReplyRuleController extends APIController
      */
     public function destroy($id)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $this->autoReplies->delete($id, $bot);
 

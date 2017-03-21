@@ -31,7 +31,7 @@ class MessagePreviewController extends APIController
         $rules = $this->validationRules();
         $this->validate($request, $rules);
 
-        $this->messagePreviews->createAndSend($request->all(), $this->user(), $this->bot());
+        $this->messagePreviews->createAndSend($request->all(), $this->user(), $this->enabledBot());
 
         return $this->response->created();
     }

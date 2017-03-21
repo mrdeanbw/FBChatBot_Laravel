@@ -3,6 +3,7 @@
 use Common\Models\Bot;
 use Common\Models\User;
 use Common\Models\Button;
+use Illuminate\Pagination\Paginator;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
 use Illuminate\Support\Collection;
@@ -17,49 +18,7 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
     }
 
     /**
-     * Get the list of active pages that belong to a user.
-     * @param User $user
-     * @return Collection
-     */
-    public function getEnabledForUser(User $user)
-    {
-        $filter = [
-            ['operator' => '=', 'key' => 'enabled', 'value' => true],
-            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
-        ];
-
-        return $this->getAll($filter);
-    }
-
-    /**
-     * Get the list of inactive pages that belong to a user.
-     * @param User $user
-     * @return Collection
-     */
-    public function getDisabledForUser(User $user)
-    {
-        $filter = [
-            ['operator' => '=', 'key' => 'enabled', 'value' => false],
-            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
-        ];
-
-        return $this->getAll($filter);
-    }
-
-    /**
-     * Find a page by its Facebook id.
-     * @param $id
-     * @return Bot
-     */
-    public function findByFacebookId($id)
-    {
-        $filter = [['operator' => '=', 'key' => 'page.id', 'value' => $id]];
-
-        return $this->getOne($filter);
-    }
-
-    /**
-     * Find a page by its Facebook id.
+     * Find a bot by its id.
      * @param      $botId
      * @param User $user
      * @return Bot|null
@@ -70,6 +29,86 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
             ['operator' => '=', 'key' => '_id', 'value' => $botId],
             ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
         ];
+
+        return $this->getOne($filter);
+    }
+
+    /**
+     * Find an enabled bot by its id.
+     * @param      $botId
+     * @param User $user
+     * @return Bot|null
+     */
+    public function findEnabledByIdForUser($botId, User $user)
+    {
+        $filter = [
+            ['operator' => '=', 'key' => '_id', 'value' => $botId],
+            ['operator' => '=', 'key' => 'enabled', 'value' => true],
+            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
+        ];
+
+        return $this->getOne($filter);
+    }
+
+    /**
+     * Find a disabled bot by its id.
+     * @param      $botId
+     * @param User $user
+     * @return Bot|null
+     */
+    public function findDisabledByIdForUser($botId, User $user)
+    {
+        $filter = [
+            ['operator' => '=', 'key' => '_id', 'value' => $botId],
+            ['operator' => '=', 'key' => 'enabled', 'value' => false],
+            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
+        ];
+
+        return $this->getOne($filter);
+    }
+
+    /**
+     * Get the list of active pages that belong to a user.
+     * @param User $user
+     * @param int  $page
+     * @param int  $perPage
+     * @return Paginator
+     */
+    public function paginateEnabledForUser(User $user, $page, $perPage)
+    {
+        $filter = [
+            ['operator' => '=', 'key' => 'enabled', 'value' => true],
+            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
+        ];
+
+        return $this->paginate($page, $filter, [], $perPage);
+    }
+
+    /**
+     * Get the list of inactive pages that belong to a user.
+     * @param User $user
+     * @param int  $page
+     * @param int  $perPage
+     * @return Paginator
+     */
+    public function paginateDisabledForUser(User $user, $page, $perPage)
+    {
+        $filter = [
+            ['operator' => '=', 'key' => 'enabled', 'value' => false],
+            ['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]
+        ];
+
+        return $this->paginate($page, $filter, [], $perPage);
+    }
+
+    /**
+     * Find a page by its Facebook id.
+     * @param $id
+     * @return Bot
+     */
+    public function findByFacebookId($id)
+    {
+        $filter = [['operator' => '=', 'key' => 'page.id', 'value' => $id]];
 
         return $this->getOne($filter);
     }

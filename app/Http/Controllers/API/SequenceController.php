@@ -36,7 +36,7 @@ class SequenceController extends APIController
     public function index(Request $request)
     {
         $paginator = $this->sequences->paginate(
-            $this->bot(),
+            $this->enabledBot(),
             (int)$request->get('page', 1),
             ['name' => $request->get('name')],
             [],
@@ -55,7 +55,7 @@ class SequenceController extends APIController
      */
     public function show($id)
     {
-        $page = $this->bot();
+        $page = $this->enabledBot();
         $sequence = $this->sequences->findByIdForBotOrFail($id, $page);
 
         return $this->itemResponse($sequence);
@@ -70,7 +70,7 @@ class SequenceController extends APIController
      */
     public function store(Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $nameUniqueRule = "ci_unique:sequences,name,_id,,bot_id,oi:{$bot->id}";
 
@@ -93,7 +93,7 @@ class SequenceController extends APIController
      */
     public function update($id, Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $nameUniqueRule = "ci_unique:sequences,name,_id,{$id},bot_id,oi:{$bot->id}";
 
@@ -126,7 +126,7 @@ class SequenceController extends APIController
      */
     public function destroy($id)
     {
-        $this->sequences->delete($id, $this->bot());
+        $this->sequences->delete($id, $this->enabledBot());
 
         return $this->response->accepted();
     }

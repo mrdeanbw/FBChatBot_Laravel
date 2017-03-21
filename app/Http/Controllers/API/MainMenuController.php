@@ -27,7 +27,7 @@ class MainMenuController extends APIController
     {
         $rules = $this->validationRules();
         $this->validate($request, $rules);
-        $mainMenu = $this->mainMenu->update($request->all(), $this->bot(), $this->user());
+        $mainMenu = $this->mainMenu->update($request->all(), $this->enabledBot(), $this->user());
 
         return $this->itemResponse($mainMenu);
     }

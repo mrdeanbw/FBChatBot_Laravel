@@ -31,7 +31,7 @@ class DefaultReplyController extends APIController
         $rules = $this->validationRules();
         $this->validate($request, $rules);
         
-        $defaultReply = $this->defaultReplies->update($request->all(), $this->bot());
+        $defaultReply = $this->defaultReplies->update($request->all(), $this->enabledBot());
 
         return $this->itemResponse($defaultReply );
     }

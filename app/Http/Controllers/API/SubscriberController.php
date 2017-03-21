@@ -39,7 +39,7 @@ class SubscriberController extends APIController
         }
 
         $paginator = $this->audience->paginate(
-            $this->bot(),
+            $this->enabledBot(),
             (int)$request->get('page', 1),
             $filter,
             $request->get('sorting', []),
@@ -58,7 +58,7 @@ class SubscriberController extends APIController
      */
     public function show($id)
     {
-        $page = $this->bot();
+        $page = $this->enabledBot();
         $subscriber = $this->audience->findForBotOrFail($id, $page);
 
         return $this->itemResponse($subscriber);
@@ -79,7 +79,7 @@ class SubscriberController extends APIController
             'sequences' => 'bail|array|subscriber_sequences',
         ]);
 
-        $subscriber = $this->audience->update($request->all(), $id, $this->bot());
+        $subscriber = $this->audience->update($request->all(), $id, $this->enabledBot());
 
         return $this->itemResponse($subscriber);
     }
@@ -100,7 +100,7 @@ class SubscriberController extends APIController
             'subscribers.*.id' => 'bail|required',
         ]);
         
-        $this->audience->batchUpdate($request->all(), $this->bot());
+        $this->audience->batchUpdate($request->all(), $this->enabledBot());
 
         return $this->response->accepted();
     }

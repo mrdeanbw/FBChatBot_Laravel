@@ -132,6 +132,24 @@ class FacebookAdapter
 
     /**
      * @param Bot $bot
+     * @return object
+     * @throws DisallowedBotOperation
+     */
+    public function removeGreetingText(Bot $bot)
+    {
+        $facebookCallback = function ($accessToken) {
+            return $this->messengerThreads->removeGreetingText($accessToken);
+        };
+
+        $retryCallback = function (Bot $bot) {
+            return $this->removeGreetingText($bot);
+        };
+
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
+    }
+
+    /**
+     * @param Bot $bot
      * @return object|false
      * @throws DisallowedBotOperation
      */
@@ -151,9 +169,27 @@ class FacebookAdapter
     }
 
     /**
+     * @param Bot $bot
+     * @return object
+     * @throws DisallowedBotOperation
+     */
+    public function removeGetStartedButton(Bot $bot)
+    {
+        $facebookCallback = function ($accessToken) {
+            return $this->messengerThreads->removeGetStartedButton($accessToken);
+        };
+
+        $retryCallback = function (Bot $bot) {
+            return $this->removeGetStartedButton($bot);
+        };
+
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
+    }
+
+    /**
      * @param Bot   $bot
      * @param array $buttons
-     * @return object|false
+     * @return object
      * @throws DisallowedBotOperation
      */
     public function setPersistentMenu(Bot $bot, array $buttons)
@@ -169,6 +205,24 @@ class FacebookAdapter
         $message = "We couldn't update the main menu on Facebook because of denied Facebook permissions!";
 
         return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot, $message);
+    }
+
+    /**
+     * @param Bot $bot
+     * @return object
+     * @throws DisallowedBotOperation
+     */
+    public function removePersistentMenu(Bot $bot)
+    {
+        $facebookCallback = function ($accessToken) {
+            return $this->messengerThreads->removePersistentMenu($accessToken);
+        };
+
+        $retryCallback = function (Bot $bot) {
+            return $this->removePersistentMenu($bot);
+        };
+
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
     }
 
     /**
@@ -209,6 +263,24 @@ class FacebookAdapter
     }
 
     /**
+     * @param Bot $bot
+     * @return object
+     * @throws DisallowedBotOperation
+     */
+    public function unsubscribeFromPage(Bot $bot)
+    {
+        $facebookCallback = function ($accessToken) {
+            return $this->pages->unsubscribeFromPage($accessToken);
+        };
+
+        $retryCallback = function (Bot $bot) {
+            return $this->unsubscribeFromPage($bot);
+        };
+
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
+    }
+
+    /**
      * @param Bot   $bot
      * @param array $message
      * @param bool  $asyncMode
@@ -227,7 +299,6 @@ class FacebookAdapter
 
         return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
     }
-
 
     /**
      * @param Closure $FacebookCallback

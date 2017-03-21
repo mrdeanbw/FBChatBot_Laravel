@@ -34,7 +34,7 @@ class BroadcastController extends APIController
     public function pending(Request $request)
     {
         $page = (int)$request->get('page', 1);
-        $broadcasts = $this->broadcasts->paginatePending($this->bot(), $page);
+        $broadcasts = $this->broadcasts->paginatePending($this->enabledBot(), $page);
 
         return $this->paginatorResponse($broadcasts);
     }
@@ -47,7 +47,7 @@ class BroadcastController extends APIController
     public function nonPending(Request $request)
     {
         $page = (int)$request->get('page', 1);
-        $broadcasts = $this->broadcasts->paginateNonPending($this->bot(), $page);
+        $broadcasts = $this->broadcasts->paginateNonPending($this->enabledBot(), $page);
         
         return $this->paginatorResponse($broadcasts);
     }
@@ -59,7 +59,7 @@ class BroadcastController extends APIController
      */
     public function show($id)
     {
-        $broadcast = $this->broadcasts->broadcastWithDetailedStats($id, $this->bot());
+        $broadcast = $this->broadcasts->broadcastWithDetailedStats($id, $this->enabledBot());
 
         return $this->itemResponse($broadcast);
     }
@@ -71,7 +71,7 @@ class BroadcastController extends APIController
      */
     public function store(Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $this->validate($request, $this->validationRules(), $this->filterGroupRuleValidationCallback($bot));
 
@@ -92,7 +92,7 @@ class BroadcastController extends APIController
      */
     public function update($id, Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $this->validate($request, $this->validationRules(), $this->filterGroupRuleValidationCallback($bot));
 
@@ -112,7 +112,7 @@ class BroadcastController extends APIController
      */
     public function destroy($id)
     {
-        $this->broadcasts->delete($id, $this->bot());
+        $this->broadcasts->delete($id, $this->enabledBot());
 
         return $this->response->accepted();
     }

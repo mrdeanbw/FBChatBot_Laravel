@@ -14,16 +14,22 @@ abstract class APIController extends BaseAPIController
     protected $bot;
 
     /**
-     * Parses the request for the bot id, and fetches the bot from the database.
-     * @return Bot
+     * @type Bot
      */
-    protected function bot()
-    {
-        // If the bot has been already fetched, return it.
-        if ($this->bot) {
-            return $this->bot;
-        }
+    protected $enabledBot;
 
+    /**
+     * @type Bot
+     */
+    protected $disabledBot;
+
+    /**
+     * Parses the request for the bot id, and fetches the bot from the database.
+     * @param bool $enabled
+     * @return Bot|null
+     */
+    protected function fetchBot($enabled = null)
+    {
         $request = app('request');
 
         $botId = $this->getBotIdFromUrlParameters($request);
@@ -35,8 +41,55 @@ abstract class APIController extends BaseAPIController
         /** @type BotService $botService */
         $botService = app(BotService::class);
 
-        if ($bot = $botService->findByIdForUser($botId, $this->user())) {
+        return $botService->findByIdAndStatusForUser($botId, $this->user(), $enabled);
+    }
+
+    /**
+     * @return Bot
+     */
+    protected function bot()
+    {
+        // If the bot has been already fetched, return it.
+        if ($this->bot) {
+            return $this->bot;
+        }
+
+        if ($bot = $this->fetchBot()) {
             return $this->bot = $bot;
+        }
+
+        return $this->response->errorNotFound();
+    }
+
+    /**
+     * @return Bot
+     */
+    protected function enabledBot()
+    {
+        // If the bot has been already fetched, return it.
+        if ($this->enabledBot) {
+            return $this->enabledBot;
+        }
+
+        if ($bot = $this->fetchBot(true)) {
+            return $this->enabledBot = $bot;
+        }
+
+        return $this->response->errorNotFound();
+    }
+
+    /**
+     * @return Bot
+     */
+    protected function disabledBot()
+    {
+        // If the bot has been already fetched, return it.
+        if ($this->disabledBot) {
+            return $this->disabledBot;
+        }
+
+        if ($bot = $this->fetchBot(false)) {
+            return $this->disabledBot = $bot;
         }
 
         return $this->response->errorNotFound();

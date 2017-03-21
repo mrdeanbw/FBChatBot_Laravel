@@ -23,39 +23,29 @@ class BotController extends APIController
     }
 
     /**
-     * Return the list of pages.
+     * List of Facebook Pages which have an active bot associated with them.
      * @param Request $request
      * @return \Dingo\Api\Http\Response
      */
-    public function index(Request $request)
+    public function enabledBots(Request $request)
     {
-        if ($request->get('disabled')) {
-            return $this->inactiveBots();
-        }
+        $page = (int)$request->get('page', 1);
+        $bots = $this->bots->enabledBots($this->user(), $page);
 
-        return $this->activeBots();
-    }
-
-    /**
-     * List of Facebook Pages which have an active bot associated with them.
-     * @return \Dingo\Api\Http\Response
-     */
-    private function activeBots()
-    {
-        $bots = $this->bots->enabledBots($this->user());
-
-        return $this->collectionResponse($bots);
+        return $this->paginatorResponse($bots);
     }
 
     /**
      * List of Facebook Pages which have an inactive bot associated with them.
+     * @param Request $request
      * @return \Dingo\Api\Http\Response
      */
-    private function inactiveBots()
+    public function disabledBots(Request $request)
     {
-        $bots = $this->bots->disabledBots($this->user());
+        $page = (int)$request->get('page', 1);
+        $bots = $this->bots->disabledBots($this->user(), $page);
 
-        return $this->collectionResponse($bots);
+        return $this->paginatorResponse($bots);
     }
 
     /**
@@ -88,7 +78,7 @@ class BotController extends APIController
      */
     public function enable()
     {
-        $this->bots->enableBot($this->bot());
+        $this->bots->enableBot($this->disabledBot(), $this->user());
 
         return $this->response->accepted();
     }
@@ -99,7 +89,7 @@ class BotController extends APIController
      */
     public function disable()
     {
-        $this->bots->disableBot($this->bot());
+        $this->bots->disableBot($this->enabledBot());
 
         return $this->response->accepted();
     }
@@ -113,7 +103,7 @@ class BotController extends APIController
      */
     public function update(Request $request)
     {
-        $bot = $this->bot();
+        $bot = $this->enabledBot();
 
         $this->validate($request, [
             'timezone' => 'bail|required|max:255|timezone',

@@ -25,7 +25,7 @@ class SequenceMessageController extends APIController
      */
     public function show($sequenceId, $id)
     {
-        $sequence = $this->sequences->findByIdForBot($sequenceId, $this->bot());
+        $sequence = $this->sequences->findByIdForBot($sequenceId, $this->enabledBot());
         $message = $this->sequences->findMessageOrFail($id, $sequence);
 
         return $this->itemResponse($message);
@@ -41,7 +41,7 @@ class SequenceMessageController extends APIController
     {
         $this->validate($request, $this->allValidationRules());
 
-        $message = $this->sequences->createMessage($request->all(), $sequenceId, $this->bot());
+        $message = $this->sequences->createMessage($request->all(), $sequenceId, $this->enabledBot());
 
         return $this->itemResponse($message);
     }
@@ -57,7 +57,7 @@ class SequenceMessageController extends APIController
     {
         $this->validate($request, $this->allValidationRules());
 
-        $message = $this->sequences->updateMessage($request->all(), $id, $sequenceId, $this->bot());
+        $message = $this->sequences->updateMessage($request->all(), $id, $sequenceId, $this->enabledBot());
 
         return $this->itemResponse($message);
     }
@@ -73,7 +73,7 @@ class SequenceMessageController extends APIController
     {
         $this->validate($request, $this->conditionsValidationRules());
 
-        $message = $this->sequences->updateMessageConditions($request->all(), $id, $sequenceId, $this->bot());
+        $message = $this->sequences->updateMessageConditions($request->all(), $id, $sequenceId, $this->enabledBot());
 
         return $this->itemResponse($message);
     }
@@ -86,7 +86,7 @@ class SequenceMessageController extends APIController
      */
     public function destroy($id, $sequenceId)
     {
-        $message = $this->sequences->deleteMessage($id, $sequenceId, $this->bot());
+        $message = $this->sequences->deleteMessage($id, $sequenceId, $this->enabledBot());
 
         return $this->itemResponse($message);
     }

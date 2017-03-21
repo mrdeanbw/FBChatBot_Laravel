@@ -34,74 +34,75 @@ $api->version('v1', $options, function (Router $api) {
         $api->get('/pages', 'PageController@index');
 
         // Bot
-        $api->get('/bots', 'BotController@index');
         $api->post('/bots', 'BotController@store');
         $api->get('/bots/{id}', 'BotController@show');
         $api->patch('/bots/{id}', 'BotController@update');
-        $api->post('/bots/{id}/enable', 'BotController@enable');
-        $api->delete('/bots/{id}/enable', 'BotController@disable');
+        $api->get('/bots/enabled', 'BotController@enabledBots');
+        $api->get('/bots/disabled', 'BotController@disabledBots');
+        $api->post('/bots/disabled/{id}/enable', 'BotController@enable');
+        $api->delete('/bots/enabled/{id}/disable', 'BotController@disable');
 
         // Greeting Text.
-        $api->put('/bots/{botId}/greeting-text', 'GreetingTextController@update');
+        $api->put('/bots/enabled/{botId}/greeting-text', 'GreetingTextController@update');
 
         // Default Reply
-        $api->put('/bots/{botId}/default-reply', 'DefaultReplyController@update');
+        $api->put('/bots/enabled/{botId}/default-reply', 'DefaultReplyController@update');
 
         // Welcome Message
-        $api->put('/bots/{botId}/welcome-message/', 'WelcomeMessageController@update');
+        $api->put('/bots/enabled/{botId}/welcome-message/', 'WelcomeMessageController@update');
 
         // Main Menu
-        $api->put('/bots/{botId}/main-menu', 'MainMenuController@update');
+        $api->put('/bots/enabled/{botId}/main-menu', 'MainMenuController@update');
 
         // Auto Reply Rules
-        $api->get('/bots/{botId}/auto-reply/rules', 'AutoReplyRuleController@index');
-        $api->post('/bots/{botId}/auto-reply/rules', 'AutoReplyRuleController@create');
-        $api->put('/bots/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@update');
-        $api->delete('/bots/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@destroy');
+        $api->get('/bots/enabled/{botId}/auto-reply/rules', 'AutoReplyRuleController@index');
+        $api->post('/bots/enabled/{botId}/auto-reply/rules', 'AutoReplyRuleController@create');
+        $api->put('/bots/enabled/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@update');
+        $api->delete('/bots/enabled/{botId}/auto-reply/rules/{id}', 'AutoReplyRuleController@destroy');
 
         // Message Trees
-        $api->get('/bots/{botId}/templates/explicit', 'TemplateController@index');
-        $api->post('/bots/{botId}/templates/explicit', 'TemplateController@store');
-        $api->get('/bots/{botId}/templates/explicit/{id}', 'TemplateController@show');
-        $api->put('/bots/{botId}/templates/explicit/{id}', 'TemplateController@update');
+        $api->get('/bots/enabled/{botId}/templates/explicit', 'TemplateController@index');
+        $api->post('/bots/enabled/{botId}/templates/explicit', 'TemplateController@store');
+        $api->get('/bots/enabled/{botId}/templates/explicit/{id}', 'TemplateController@show');
+        $api->put('/bots/enabled/{botId}/templates/explicit/{id}', 'TemplateController@update');
 
         // Message Previews
-        $api->post('/bots/{botId}/message-previews', 'MessagePreviewController@store');
+        $api->post('/bots/enabled/{botId}/message-previews', 'MessagePreviewController@store');
 
         // Subscribers
-        $api->get('/bots/{botId}/subscribers', 'SubscriberController@index');
-        $api->get('/bots/{botId}/subscribers/{id}', 'SubscriberController@show');
-        $api->patch('/bots/{botId}/subscribers/{id}', 'SubscriberController@update');
-        $api->patch('/bots/{botId}/subscribers', 'SubscriberController@batchUpdate');
+        $api->get('/bots/enabled/{botId}/subscribers', 'SubscriberController@index');
+        $api->get('/bots/enabled/{botId}/subscribers/{id}', 'SubscriberController@show');
+        $api->patch('/bots/enabled/{botId}/subscribers/{id}', 'SubscriberController@update');
+        $api->patch('/bots/enabled/{botId}/subscribers', 'SubscriberController@batchUpdate');
 
         // Sequences
-        $api->get('/bots/{botId}/sequences', 'SequenceController@index');
-        $api->get('/bots/{botId}/sequences/{id}', 'SequenceController@show');
-        $api->post('/bots/{botId}/sequences', 'SequenceController@store');
-        $api->delete('/bots/{botId}/sequences/{id}', 'SequenceController@destroy');
-        $api->put('/bots/{botId}/sequences/{id}', 'SequenceController@update');
+        $api->get('/bots/enabled/{botId}/sequences', 'SequenceController@index');
+        $api->get('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@show');
+        $api->post('/bots/enabled/{botId}/sequences', 'SequenceController@store');
+        $api->delete('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@destroy');
+        $api->put('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@update');
 
         // Sequence Messages
-        $api->get('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@show');
-        $api->post('/bots/{botId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
-        $api->put('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@update');
-        $api->put('/bots/{botId}/sequences/{sequenceId}/messages/{id}/conditions', 'SequenceMessageController@updateConditions');
-        $api->delete('/bots/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
+        $api->get('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@show');
+        $api->post('/bots/enabled/{botId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
+        $api->put('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@update');
+        $api->put('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}/conditions', 'SequenceMessageController@updateConditions');
+        $api->delete('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
 
         // Broadcasts
-        $api->get('/bots/{botId}/broadcasts/pending', 'BroadcastController@pending');
-        $api->get('/bots/{botId}/broadcasts/non-pending', 'BroadcastController@nonPending');
-        $api->post('/bots/{botId}/broadcasts', 'BroadcastController@store');
-        $api->get('/bots/{botId}/broadcasts/{id}', 'BroadcastController@show');
-        $api->put('/bots/{botId}/broadcasts/{id}', 'BroadcastController@update');
-        $api->delete('/bots/{botId}/broadcasts/{id}', 'BroadcastController@destroy');
+        $api->get('/bots/enabled/{botId}/broadcasts/pending', 'BroadcastController@pending');
+        $api->get('/bots/enabled/{botId}/broadcasts/non-pending', 'BroadcastController@nonPending');
+        $api->post('/bots/enabled/{botId}/broadcasts', 'BroadcastController@store');
+        $api->get('/bots/enabled/{botId}/broadcasts/{id}', 'BroadcastController@show');
+        $api->put('/bots/enabled/{botId}/broadcasts/{id}', 'BroadcastController@update');
+        $api->delete('/bots/enabled/{botId}/broadcasts/{id}', 'BroadcastController@destroy');
 
         // Stats & Metrics
-        $api->get('/bots/{botId}/stats', 'StatsController@index');
+        $api->get('/bots/enabled/{botId}/stats', 'StatsController@index');
 
         // Message Revisions
-        $api->get('/bots/{botId}/messages/{messageId}/revisions', 'MessageRevisionController@index');
-        $api->get('/bots/{botId}/main-menu-buttons/{buttonId}/revisions', 'MessageRevisionController@mainMenuButton');
+        $api->get('/bots/enabled/{botId}/messages/{messageId}/revisions', 'MessageRevisionController@index');
+        $api->get('/bots/enabled/{botId}/main-menu-buttons/{buttonId}/revisions', 'MessageRevisionController@mainMenuButton');
     });
 
 });

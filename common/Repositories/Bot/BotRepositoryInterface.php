@@ -3,10 +3,10 @@
 use Common\Models\Bot;
 use Common\Models\User;
 use Common\Models\Button;
-use Common\Models\Subscriber;
-use Illuminate\Support\Collection;
-use Common\Repositories\BaseRepositoryInterface;
 use MongoDB\BSON\ObjectID;
+use Common\Models\Subscriber;
+use Illuminate\Pagination\Paginator;
+use Common\Repositories\BaseRepositoryInterface;
 
 interface BotRepositoryInterface extends BaseRepositoryInterface
 {
@@ -17,12 +17,28 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
     const MESSAGE_SUCCESSFUL_UNSUBSCRIPTION = 3;
 
     /**
-     * Find a page by its Facebook id.
+     * Find a bot by its id.
      * @param      $botId
      * @param User $user
      * @return Bot|null
      */
     public function findByIdForUser($botId, User $user);
+
+    /**
+     * Find an enabled bot by its id.
+     * @param      $botId
+     * @param User $user
+     * @return Bot|null
+     */
+    public function findEnabledByIdForUser($botId, User $user);
+
+    /**
+     * Find a disabled bot by its id.
+     * @param      $botId
+     * @param User $user
+     * @return Bot|null
+     */
+    public function findDisabledByIdForUser($botId, User $user);
 
     /**
      * Find a page by its Facebook id.
@@ -34,16 +50,20 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
     /**
      * Get the list of active pages that belong to a user.
      * @param User $user
-     * @return Collection
+     * @param int  $page
+     * @param int  $perPage
+     * @return Paginator
      */
-    public function getEnabledForUser(User $user);
+    public function paginateEnabledForUser(User $user, $page, $perPage);
 
     /**
      * Get the list of inactive pages that belong to a user.
      * @param User $user
-     * @return Collection
+     * @param int  $page
+     * @param int  $perPage
+     * @return Paginator
      */
-    public function getDisabledForUser(User $user);
+    public function paginateDisabledForUser(User $user, $page, $perPage);
 
     /**
      * @param Bot      $bot

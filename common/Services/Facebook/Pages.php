@@ -24,13 +24,26 @@ class Pages extends API
 
     /**
      * @param $accessToken
-     * @return mixed
+     * @return object
      */
     public function subscribeToPage($accessToken)
     {
         $url = $this->url('me/subscribed_apps', ['access_token' => $accessToken]);
 
         $response = $this->guzzle->post($url, $this->requestOptions());
+
+        return json_decode($response->getBody());
+    }
+
+    /**
+     * @param $accessToken
+     * @return object
+     */
+    public function unsubscribeFromPage($accessToken)
+    {
+        $url = $this->url('me/subscribed_apps', ['access_token' => $accessToken]);
+
+       $response = $this->guzzle->delete($url, $this->requestOptions());
 
         return json_decode($response->getBody());
     }
