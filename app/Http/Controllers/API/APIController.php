@@ -41,7 +41,15 @@ abstract class APIController extends BaseAPIController
         /** @type BotService $botService */
         $botService = app(BotService::class);
 
-        return $botService->findByIdAndStatusForUser($botId, $this->user(), $enabled);
+        $bot = $botService->findByIdAndStatusForUser($botId, $this->user(), $enabled);
+
+        if ($bot && config('sentry.dsn')) {
+            app('sentry')->user_context([
+                'bot_id' => $bot->id
+            ]);
+        }
+
+        return $bot;
     }
 
     /**

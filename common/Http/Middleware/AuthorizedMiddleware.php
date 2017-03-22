@@ -20,8 +20,14 @@ class AuthorizedMiddleware
     {
         $user = app(Auth::class)->user();
 
-        if (!app(UserService::class)->hasAllManagingPagePermissions($user->granted_permissions)) {
+        if (! app(UserService::class)->hasAllManagingPagePermissions($user->granted_permissions)) {
             throw new HttpException(403, "missing_permissions");
+        }
+
+        if (config('sentry.dsn')) {
+            app('sentry')->user_context([
+                'id' => $user->id
+            ]);
         }
 
         return $next($request);
