@@ -2,6 +2,7 @@
 
 use Common\Models\User;
 use Common\Services\Facebook\Auth as FacebookAuthService;
+use GuzzleHttp\Exception\ClientException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class AuthService
@@ -41,8 +42,12 @@ class AuthService
         try {
             $user = $this->FacebookAuth->getUser($facebookAuthToken);
             $user['access_token'] = $this->getExtendedFacebookAccessToken($facebookAuthToken);
-        } catch (\Exception $e) {
-            throw new BadRequestHttpException($e->getMessage());
+        } catch (ClientException $e) {
+            $body = json_decode($e->getResponse()->getBody());
+            if ($body && isset($body->error->code) && $body->error->code == 190) {
+                throw new BadRequestHttpException("Invalid Facebook access token.");
+            }
+            throw $e;
         }
 
         /**
