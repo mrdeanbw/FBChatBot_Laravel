@@ -24,7 +24,6 @@ class WebAppAdapter
 
     use LoadsAssociatedModels;
 
-    const UNSUBSCRIBE_PAYLOAD = "UNSUBSCRIBE";
     /**
      * @type FacebookSender
      */
@@ -384,6 +383,10 @@ class WebAppAdapter
 
         if ($button->template_id || $button->messages) {
             $this->FacebookMessageSender->sendFromButton($button, $subscriber, $bot, $buttonTemplate, (array)$buttonPath);
+        }
+
+        if (isset($button->conclude_unsubscription)) {
+            $this->concludeUnsubscriptionProcess($bot, $subscriber);
         }
     }
 

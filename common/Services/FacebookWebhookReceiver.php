@@ -187,16 +187,8 @@ class FacebookWebhookReceiver
             return;
         }
 
-        // If the user clicks on the button to confirm unsubscription, then unsubscribe him.
-        if ($event['postback']['payload'] == WebAppAdapter::UNSUBSCRIBE_PAYLOAD) {
-            $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
-            $this->adapter->concludeUnsubscriptionProcess($bot, $subscriber);
-
-            return;
-        }
-
         // If the user clicks on any other button, then subscribe him silently!
-        $subscriber = $this->adapter->subscribeSilently($bot, $event['sender']['id']);
+        $subscriber = $subscriber?: $this->adapter->subscribeSilently($bot, $event['sender']['id']);
         $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
 
         // payload is a hashed button.

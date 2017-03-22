@@ -5,6 +5,7 @@ use Common\Models\Bot;
 use Common\Models\Page;
 use Common\Models\Text;
 use Common\Models\User;
+use Common\Models\Button;
 use MongoDB\BSON\ObjectID;
 use Common\Models\DefaultReply;
 use Common\Models\WelcomeMessage;
@@ -352,7 +353,7 @@ class BotService
         $successfullyUnsubscribed = new Text(['text' => 'You have successfully unsubscribed. Use "start" to subscribe again.']);
         $unsubscriptionConfirmation = new Text([
             'text'    => 'Do you really want to unsubscribe from {{page_name}}?',
-            'buttons' => [['type' => 'postback', 'title' => 'Unsubscribe', 'payload' => WebAppAdapter::UNSUBSCRIBE_PAYLOAD]]
+            'buttons' => [['type' => 'button', 'title' => 'Unsubscribe', 'conclude_unsubscription' => true]]
         ]);
 
         $ret = [

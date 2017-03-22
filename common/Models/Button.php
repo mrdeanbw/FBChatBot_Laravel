@@ -14,7 +14,7 @@ class Button extends Message
     public $title;
     public $url;
     /** @type Message[] */
-    public $messages;
+    public $messages = [];
     public $template_id;
     public $actions = [
         'add_tags'         => [],
