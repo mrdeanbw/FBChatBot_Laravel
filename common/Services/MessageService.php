@@ -114,7 +114,7 @@ class MessageService
         $this->messageRevisions = [];
 
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
-        
+
         $this->files->delete($this->delete['image_files']);
         $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
         $this->messageRevisionRepo->bulkDelete($this->delete['message_revisions']);
@@ -301,21 +301,26 @@ class MessageService
             return;
         }
 
-        $ext = $message->file->type;
-        if (! in_array($ext, ['png', 'jpg', 'gif'])) {
-            $ext = 'png';
-        }
+        $map = [
+            'image/jpeg' => 'jpg',
+            'image/jpg'  => 'jpg',
+            'image/gif'  => 'gif'
+        ];
+
+        $ext = isset($map[$message->file->type])? $map[$message->file->type] : 'png';
 
         $fileName = $this->randomFileName($ext);
+        $filePath = "img/uploads/{$fileName}";
 
-        $image = ImageManagerStatic::make($message->file->encoded);
-        $image->encode($ext);
+        if ($ext == 'gif' && starts_with($message->file->encoded, 'data:image/gif;base64,')) {
+            file_put_contents($filePath, base64_decode(substr($message->file->encoded, 22)));
+        } else {
+            $image = ImageManagerStatic::make($message->file->encoded)->encode($ext);
+            $message->file->path = public_path($filePath);
+            $image->save($message->file->path);
+        }
 
         $message->file->encoded = null;
-        $message->file->path = public_path("img/uploads/{$fileName}");
-
-        $image->save($message->file->path);
-
         $message->image_url = rtrim(config('app.url'), '/') . '/img/uploads/' . $fileName;
     }
 
