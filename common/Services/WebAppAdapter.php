@@ -1,12 +1,13 @@
 <?php namespace Common\Services;
 
 use Carbon\Carbon;
-use Common\Exceptions\MessageNotSentException;
 use Common\Models\Bot;
 use Common\Models\Button;
+use MongoDB\BSON\ObjectID;
+use Common\Models\Template;
 use Common\Models\Subscriber;
 use Common\Models\AutoReplyRule;
-use Common\Models\Template;
+use Common\Exceptions\MessageNotSentException;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\User\UserRepositoryInterface;
 use Common\Services\Facebook\MessengerSender as FacebookSender;
@@ -16,7 +17,7 @@ use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 use Common\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
-use MongoDB\BSON\ObjectID;
+use Common\Repositories\IncomingMessage\IncomingMessageRepositoryInterface;
 
 class WebAppAdapter
 {
@@ -76,6 +77,10 @@ class WebAppAdapter
      * @type FacebookAdapter
      */
     private $FacebookAdapter;
+    /**
+     * @type IncomingMessageRepositoryInterface
+     */
+    private $incomingMessageRepo;
 
     /**
      * WebAppAdapter constructor.
@@ -84,6 +89,7 @@ class WebAppAdapter
      * @param FacebookSender                     $FacebookSender
      * @param SubscriberService                  $subscribers
      * @param BotRepositoryInterface             $botRepo
+     * @param FacebookAdapter                    $FacebookAdapter
      * @param UserRepositoryInterface            $userRepo
      * @param TemplateRepositoryInterface        $templateRepo
      * @param BroadcastRepositoryInterface       $broadcastRepo
@@ -91,7 +97,7 @@ class WebAppAdapter
      * @param SubscriberRepositoryInterface      $subscriberRepo
      * @param SentMessageRepositoryInterface     $sentMessageRepo
      * @param AutoReplyRuleRepositoryInterface   $autoReplyRuleRepo
-     * @param FacebookAdapter                    $FacebookAdapter
+     * @param IncomingMessageRepositoryInterface $incomingMessageRepo
      * @param MessageRevisionRepositoryInterface $messageRevisionRepo
      */
     public function __construct(
@@ -107,6 +113,7 @@ class WebAppAdapter
         SubscriberRepositoryInterface $subscriberRepo,
         SentMessageRepositoryInterface $sentMessageRepo,
         AutoReplyRuleRepositoryInterface $autoReplyRuleRepo,
+        IncomingMessageRepositoryInterface $incomingMessageRepo,
         MessageRevisionRepositoryInterface $messageRevisionRepo
     ) {
         $this->botRepo = $botRepo;
@@ -121,16 +128,15 @@ class WebAppAdapter
         $this->FacebookAdapter = $FacebookAdapter;
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
         $this->messageRevisionRepo = $messageRevisionRepo;
+        $this->incomingMessageRepo = $incomingMessageRepo;
         $this->FacebookMessageSender = $FacebookMessageSender;
     }
 
     /**
      * Subscribe a message sender to the page.
-     *
      * @param Bot    $bot
      * @param string $senderId
      * @param bool   $silentMode
-     *
      * @return Subscriber
      */
     public function subscribe(Bot $bot, $senderId, $silentMode = false)
@@ -483,12 +489,10 @@ class WebAppAdapter
 
     /**
      * Make a user (page admin) into "subscriber" for a page.
-     *
      * @param      $payload
      * @param Bot  $bot
      * @param      $senderId
-     *
-     * @return bool
+     * @return Subscriber
      */
     public function subscribeBotUser($payload, Bot $bot, $senderId)
     {
@@ -516,17 +520,33 @@ class WebAppAdapter
 
         notify_frontend("{$bot->id}_{$user->id}_subscriptions", 'subscribed', ['subscriber_id' => $subscriber->id]);
 
-        return true;
+        return $subscriber;
     }
 
     /**
-     * @param Subscriber $subscriber
+     * @param array           $event
+     * @param int             $timestamp
+     * @param Bot             $bot
+     * @param Subscriber|null $subscriber
      */
-    public function storeIncomingInteraction($subscriber)
+    public function storeIncomingMessage(array $event, $timestamp, Bot $bot, Subscriber $subscriber = null)
     {
+        unset($event['sender']);
+        unset($event['recipient']);
+        $actionAt = mongo_date(array_pull($event, 'timestamp', $timestamp));
+        $data = [
+            'bot_id'        => $bot->_id,
+            'event'         => $event,
+            'subscriber_id' => null,
+            'action_at'     => $actionAt,
+            'original'      => mongo_date($timestamp),
+        ];
+
         if ($subscriber) {
-            $subscriber->last_interaction_at = Carbon::now();
-            $subscriber->save();
+            $data['subscriber_id'] = $subscriber->_id;
+            $this->subscriberRepo->update($subscriber, ['last_interaction_at' => Carbon::now()]);
         }
+
+        $this->incomingMessageRepo->create($data);
     }
 }

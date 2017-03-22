@@ -26,6 +26,7 @@ class RepositoryServiceProvider extends ServiceProvider
             Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface::class      => Repositories\AutoReplyRule\DBAutoReplyRuleRepository::class,
             Repositories\MessagePreview\MessagePreviewRepositoryInterface::class    => Repositories\MessagePreview\DBMessagePreviewRepository::class,
             Repositories\MessageRevision\MessageRevisionRepositoryInterface::class  => Repositories\MessageRevision\DBMessageRevisionRepository::class,
+            Repositories\IncomingMessage\IncomingMessageRepositoryInterface::class  => Repositories\IncomingMessage\DBIncomingMessageRepository::class,
             AdminRepositories\MongoDatabase\MongoDatabaseRepositoryInterface::class => AdminRepositories\MongoDatabase\DBMongoDatabaseRepository::class,
         ];
 

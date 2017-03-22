@@ -142,7 +142,10 @@ class FacebookMessageSender
 
             try {
                 $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot, $notificationType);
-                $ret[] = $this->sentMessageRepo->create(array_merge($data, ['facebook_id' => $facebookMessageId]));
+                $ret[] = $this->sentMessageRepo->create(array_merge($data, [
+                    'facebook_id' => $facebookMessageId,
+                    'sent_at' => Carbon::now()
+                ]));
             } catch (MessageNotSentException $e) {
                 // do nothing
             }
@@ -220,7 +223,6 @@ class FacebookMessageSender
             'bot_id'        => $bot->_id,
             'subscriber_id' => $subscriber->_id,
             'message_id'    => $message->id,
-            'sent_at'       => Carbon::now(),
             'delivered_at'  => null,
             'read_at'       => null,
         ];
