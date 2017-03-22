@@ -20,7 +20,7 @@ trait LoadsAssociatedModels
                 $model[$modelToLoad] = $this->loadModel($model, $modelToLoad);
                 continue;
             }
-            
+
             if (isset($model->{$modelToLoad})) {
                 continue;
             }
@@ -38,13 +38,13 @@ trait LoadsAssociatedModels
     {
         switch ($modelToLoad) {
             case 'bot':
-                return $this->getRepo('bot')->findById($model->bot_id);
+                return $this->getRepo('bot')->findById(is_array($model)? $model['bot_id'] : $model->bot_id);
 
             case 'template':
-                return $this->getRepo('template')->findById($model->template_id);
+                return $this->getRepo('template')->findById(is_array($model)? $model['template_id'] : $model->template_id);
 
             case 'sequences':
-                $filter = [['operator' => 'in', 'key' => '_id', 'value' => $model->sequences]];
+                $filter = [['operator' => 'in', 'key' => '_id', 'value' => is_array($model)? $model['sequences'] : $model->sequences]];
 
                 return $this->getRepo('sequence')->getAll($filter);
 
