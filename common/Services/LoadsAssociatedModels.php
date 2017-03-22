@@ -1,5 +1,6 @@
 <?php namespace Common\Services;
 
+use Common\Models\ArrayModel;
 use Common\Models\BaseModel;
 use Common\Repositories\DBBaseRepository;
 
@@ -7,8 +8,8 @@ trait LoadsAssociatedModels
 {
 
     /**
-     * @param BaseModel $model
-     * @param string[]  $modelsToLoad
+     * @param array|ArrayModel|BaseModel $model
+     * @param string[]                   $modelsToLoad
      */
     public function loadModelsIfNotLoaded(&$model, array $modelsToLoad)
     {

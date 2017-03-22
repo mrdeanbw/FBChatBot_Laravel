@@ -103,9 +103,9 @@ class FacebookMessageSender
     }
 
     /**
-     * @param            $context
-     * @param Subscriber $subscriber
-     * @param Bot        $bot
+     * @param array|object $context
+     * @param Subscriber   $subscriber
+     * @param Bot          $bot
      * @return \object[]
      */
     public function sendFromContext($context, Subscriber $subscriber, Bot $bot)
@@ -114,9 +114,10 @@ class FacebookMessageSender
         $this->loadModelsIfNotLoaded($context, ['template']);
 
         $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
-        $mapper->payloadEncoder->setTemplate($context->template);
+        $template = is_array($context)? $context['template'] : $context->template;
+        $mapper->payloadEncoder->setTemplate($template);
 
-        return $this->sendMessages($mapper, $context->template->messages, $subscriber, $bot);
+        return $this->sendMessages($mapper, $template->messages, $subscriber, $bot);
     }
 
     /**
@@ -144,7 +145,7 @@ class FacebookMessageSender
                 $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot, $notificationType);
                 $ret[] = $this->sentMessageRepo->create(array_merge($data, [
                     'facebook_id' => $facebookMessageId,
-                    'sent_at' => Carbon::now()
+                    'sent_at'     => Carbon::now()
                 ]));
             } catch (MessageNotSentException $e) {
                 // do nothing
