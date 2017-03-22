@@ -271,8 +271,8 @@ class FacebookMessageMapper
     protected function evaluateShortcodes($text, Subscriber $subscriber)
     {
         return str_replace(
-            ['{{first_name}}', '{{last_name}}', '{{full_name}}'],
-            [$subscriber->first_name, $subscriber->last_name, $subscriber->full_name],
+            ['{{first_name}}', '{{last_name}}', '{{full_name}}', '{{page_name}}'],
+            [$subscriber->first_name, $subscriber->last_name, $subscriber->full_name, $this->bot->page->name],
             $text
         );
     }
