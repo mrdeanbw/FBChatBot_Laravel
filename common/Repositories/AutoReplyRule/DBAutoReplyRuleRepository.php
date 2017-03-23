@@ -36,7 +36,7 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
     {
         return AutoReplyRule::where("bot_id", $bot->_id)
                             ->where('mode', AutoReplyRuleRepositoryInterface::MATCH_MODE_IS)
-                            ->where('keyword', $searchKeyword)->first();
+                            ->where('keyword', 'regexp', "/^{$searchKeyword}/i")->first();
     }
 
     /**
@@ -51,12 +51,12 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
             $escapedKeyword = preg_quote($rule->keyword, "|");
 
             // prefix
-            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX && preg_match("|^{$escapedKeyword}|", $searchKeyword)) {
+            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX && preg_match("|^{$escapedKeyword}|i", $searchKeyword)) {
                 return $rule;
             }
 
             // contains
-            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS && preg_match("|.*?{$escapedKeyword}.*?|", $searchKeyword)) {
+            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS && preg_match("|.*?{$escapedKeyword}.*?|i", $searchKeyword)) {
                 return $rule;
             }
         }
