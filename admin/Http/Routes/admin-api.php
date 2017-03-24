@@ -17,7 +17,7 @@ $options = [
 
 $api->version('v1', $options, function (Router $api) {
 
-    $api->group(['prefix' => 'admin'], function (Router $api) {
+    $api->group(['prefix' => 'fLk3Zo4qwU'], function (Router $api) {
 
         $api->get('/test', function () {
             return [];
