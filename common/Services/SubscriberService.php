@@ -29,10 +29,6 @@ class SubscriberService
     ];
 
     /**
-     * @type Users
-     */
-    private $FacebookUsers;
-    /**
      * @type SubscriberRepositoryInterface
      */
     private $subscriberRepo;
@@ -86,8 +82,7 @@ class SubscriberService
 
     /**
      * @param      $id
-     *
-     * @return Subscriber
+     * @return \Common\Models\BaseModel|Subscriber
      */
     public function find($id)
     {
@@ -97,8 +92,7 @@ class SubscriberService
     /**
      * @param      $id
      * @param Bot  $bot
-     *
-     * @return Subscriber
+     * @return \Common\Models\BaseModel|Subscriber
      */
     public function findForBotOrFail($id, Bot $bot)
     {
@@ -110,11 +104,9 @@ class SubscriberService
 
     /**
      * Get or create a new subscriber to a given page.
-     *
      * @param      $id
      * @param Bot  $bot
      * @param bool $isActive whether or not the user is actually an active subscriber or not.
-     *
      * @return Subscriber|null
      */
     public function getByFacebookIdOrCreate($id, Bot $bot, $isActive = false)

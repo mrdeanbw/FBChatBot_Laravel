@@ -22,10 +22,19 @@ abstract class BaseModel extends Model
      */
     public function scopeDate($query, $columnName, $value)
     {
+        if (starts_with($value, 'nullable_not:')) {
+            $boundaries = date_boundaries(substr($value, 13));
+            $query->where(function ($subQuery) use ($columnName, $boundaries) {
+                $subQuery->whereNull($columnName)->orWhere($columnName, '<', $boundaries[0])->orWhere($columnName, '>=', $boundaries[1]);
+            });
+
+            return $query;
+        }
+
         if (starts_with($value, 'not:')) {
             $boundaries = date_boundaries(substr($value, 4));
             $query->where(function ($subQuery) use ($columnName, $boundaries) {
-                $subQuery->whereNull($columnName)->orWhere($columnName, '<', $boundaries[0])->orWhere($columnName, '>=', $boundaries[1]);
+                $subQuery->where($columnName, '<', $boundaries[0])->orWhere($columnName, '>=', $boundaries[1]);
             });
 
             return $query;

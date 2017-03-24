@@ -1,8 +1,8 @@
 <?php namespace Admin\Services;
 
 use ReflectionClass;
-use GuzzleHttp\Client;
 use Psr\Log\LogLevel;
+use GuzzleHttp\Client;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -58,9 +58,7 @@ class MonitorService
             $serversData[] = [
                 'host'    => $data['host'],
                 'address' => $ip,
-                'load'    => array_map(function ($num) {
-                    return (int)round($num, 2);
-                }, $data['load']),
+                'load'    => $data['load'],
                 'disk'    => trim($data['disk']),
                 'memory'  => [
                     'total' => (int)round($data['memory']['total']),
