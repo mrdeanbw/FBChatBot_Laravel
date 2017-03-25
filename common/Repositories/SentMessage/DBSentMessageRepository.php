@@ -466,7 +466,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             ['$project' => ['cards' => 1]],
             ['$unwind' => '$cards'],
             ['$match' => ['cards.id' => $cardId]],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$card.clicks']]]]
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.clicks']]]]
         ];
 
         $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
