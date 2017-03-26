@@ -407,15 +407,15 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
         $matchFilters = ['$and' => [["cards.buttons.id" => $buttonId]]];
 
         if ($startDateTime) {
-            $matchFilters['$and'][] = ["cards.buttons.id" => ['$gte' => mongo_date($startDateTime)]];
+            $matchFilters['$and'][] = ["cards.buttons.clicks" => ['$gte' => mongo_date($startDateTime)]];
         }
 
         if ($endDateTime) {
-            $matchFilters['$and'][] = ["cards.buttons.id" => ['$lt' => mongo_date($endDateTime)]];
+            $matchFilters['$and'][] = ["cards.buttons.clicks" => ['$lt' => mongo_date($endDateTime)]];
         }
 
         if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ["cards.buttons.id.0" => ['$exists' => true]];
+            $matchFilters['$and'][] = ["cards.buttons.clicks.0" => ['$exists' => true]];
         }
 
         $aggregate = [
