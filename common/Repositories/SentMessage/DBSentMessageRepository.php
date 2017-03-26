@@ -76,7 +76,9 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
         $index = null;
 
         $container = $path[0];
-        foreach ($model->{$container} as $i => $message) {
+        $messages = is_array($model)? $model[$container] : $model->{$container};
+
+        foreach ($messages as $i => $message) {
             if ((string)$message['id'] == $path[1]) {
                 $index = $i;
                 break;
@@ -88,7 +90,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
         }
 
         $ret = "{$container}.{$index}";
-        if ($temp = $this->normalizePath($model->{$container}[$index], array_slice($path, 2))) {
+        if ($temp = $this->normalizePath($messages[$index], array_slice($path, 2))) {
             $ret .= '.' . $temp;
         }
 

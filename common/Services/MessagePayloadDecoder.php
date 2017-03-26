@@ -3,10 +3,10 @@
 use Common\Models\Bot;
 use Common\Models\Card;
 use Common\Models\Button;
+use MongoDB\BSON\ObjectID;
 use Common\Models\Message;
 use Common\Models\Template;
 use Common\Models\Subscriber;
-use MongoDB\BSON\ObjectID;
 use Common\Models\SentMessage;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\Template\TemplateRepositoryInterface;
@@ -131,7 +131,7 @@ class MessagePayloadDecoder
     }
 
     /**
-     * @return Card|Button|null
+     * @return Button|Card|null
      */
     public function getClickedMessage()
     {
@@ -245,11 +245,20 @@ class MessagePayloadDecoder
 
         $reversedMessagePath = array_reverse($fullMessagePath);
         $this->sentMessage = $this->sentMessageRepo->findById($sentMessageId);
+
+        $index = 2;
+        for ($i = 0; $i < count($reversedMessagePath); $i++) {
+            if ($reversedMessagePath[$i] == 'messages') {
+                $index = $i - 1;
+                break;
+            }
+        }
+
         if (
             ! $this->sentMessage ||
             $this->sentMessage->bot_id != $this->bot->_id ||
             $this->sentMessage->subscriber_id != $this->subscriber->_id ||
-            (string)$this->sentMessage->message_id != $reversedMessagePath[2]
+            (string)$this->sentMessage->message_id != $reversedMessagePath[$index]
         ) {
             return $this->invalid();
         }
@@ -269,6 +278,7 @@ class MessagePayloadDecoder
         if (! $this->isValidMessagePath($fullMessagePath)) {
             return $this->invalid();
         }
+
 
         $this->isValid = true;
         $this->template = $template;
@@ -310,8 +320,14 @@ class MessagePayloadDecoder
 
         foreach ($messagePath as $section) {
 
-            if (in_array($section, ['messages', 'buttons', 'cards']) && is_object($ret) && isset($ret->{$section})) {
-                $ret = $ret->{$section};
+            if (
+                in_array($section, ['messages', 'buttons', 'cards']) &&
+                (
+                    (is_object($ret) && isset($ret->{$section})) ||
+                    (is_array($ret) && isset($ret[$section]))
+                )
+            ) {
+                $ret = is_array($ret)? $ret[$section] : $ret->{$section};
                 continue;
             }
 
@@ -393,7 +409,9 @@ class MessagePayloadDecoder
         $this->sentMessagePath = array_reverse($temp);
 
         if (! is_array($this->navigateThroughMessagePath($this->sentMessage, $this->sentMessagePath))) {
-            return $this->invalid();
+            $this->invalid();
+
+            return false;
         }
 
         return true;
