@@ -310,17 +310,17 @@ class MessageService
         $ext = isset($map[$message->file->type])? $map[$message->file->type] : 'png';
 
         $fileName = $this->randomFileName($ext);
-        $filePath = "img/uploads/{$fileName}";
+        $filePath = public_path("img/uploads/{$fileName}");
 
         if ($ext == 'gif' && starts_with($message->file->encoded, 'data:image/gif;base64,')) {
             file_put_contents($filePath, base64_decode(substr($message->file->encoded, 22)));
         } else {
             $image = ImageManagerStatic::make($message->file->encoded)->encode($ext);
-            $message->file->path = public_path($filePath);
-            $image->save($message->file->path);
+            $image->save($filePath);
         }
 
         $message->file->encoded = null;
+        $message->file->path = $filePath;
         $message->image_url = rtrim(config('app.url'), '/') . '/img/uploads/' . $fileName;
     }
 
@@ -420,7 +420,9 @@ class MessageService
         foreach ($revisions as $revision) {
             foreach ($revision->cards as $card) {
                 if ($card->id == $message->id) {
-                    $this->delete['image_files'][] = $card->file->path;
+                    if ($card->file) {
+                        $this->delete['image_files'][] = $card->file->path;
+                    }
                 }
             }
         }
