@@ -69,7 +69,6 @@ class SequenceService
      * @param array   $filter
      * @param array   $orderBy
      * @param int     $perPage
-     *
      * @return \Illuminate\Pagination\Paginator
      */
     public function paginate(Bot $bot, $page = 1, $filter = [], $orderBy = [], $perPage = 20)
@@ -80,7 +79,11 @@ class SequenceService
             $filterBy[] = ['operator' => 'prefix', 'key' => 'name', 'value' => $name];
         }
 
-        $orderBy = $orderBy ?: ['_id' => 'desc'];
+        if ($ids = array_get($filter, 'ids')) {
+            $filterBy[] = ['operator' => 'in', 'key' => '_id', 'value' => $ids];
+        }
+
+        $orderBy = $orderBy?: ['_id' => 'desc'];
 
         return $this->sequenceRepo->paginateForBot($bot, $page, $filterBy, $orderBy, $perPage);
     }
@@ -124,7 +127,7 @@ class SequenceService
      */
     public function findMessageOrFail($id, Sequence $sequence)
     {
-        $id = is_a($id, ObjectID::class) ? $id : new ObjectID($id);
+        $id = is_a($id, ObjectID::class)? $id : new ObjectID($id);
         if ($message = $this->sequenceRepo->findSequenceMessageById($id, $sequence)) {
             return $message;
         }

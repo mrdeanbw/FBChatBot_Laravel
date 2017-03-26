@@ -38,9 +38,9 @@ class SequenceController extends APIController
         $paginator = $this->sequences->paginate(
             $this->enabledBot(),
             (int)$request->get('page', 1),
-            ['name' => $request->get('name')],
+            ['name' => $request->get('name'), 'ids' => explode(',', $request->get('ids'))],
             [],
-            8
+            16
         );
 
         return $this->paginatorResponse($paginator);

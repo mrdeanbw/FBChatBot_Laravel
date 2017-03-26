@@ -47,6 +47,14 @@ class Button extends Message
         }
         $data['actions'] = $actions;
 
+        $data['actions']['add_sequences'] = array_map(function ($sequence) {
+            return is_a($sequence, ObjectID::class)? $sequence : new ObjectID($sequence['id']);
+        }, $data['actions']['add_sequences']);
+
+        $data['actions']['remove_sequences'] = array_map(function ($sequence) {
+            return is_a($sequence, ObjectID::class)? $sequence : new ObjectID($sequence['id']);
+        }, $data['actions']['remove_sequences']);
+
         parent::__construct($data, $strict);
     }
 }
