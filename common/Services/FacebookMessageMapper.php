@@ -213,7 +213,7 @@ class FacebookMessageMapper
      * @param ObjectID $cardContainerId
      * @return array
      */
-    protected function mapCardButtons(array  $buttons, $cardId, $cardContainerId)
+    protected function mapCardButtons(array $buttons, $cardId, $cardContainerId)
     {
         return array_map(function (Button $button) use ($cardId, $cardContainerId) {
             $payload = $this->payloadEncoder->cardButton($button->id, $cardId, $cardContainerId);
@@ -227,7 +227,7 @@ class FacebookMessageMapper
      * @param ObjectID $textId
      * @return array
      */
-    protected function mapTextButtons(array  $buttons, $textId)
+    protected function mapTextButtons(array $buttons, $textId)
     {
         return array_map(function (Button $button) use ($textId) {
             $payload = $this->payloadEncoder->textButton($button->id, $textId);

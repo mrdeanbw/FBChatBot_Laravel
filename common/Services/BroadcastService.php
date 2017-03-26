@@ -5,10 +5,10 @@ use Common\Models\Bot;
 use Common\Models\Broadcast;
 use Common\Models\AudienceFilter;
 use Common\Models\BroadcastSchedule;
-use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 
 class BroadcastService
 {
@@ -81,7 +81,7 @@ class BroadcastService
 
         return $this->broadcastRepo->paginateForBot($bot, $page, $filter, $order, $perPage);
     }
-    
+
     /**
      * @param Bot $bot
      * @param int $page
@@ -103,7 +103,10 @@ class BroadcastService
      */
     public function findById($id, Bot $bot)
     {
-        return $this->broadcastRepo->findByIdForBot($id, $bot);
+        /** @type Broadcast $ret */
+        $ret = $this->broadcastRepo->findByIdForBot($id, $bot);
+
+        return $ret;
     }
 
     /**
@@ -310,6 +313,8 @@ class BroadcastService
         }
 
         $this->loadModelsIfNotLoaded($broadcast, ['template']);
+
+
         foreach ($broadcast->template->messages as $i => $message) {
             if (! $i) {
                 $this->sentMessages->setFullMessageStats($message, $message->id);
