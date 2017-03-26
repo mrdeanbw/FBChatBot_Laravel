@@ -175,7 +175,7 @@ class MessageValidator extends LaravelValidator
             return false;
         }
 
-        if (! $this->validateMax($attribute, array_get($card, 'subtitle'), [80])) {
+        if (($subtitle = array_get($card, 'subtitle')) && ! $this->validateMax($attribute, $subtitle, [80])) {
             $this->setErrorMessage("Your card subtitle must be between 1 and 80 characters.");
 
             return false;
@@ -201,7 +201,18 @@ class MessageValidator extends LaravelValidator
             return false;
         }
 
-        return $this->_validateButtons($attribute, array_get($card, 'buttons', []));
+        $buttons = array_get($card, 'buttons', []);
+        if (! $this->_validateButtons($attribute, $buttons)) {
+            return false;
+        }
+
+        if (! $image && ! $file && ! $subtitle && ! $buttons) {
+            $this->setErrorMessage("You need to set up at least one more card content item: subtitle, image or button.");
+
+            return false;
+        }
+
+        return true;
     }
 
     private function _validateButtons($attribute, $buttons)
