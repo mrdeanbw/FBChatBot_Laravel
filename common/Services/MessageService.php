@@ -4,7 +4,6 @@ use Common\Models\Card;
 use Common\Models\Image;
 use Common\Models\Message;
 use MongoDB\BSON\ObjectID;
-use Common\Models\SentMessage;
 use Common\Models\MessageRevision;
 use Illuminate\Support\Collection;
 use Illuminate\Filesystem\Filesystem;

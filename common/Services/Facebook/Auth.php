@@ -61,8 +61,6 @@ class Auth extends API
 
         $response = $this->guzzle->get($url, $this->requestOptions());
 
-        parse_str($response->getBody(), $response);
-
-        return $response;
+        return json_decode($response->getBody(), true);
     }
 }
