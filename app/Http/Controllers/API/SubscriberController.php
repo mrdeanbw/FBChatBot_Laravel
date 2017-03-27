@@ -25,9 +25,7 @@ class SubscriberController extends APIController
 
     /**
      * Return paginated list of subscribers.
-     *
      * @param Request $request
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function index(Request $request)
@@ -47,6 +45,23 @@ class SubscriberController extends APIController
         );
 
         return $this->paginatorResponse($paginator);
+    }
+
+    /**
+     * @param Request $request
+     * @return \Dingo\Api\Http\Response
+     */
+    public function count(Request $request)
+    {
+        // Parse the filter query string to an array.
+        $filter = $request->get('filter', []);
+        if (is_string($filter)) {
+            $filter = json_decode($filter, true);
+        }
+
+        $count = $this->audience->count($this->enabledBot(), $filter);
+
+        return $this->arrayResponse(compact('count'));
     }
 
     /**
@@ -99,7 +114,7 @@ class SubscriberController extends APIController
             'subscribers.*'    => 'bail|required|array',
             'subscribers.*.id' => 'bail|required',
         ]);
-        
+
         $this->audience->batchUpdate($request->all(), $this->enabledBot());
 
         return $this->response->accepted();

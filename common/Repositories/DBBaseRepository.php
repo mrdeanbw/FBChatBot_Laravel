@@ -5,9 +5,9 @@ use MongoDB\BSON\ObjectID;
 use Common\Models\BaseModel;
 use MongoDB\BSON\UTCDatetime;
 use Illuminate\Support\Collection;
-use Illuminate\Pagination\Paginator;
 use Jenssegers\Mongodb\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 abstract class DBBaseRepository implements BaseRepositoryInterface
 {
@@ -36,18 +36,20 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
      * @param array $filterBy
      * @param array $orderBy
      * @param array $columns
-     *
      * @return BaseModel|null
      */
     public function getOne(array $filterBy = [], array $orderBy = [], array $columns = ['*'])
     {
-        return $this->applyFilterByAndOrderBy($filterBy, $orderBy)->first($columns);
+        $query = $this->applyFilterByAndOrderBy($filterBy, $orderBy);
+        /** @type BaseModel $ret */
+        $ret = $query->first($columns);
+
+        return $ret;
     }
 
     /**
      * @param array $filterBy
      * @param array $orderBy
-     *
      * @return int
      */
     public function count(array $filterBy = [], array $orderBy = [])
@@ -60,8 +62,7 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
      * @param array $filterBy
      * @param array $orderBy
      * @param int   $perPage
-     *
-     * @return Paginator
+     * @return LengthAwarePaginator
      */
     public function paginate($page, array $filterBy, array $orderBy, $perPage)
     {

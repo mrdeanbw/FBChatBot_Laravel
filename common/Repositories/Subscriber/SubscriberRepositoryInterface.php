@@ -11,7 +11,7 @@ use Common\Repositories\AssociatedWithBotRepositoryInterface;
 
 interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
-    
+
     const ACTION_SUBSCRIBED = 1;
     const ACTION_UNSUBSCRIBED = 0;
 
@@ -36,38 +36,30 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
 
     /**
      * Unsubscribe from the bot.
-     *
      * @param Subscriber $subscriber
-     *
      * @return bool
      */
     public function unsubscribe(Subscriber $subscriber);
 
     /**
      * Count the number of active subscribers for a certain page.
-     *
      * @param Bot $page
-     *
      * @return Subscriber
      */
     public function activeSubscriberCountForBot(Bot $page);
 
     /**
      * Count the number of subscribers who last subscribed on a given date, or in a given time period.
-     *
      * @param Carbon|string $date
      * @param Bot           $bot
-     *
      * @return int
      */
     public function LastSubscribedAtCountForBot($date, Bot $bot);
 
     /**
      * Count the number of subscribers who last unsubscribed on a given date, or in a given time period.
-     *
      * @param Carbon|string $date
      * @param Bot           $bot
-     *
      * @return int
      */
     public function LastUnsubscribedAtCountForBot($date, Bot $bot);
@@ -131,7 +123,6 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
     /**
      * @param Sequence $sequence
      * @param array    $columns
-     *
      * @return Collection
      */
     public function subscribersWhoShouldSubscribeToSequence(Sequence $sequence, $columns = ['_id']);

@@ -2,11 +2,11 @@
 
 use Carbon\Carbon;
 use Common\Models\Bot;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
 use Common\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
-use Common\Services\Facebook\Users;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\Sequence\SequenceRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -52,6 +52,10 @@ class SubscriberService
      * @type FacebookAdapter
      */
     private $FacebookAdapter;
+    /**
+     * @var SentMessageRepositoryInterface
+     */
+    private $sentMessageRepo;
 
     /**
      * AudienceService constructor.
@@ -61,6 +65,7 @@ class SubscriberService
      * @param FacebookAdapter                     $FacebookAdapter
      * @param SequenceRepositoryInterface         $sequenceRepo
      * @param SubscriberRepositoryInterface       $subscriberRepo
+     * @param SentMessageRepositoryInterface      $sentMessageRepo
      * @param SequenceScheduleRepositoryInterface $sequenceScheduleRepo
      * @internal param FacebookUser $FacebookUsers
      */
@@ -70,6 +75,7 @@ class SubscriberService
         FacebookAdapter $FacebookAdapter,
         SequenceRepositoryInterface $sequenceRepo,
         SubscriberRepositoryInterface $subscriberRepo,
+        SentMessageRepositoryInterface $sentMessageRepo,
         SequenceScheduleRepositoryInterface $sequenceScheduleRepo
     ) {
         $this->botRepo = $botRepo;
@@ -77,6 +83,7 @@ class SubscriberService
         $this->sequenceRepo = $sequenceRepo;
         $this->subscriberRepo = $subscriberRepo;
         $this->FacebookAdapter = $FacebookAdapter;
+        $this->sentMessageRepo = $sentMessageRepo;
         $this->sequenceScheduleRepo = $sequenceScheduleRepo;
     }
 
@@ -160,10 +167,8 @@ class SubscriberService
 
     /**
      * Make a subscriber inactive.
-     *
      * @param Subscriber $subscriber
-     *
-     * @return Subscriber
+     * @return bool
      */
     public function unsubscribe(Subscriber $subscriber)
     {
@@ -180,18 +185,38 @@ class SubscriberService
      * @param array $filterBy
      * @param array $orderBy
      * @param int   $perPage
-     *
      * @return Paginator
      */
     public function paginate(Bot $bot, $page = 1, $filterBy = [], $orderBy = [], $perPage = 20)
     {
-        return $this->subscriberRepo->paginateForBot(
+        $ret = $this->subscriberRepo->paginateForBot(
             $bot,
             $page,
             $this->normalizeFilterBy($filterBy),
             $this->normalizeOrderBy($orderBy),
             $perPage
         );
+
+        return $ret;
+    }
+
+    /**
+     * @param Bot   $bot
+     * @param array $filterBy
+     * @return int
+     */
+    public function count(Bot $bot, $filterBy = [])
+    {
+        $followUp = array_get($filterBy, 'follow_up');
+        $normalizedFilters = $this->normalizeFilterBy($filterBy);
+        if ($followUp) {
+            $filterBy = $this->normalizeFilterBy($filterBy);
+            $subscribers = $this->subscriberRepo->getAllForBot($bot, $filterBy);
+
+            return count($this->sentMessageRepo->followupFilter($subscribers));
+        }
+
+        return $this->subscriberRepo->countForBot($bot, $normalizedFilters);
     }
 
     /**

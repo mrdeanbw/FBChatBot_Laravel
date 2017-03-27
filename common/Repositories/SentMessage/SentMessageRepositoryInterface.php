@@ -170,4 +170,16 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @return Collection
      */
     public function getAllForMessage(ObjectID $messageId, $columns = ['*']);
+
+    /**
+     * @param Subscriber $subscriber
+     * @return bool
+     */
+    public function wasContacted24HoursAfterLastInteraction(Subscriber $subscriber);
+
+    /**
+     * @param Collection $subscribers
+     * @return array
+     */
+    public function followupFilter(Collection $subscribers);
 }

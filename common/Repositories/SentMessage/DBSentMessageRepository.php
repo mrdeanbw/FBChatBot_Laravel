@@ -624,4 +624,46 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
 
         return $this->getAll($filter, [], $columns);
     }
+
+    /**
+     * @param Subscriber $subscriber
+     * @return bool
+     */
+    public function wasContacted24HoursAfterLastInteraction(Subscriber $subscriber)
+    {
+        $copy = $subscriber->last_interaction_at->addDay(1);
+
+        return SentMessage::where('subscriber_id', $subscriber->_id)->where('sent_at', '>=', $copy)->exists();
+    }
+
+    /**
+     * @param Collection $subscribers
+     * @return array
+     */
+    public function followupFilter(Collection $subscribers)
+    {
+        $subscriberIds = $subscribers->pluck('_id')->toArray();
+        $subscribersCopy = $subscribers->keyBy('_id');
+
+        $aggregate = [
+            ['$sort' => ['subscriber_id' => 1, 'sent_at' => -1]],
+            ['$match' => ['subscriber_id' => ['$in' => $subscriberIds]]],
+            ['$group' => ['_id' => '$subscriber_id', 'sent_at' => ['$first' => '$sent_at']]],
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        $ret = [];
+
+        foreach ($result as $document) {
+            $lastInteractionAt = $subscribersCopy->get((string)$document->_id)->last_interaction_at;
+            $compare = $lastInteractionAt->copy()->addDay();
+            $sentAt = carbon_date($document->sent_at);
+             if ($sentAt->lt($compare)) {
+                $ret[] = $document->_id;
+            }
+        }
+
+        return $ret;
+    }
 }

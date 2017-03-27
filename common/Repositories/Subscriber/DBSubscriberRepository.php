@@ -62,7 +62,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
                 ];
             }
         }
-        
+
         return parent::update($model, $data);
     }
 
@@ -388,11 +388,9 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
 
     /**
      * Get an ordered list of all active subscribers matching some filtration criteria.
-     *
      * @param Sequence|Broadcast $model
      * @param array              $filterBy
      * @param array              $orderBy
-     *
      * @return \Illuminate\Support\Collection
      */
     public function getActiveTargetAudience($model, array $filterBy = [], array $orderBy = [])

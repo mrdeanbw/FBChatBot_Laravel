@@ -74,6 +74,8 @@ class CreateDatabaseIndexes extends Command
 
         $collection->createIndex(['bot_id' => 1, 'sent_at' => 1]);
 
+        $collection->createIndex(['subscriber_id' => 1, 'sent_at' => -1]);
+
         $collection->createIndex(['sent_at' => 1, 'delivered_at' => 1, 'subscriber_id' => 1]);
         $collection->createIndex(['sent_at' => 1, 'read_at' => 1, 'subscriber_id' => 1]);
 

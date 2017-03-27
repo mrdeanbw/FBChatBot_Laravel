@@ -76,6 +76,7 @@ $api->version('v1', $options, function (Router $api) {
 
         // Subscribers
         $api->get('/bots/enabled/{botId}/subscribers', 'SubscriberController@index');
+        $api->get('/bots/enabled/{botId}/subscribers/count', 'SubscriberController@count');
         $api->get('/bots/enabled/{botId}/subscribers/{id}', 'SubscriberController@show');
         $api->patch('/bots/enabled/{botId}/subscribers/{id}', 'SubscriberController@update');
         $api->patch('/bots/enabled/{botId}/subscribers', 'SubscriberController@batchUpdate');

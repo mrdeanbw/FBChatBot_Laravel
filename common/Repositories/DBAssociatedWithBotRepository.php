@@ -1,10 +1,10 @@
 <?php namespace Common\Repositories;
 
 use Common\Models\Bot;
-use Common\Models\BaseModel;
 use MongoDB\BSON\ObjectID;
+use Common\Models\BaseModel;
 use Illuminate\Support\Collection;
-use Illuminate\Pagination\Paginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements AssociatedWithBotRepositoryInterface
 {
@@ -27,14 +27,17 @@ abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements
 
     /**
      * Get all broadcasts that
-     * @param Bot $bot
+     * @param Bot   $bot
+     * @param array $filterBy
+     * @param array $orderBy
+     * @param array $columns
      * @return Collection
      */
-    public function getAllForBot(Bot $bot)
+    public function getAllForBot(Bot $bot, array $filterBy = [], array $orderBy = [], array $columns = ['*'])
     {
-        $filter = [['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id]];
+        $filterBy[] = ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id];
 
-        return $this->getAll($filter);
+        return $this->getAll($filterBy, $orderBy, $columns);
     }
 
     /**
@@ -43,13 +46,25 @@ abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements
      * @param array $filterBy
      * @param array $orderBy
      * @param int   $perPage
-     * @return Paginator
+     * @return LengthAwarePaginator
      */
     public function paginateForBot(Bot $bot, $page, array $filterBy, array $orderBy, $perPage)
     {
         $filterBy[] = ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id];
 
         return $this->paginate($page, $filterBy, $orderBy, $perPage);
+    }
+
+    /**
+     * @param Bot   $bot
+     * @param array $filterBy
+     * @return int
+     */
+    public function countForBot(Bot $bot, array $filterBy)
+    {
+        $filterBy[] = ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id];
+
+        return $this->count($filterBy);
     }
 
     /**
