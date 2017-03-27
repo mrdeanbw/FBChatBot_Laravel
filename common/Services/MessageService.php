@@ -39,7 +39,7 @@ class MessageService
      */
     protected $delete = [
         'image_files'       => [],
-        'sent_messages'     => [],
+//        'sent_messages'     => [],
         'message_revisions' => []
     ];
     /**
@@ -116,13 +116,12 @@ class MessageService
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
 
         $this->files->delete($this->delete['image_files']);
-        $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
+//        $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
         $this->messageRevisionRepo->bulkDelete($this->delete['message_revisions']);
         $this->delete = [
             'image_files'       => [],
-            'sent_messages'     => [],
+//            'sent_messages'     => [],
             'message_revisions' => []
-
         ];
 
         if ($this->versioning && $this->messageRevisions) {
@@ -267,7 +266,7 @@ class MessageService
             }
 
             if (in_array($message->type, ['text', 'image', 'card_container'])) {
-                $this->setSentMessagesToBeDeleted($message);
+                //$this->setSentMessagesToBeDeleted($message);
                 $revisions = $revisions->map(function (MessageRevision $revision) {
                     return $revision->_id;
                 })->toArray();
@@ -428,16 +427,16 @@ class MessageService
         }
     }
 
-    /**
-     * @param $message
-     * @return array
-     */
-    private function setSentMessagesToBeDeleted($message)
-    {
-        $sentMessageIds = $this->sentMessageRepo->getAllForMessage($message->id)->map(function (SentMessage $sentMessage) {
-            return $sentMessage->_id;
-        })->toArray();
-
-        $this->delete['sent_messages'] = array_merge($this->delete['sent_messages'], $sentMessageIds);
-    }
+    //    /**
+    //     * @param $message
+    //     * @return array
+    //     */
+    //    private function setSentMessagesToBeDeleted($message)
+    //    {
+    //        $sentMessageIds = $this->sentMessageRepo->getAllForMessage($message->id)->map(function (SentMessage $sentMessage) {
+    //            return $sentMessage->_id;
+    //        })->toArray();
+    //
+    //        $this->delete['sent_messages'] = array_merge($this->delete['sent_messages'], $sentMessageIds);
+    //    }
 }
