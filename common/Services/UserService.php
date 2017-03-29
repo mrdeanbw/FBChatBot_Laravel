@@ -45,7 +45,7 @@ class UserService
             'full_name'           => $userData['name'],
             'first_name'          => $userData['first_name'],
             'last_name'           => $userData['last_name'],
-            'gender'              => $userData['gender'],
+            'gender'              => array_get($userData, 'gender'),
             'avatar_url'          => array_get($userData, 'picture.data.url'),
             'email'               => array_get($userData, 'email'),
             'access_token'        => $userData['access_token'],
@@ -58,10 +58,11 @@ class UserService
          */
         if ($user = $this->userRepo->findByFacebookId($userData['id'])) {
             $this->userRepo->update($user, $data);
-
-            return $user;
+        } else {
+            /** @type User $user */
+            $user = $this->userRepo->create($data);
         }
 
-        return $this->userRepo->create($data);
+        return $user;
     }
 }
