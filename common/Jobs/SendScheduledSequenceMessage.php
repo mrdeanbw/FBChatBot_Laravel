@@ -65,6 +65,8 @@ class SendScheduledSequenceMessage extends BaseJob
         SubscriberRepositoryInterface $subscriberRepo,
         SequenceScheduleRepositoryInterface $sequenceScheduleRepo
     ) {
+        $this->setSentryContext($this->sequence->bot_id);
+
         // Initialize
         $this->templateRepo = $templateRepo;
         $this->sequenceRepo = $sequenceRepo;

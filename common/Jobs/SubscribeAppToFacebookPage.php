@@ -31,6 +31,7 @@ class SubscribeAppToFacebookPage extends BaseJob
      */
     public function handle(FacebookAdapter $FacebookAdapter)
     {
+        $this->setSentryContext($this->bot->_id);
         try {
             $FacebookAdapter->subscribeToPage($this->bot);
         } catch (DisallowedBotOperation $e) {

@@ -74,6 +74,11 @@ class FacebookWebhookReceiver
             return;
         }
 
+        if (config('sentry.dsn')) {
+            app('sentry')->user_context(['bot_id' => $bot->_id]);
+        }
+
+
         // If echo, then do nothing.
         if (array_get($event, 'message.is_echo')) {
             return;

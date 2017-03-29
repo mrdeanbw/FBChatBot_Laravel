@@ -1,5 +1,7 @@
 <?php namespace Common\Models;
 
+use MongoDB\BSON\ObjectID;
+
 /**
  * @property int                 $status
  * @property Template            $template
@@ -10,7 +12,7 @@
  * @property string              $date
  * @property string              $time
  * @property AudienceFilter      $filter
- * @property string              $bot_id
+ * @property ObjectID            $bot_id
  * @property \Carbon\Carbon      $completed_at
  * @property Bot                 $bot
  * @property array               $stats

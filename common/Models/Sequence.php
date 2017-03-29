@@ -1,10 +1,12 @@
 <?php namespace Common\Models;
 
+use MongoDB\BSON\ObjectID;
+
 /**
  * @property string            $name
  * @property SequenceMessage[] $messages
  * @property AudienceFilter    $filter
- * @property string            $bot_id
+ * @property ObjectID          $bot_id
  * @property int               $subscriber_count
  */
 class Sequence extends BaseModel

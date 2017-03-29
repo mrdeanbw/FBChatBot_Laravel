@@ -37,6 +37,7 @@ class SendBroadcastToSubscriber extends BaseJob
      */
     public function handle(FacebookMessageSender $FacebookMessageSender)
     {
+        $this->setSentryContext($this->broadcast->bot_id);
         try {
             $FacebookMessageSender->sendBroadcastMessages($this->broadcast, $this->subscriber);
         } catch (DisallowedBotOperation $e) {

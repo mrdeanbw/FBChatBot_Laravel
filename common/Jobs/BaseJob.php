@@ -1,11 +1,13 @@
 <?php namespace Common\Jobs;
 
+use Common\Models\Bot;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Maknz\Slack\Client as SlackClient;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use MongoDB\BSON\ObjectID;
 
 abstract class BaseJob implements ShouldQueue
 {
@@ -79,5 +81,22 @@ abstract class BaseJob implements ShouldQueue
                 ]
             ]
         ])->send('Job  ' . $class . ' is failing');
+    }
+
+    /**
+     * @param ObjectID $botId
+     */
+    public function setSentryContext(ObjectID $botId)
+    {
+        if (! config('sentry.dsn')) {
+            return;
+        }
+        $context = ['bot_id' => $botId];
+
+        if ($this->userId) {
+            $context['user_id'] = $this->userId;
+        }
+
+        app('sentry')->user_context($context);
     }
 }

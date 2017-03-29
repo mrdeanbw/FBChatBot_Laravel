@@ -30,6 +30,7 @@ class RemoveMainMenuFromFacebook extends BaseJob
      */
     public function handle(FacebookAdapter $FacebookAdapter)
     {
+        $this->setSentryContext($this->bot->_id);
         try {
             $FacebookAdapter->removePersistentMenu($this->bot);
         } catch (DisallowedBotOperation $e) {

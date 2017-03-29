@@ -35,6 +35,7 @@ class UpdateMainMenuOnFacebook extends BaseJob
      */
     public function handle(FacebookAdapter $FacebookAdapter)
     {
+        $this->setSentryContext($this->bot->_id);
         $messages = (new FacebookMessageMapper($this->bot))->mapMainMenuButtons();
 
         try {

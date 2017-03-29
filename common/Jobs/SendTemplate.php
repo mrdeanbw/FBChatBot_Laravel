@@ -37,6 +37,7 @@ class SendTemplate extends BaseJob
      */
     public function handle(FacebookMessageSender $FacebookMessageSender)
     {
+        $this->setSentryContext($this->subscriber->bot_id);
         try {
             $FacebookMessageSender->sendTemplate($this->template, $this->subscriber);
         } catch (DisallowedBotOperation $e) {

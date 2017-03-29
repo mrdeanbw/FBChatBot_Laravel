@@ -50,6 +50,7 @@ class SendDueBroadcast extends BaseJob
      */
     public function handle(BroadcastRepositoryInterface $broadcastRepo, SubscriberRepositoryInterface $subscriberRepo, BroadcastService $broadcasts)
     {
+        $this->setSentryContext($this->broadcast->bot_id);
         $this->broadcasts = $broadcasts;
         $this->broadcastRepo = $broadcastRepo;
         $this->subscriberRepo = $subscriberRepo;

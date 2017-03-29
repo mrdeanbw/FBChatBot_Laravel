@@ -34,6 +34,8 @@ class AddGetStartedButtonOnFacebook extends BaseJob
      */
     public function handle(FacebookAdapter $FacebookAdapter)
     {
+        $this->setSentryContext($this->bot->_id);
+
         try {
             $response = $FacebookAdapter->addGetStartedButton($this->bot);
         } catch (DisallowedBotOperation $e) {

@@ -1,6 +1,5 @@
 <?php namespace Common\Jobs;
 
-use Common\Services\Facebook;
 use Common\Services\FacebookWebhookReceiver;
 use Common\Exceptions\DisallowedBotOperation;
 

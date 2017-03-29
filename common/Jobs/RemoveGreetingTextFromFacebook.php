@@ -30,6 +30,7 @@ class RemoveGreetingTextFromFacebook extends BaseJob
      */
     public function handle(FacebookAdapter $FacebookAdapter)
     {
+        $this->setSentryContext($this->bot->_id);
         try {
             $FacebookAdapter->removeGreetingText($this->bot);
         } catch (DisallowedBotOperation $e) {

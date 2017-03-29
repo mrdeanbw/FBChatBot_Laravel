@@ -36,6 +36,7 @@ class UpdateGreetingTextOnFacebook extends BaseJob
      */
     public function handle(FacebookAdapter $FacebookAdapter)
     {
+        $this->setSentryContext($this->bot->_id);
         $text = $this->normaliseGreetingText($this->bot->greeting_text);
 
         try {

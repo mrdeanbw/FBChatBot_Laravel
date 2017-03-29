@@ -2,7 +2,6 @@
 
 use Exception;
 use Common\Models\Bot;
-use Common\Services\Facebook;
 use Common\Services\FacebookAdapter;
 use Common\Exceptions\DisallowedBotOperation;
 
@@ -30,6 +29,7 @@ class RemoveGetStartedButtonFromFacebook extends BaseJob
      */
     public function handle(FacebookAdapter $FacebookAdapter)
     {
+        $this->setSentryContext($this->bot->_id);
         try {
             $FacebookAdapter->removeGetStartedButton($this->bot);
         } catch (DisallowedBotOperation $e) {
