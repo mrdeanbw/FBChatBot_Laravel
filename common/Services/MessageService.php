@@ -4,6 +4,7 @@ use Common\Models\Card;
 use Common\Models\Image;
 use Common\Models\Message;
 use MongoDB\BSON\ObjectID;
+use Common\Models\SentMessage;
 use Common\Models\MessageRevision;
 use Illuminate\Support\Collection;
 use Illuminate\Filesystem\Filesystem;
@@ -38,7 +39,7 @@ class MessageService
      */
     protected $delete = [
         'image_files'       => [],
-        //        'sent_messages'     => [],
+        'sent_messages'     => [],
         'message_revisions' => []
     ];
     /**
@@ -115,12 +116,13 @@ class MessageService
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
 
         $this->files->delete($this->delete['image_files']);
-        //        $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
+        $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
         $this->messageRevisionRepo->bulkDelete($this->delete['message_revisions']);
         $this->delete = [
             'image_files'       => [],
-            //            'sent_messages'     => [],
+            'sent_messages'     => [],
             'message_revisions' => []
+
         ];
 
         if ($this->versioning && $this->messageRevisions) {
@@ -131,7 +133,11 @@ class MessageService
 
                 if ($this->forMainMenuButtons) {
                     $version['clicks'] = ['total' => 0, 'subscribers' => []];
-                    $ret[$i]->last_revision_id = $version['_id'] = new ObjectID(null);
+                    foreach ($ret as $message) {
+                        if ($message->id == $version['message_id']) {
+                            $message->last_revision_id = $version['_id'] = new ObjectID(null);
+                        }
+                    }
                 }
 
                 unset($version['id']);
@@ -235,7 +241,6 @@ class MessageService
     /**
      * @param array      $messages
      * @param Collection $revisions
-     * @return array
      */
     private function setModelsToBeDeleted(array $messages, Collection $revisions)
     {
@@ -265,7 +270,7 @@ class MessageService
             }
 
             if (in_array($message->type, ['text', 'image', 'card_container'])) {
-                //$this->setSentMessagesToBeDeleted($message);
+                $this->setSentMessagesToBeDeleted($message);
                 $revisions = $revisions->map(function (MessageRevision $revision) {
                     return $revision->_id;
                 })->toArray();
@@ -314,11 +319,11 @@ class MessageService
             file_put_contents($filePath, base64_decode(substr($message->file->encoded, 22)));
         } else {
             $image = ImageManagerStatic::make($message->file->encoded)->encode($ext);
-            $image->save($filePath);
+            $message->file->path = public_path($filePath);
+            $image->save($message->file->path);
         }
 
         $message->file->encoded = null;
-        $message->file->path = $filePath;
         $message->image_url = rtrim(config('app.url'), '/') . '/img/uploads/' . $fileName;
     }
 
@@ -426,16 +431,15 @@ class MessageService
         }
     }
 
-    //    /**
-    //     * @param $message
-    //     * @return array
-    //     */
-    //    private function setSentMessagesToBeDeleted($message)
-    //    {
-    //        $sentMessageIds = $this->sentMessageRepo->getAllForMessage($message->id)->map(function (SentMessage $sentMessage) {
-    //            return $sentMessage->_id;
-    //        })->toArray();
-    //
-    //        $this->delete['sent_messages'] = array_merge($this->delete['sent_messages'], $sentMessageIds);
-    //    }
+    /**
+     * @param $message
+     */
+    private function setSentMessagesToBeDeleted($message)
+    {
+        $sentMessageIds = $this->sentMessageRepo->getAllForMessage($message->id)->map(function (SentMessage $sentMessage) {
+            return $sentMessage->_id;
+        })->toArray();
+
+        $this->delete['sent_messages'] = array_merge($this->delete['sent_messages'], $sentMessageIds);
+    }
 }

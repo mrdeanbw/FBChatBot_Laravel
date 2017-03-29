@@ -111,6 +111,7 @@ class MainMenuService
             return [];
         }
 
+        /** @var Button[] $buttons */
         $buttons = $this->messages->correspondInputMessagesToOriginal($buttons, $bot->main_menu->buttons, $bot->_id);
 
         if (! $buttons) {
