@@ -131,7 +131,7 @@ class SubscriberService
             'avatar_url'           => $publicProfile->profile_pic,
             'locale'               => $publicProfile->locale,
             'timezone'             => $publicProfile->timezone,
-            'gender'               => $publicProfile->gender,
+            'gender'               => isset($publicProfile->gender)? $publicProfile->gender : null,
             'active'               => $isActive,
             'bot_id'               => $bot->_id,
             'last_subscribed_at'   => $isActive? Carbon::now() : null,
