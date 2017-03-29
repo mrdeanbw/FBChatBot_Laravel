@@ -1,6 +1,6 @@
 <?php namespace Common\Models;
 
-class IncomingMessage extends BaseModel
+class InboxMessage extends BaseModel
 {
 
     public $dates = ['action_at'];

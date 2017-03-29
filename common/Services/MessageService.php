@@ -38,7 +38,7 @@ class MessageService
      */
     protected $delete = [
         'image_files'       => [],
-//        'sent_messages'     => [],
+        //        'sent_messages'     => [],
         'message_revisions' => []
     ];
     /**
@@ -115,11 +115,11 @@ class MessageService
         $ret = $this->makeMessages($input, $original, $botId, $allowReadOnly, true);
 
         $this->files->delete($this->delete['image_files']);
-//        $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
+        //        $this->sentMessageRepo->bulkDelete($this->delete['sent_messages']);
         $this->messageRevisionRepo->bulkDelete($this->delete['message_revisions']);
         $this->delete = [
             'image_files'       => [],
-//            'sent_messages'     => [],
+            //            'sent_messages'     => [],
             'message_revisions' => []
         ];
 

@@ -179,7 +179,7 @@ class MessagePayloadDecoder
     }
 
     /**
-     * @return null|string
+     * @return null|array
      */
     public function getSentMessagePath()
     {

@@ -17,6 +17,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $interfaceToConcreteMap = [
             Repositories\Bot\BotRepositoryInterface::class                          => Repositories\Bot\DBBotRepository::class,
             Repositories\User\UserRepositoryInterface::class                        => Repositories\User\DBUserRepository::class,
+            Repositories\Inbox\InboxRepositoryInterface::class                      => Repositories\Inbox\DBInboxRepository::class,
             Repositories\Sequence\SequenceRepositoryInterface::class                => Repositories\Sequence\DBSequenceRepository::class,
             Repositories\Template\TemplateRepositoryInterface::class                => Repositories\Template\DBTemplateRepository::class,
             Repositories\Broadcast\BroadcastRepositoryInterface::class              => Repositories\Broadcast\DBBroadcastRepository::class,
@@ -26,7 +27,6 @@ class RepositoryServiceProvider extends ServiceProvider
             Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface::class      => Repositories\AutoReplyRule\DBAutoReplyRuleRepository::class,
             Repositories\MessagePreview\MessagePreviewRepositoryInterface::class    => Repositories\MessagePreview\DBMessagePreviewRepository::class,
             Repositories\MessageRevision\MessageRevisionRepositoryInterface::class  => Repositories\MessageRevision\DBMessageRevisionRepository::class,
-            Repositories\IncomingMessage\IncomingMessageRepositoryInterface::class  => Repositories\IncomingMessage\DBIncomingMessageRepository::class,
             AdminRepositories\MongoDatabase\MongoDatabaseRepositoryInterface::class => AdminRepositories\MongoDatabase\DBMongoDatabaseRepository::class,
         ];
 

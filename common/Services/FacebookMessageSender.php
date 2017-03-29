@@ -1,6 +1,5 @@
 <?php namespace Common\Services;
 
-use Common\Exceptions\MessageNotSentException;
 use Exception;
 use Carbon\Carbon;
 use Common\Models\Bot;
@@ -12,6 +11,8 @@ use Common\Models\Template;
 use Common\Models\Broadcast;
 use Common\Models\Subscriber;
 use Common\Models\CardContainer;
+use Common\Exceptions\MessageNotSentException;
+use Common\Repositories\Inbox\InboxRepositoryInterface;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class FacebookMessageSender
@@ -27,6 +28,10 @@ class FacebookMessageSender
         self::NOTIFICATION_SILENT_PUSH => 'SILENT_PUSH',
         self::NOTIFICATION_NO_PUSH     => 'NO_PUSH',
     ];
+    /**
+     * @type InboxRepositoryInterface
+     */
+    protected $inboxRepo;
 
     /**
      * @type SentMessageRepositoryInterface
@@ -42,9 +47,11 @@ class FacebookMessageSender
      *
      * @param FacebookAdapter                $FacebookAdapter
      * @param SentMessageRepositoryInterface $sentMessageRepo
+     * @param InboxRepositoryInterface       $inboxRepo
      */
-    public function __construct(FacebookAdapter $FacebookAdapter, SentMessageRepositoryInterface $sentMessageRepo)
+    public function __construct(FacebookAdapter $FacebookAdapter, SentMessageRepositoryInterface $sentMessageRepo, InboxRepositoryInterface $inboxRepo)
     {
+        $this->inboxRepo = $inboxRepo;
         $this->sentMessageRepo = $sentMessageRepo;
         $this->FacebookAdapter = $FacebookAdapter;
     }
@@ -143,10 +150,18 @@ class FacebookMessageSender
 
             try {
                 $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot, $notificationType);
+                $sentAt = Carbon::now();
                 $ret[] = $this->sentMessageRepo->create(array_merge($data, [
                     'facebook_id' => $facebookMessageId,
-                    'sent_at'     => Carbon::now()
+                    'sent_at'     => $sentAt
                 ]));
+                $this->inboxRepo->create([
+                    'bot_id'        => $bot->_id,
+                    'subscriber_id' => $subscriber->_id,
+                    'sent_at'       => $sentAt,
+                    'incoming'      => 0,
+                    'message'       => $mappedMessage,
+                ]);
             } catch (MessageNotSentException $e) {
                 // do nothing
             }

@@ -137,10 +137,8 @@ class SequenceService
 
     /**
      * Create a sequence
-     *
      * @param array $input
      * @param Bot   $bot
-     *
      * @return Sequence
      */
     public function create(array $input, Bot $bot)
@@ -151,9 +149,13 @@ class SequenceService
             'filter'           => new AudienceFilter(['enabled' => false]),
             'messages'         => $this->defaultSequenceMessages($bot),
             'subscriber_count' => 0,
+            'deleted_at'       => null,
         ];
 
-        return $this->sequenceRepo->create($data);
+        /** @type Sequence $ret */
+        $ret = $this->sequenceRepo->create($data);
+
+        return $ret;
     }
 
     /**

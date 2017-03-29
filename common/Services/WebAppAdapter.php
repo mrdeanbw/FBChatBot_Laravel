@@ -17,7 +17,7 @@ use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
 use Common\Repositories\MessageRevision\MessageRevisionRepositoryInterface;
-use Common\Repositories\IncomingMessage\IncomingMessageRepositoryInterface;
+use Common\Repositories\Inbox\InboxRepositoryInterface;
 
 class WebAppAdapter
 {
@@ -77,9 +77,9 @@ class WebAppAdapter
      */
     private $FacebookAdapter;
     /**
-     * @type IncomingMessageRepositoryInterface
+     * @type InboxRepositoryInterface
      */
-    private $incomingMessageRepo;
+    private $inboxRepo;
 
     /**
      * WebAppAdapter constructor.
@@ -96,7 +96,7 @@ class WebAppAdapter
      * @param SubscriberRepositoryInterface      $subscriberRepo
      * @param SentMessageRepositoryInterface     $sentMessageRepo
      * @param AutoReplyRuleRepositoryInterface   $autoReplyRuleRepo
-     * @param IncomingMessageRepositoryInterface $incomingMessageRepo
+     * @param InboxRepositoryInterface           $inboxRepo
      * @param MessageRevisionRepositoryInterface $messageRevisionRepo
      */
     public function __construct(
@@ -106,18 +106,19 @@ class WebAppAdapter
         BotRepositoryInterface $botRepo,
         FacebookAdapter $FacebookAdapter,
         UserRepositoryInterface $userRepo,
+        InboxRepositoryInterface $inboxRepo,
         TemplateRepositoryInterface $templateRepo,
         BroadcastRepositoryInterface $broadcastRepo,
         FacebookMessageSender $FacebookMessageSender,
         SubscriberRepositoryInterface $subscriberRepo,
         SentMessageRepositoryInterface $sentMessageRepo,
         AutoReplyRuleRepositoryInterface $autoReplyRuleRepo,
-        IncomingMessageRepositoryInterface $incomingMessageRepo,
         MessageRevisionRepositoryInterface $messageRevisionRepo
     ) {
         $this->botRepo = $botRepo;
         $this->messages = $messages;
         $this->userRepo = $userRepo;
+        $this->inboxRepo = $inboxRepo;
         $this->subscribers = $subscribers;
         $this->templateRepo = $templateRepo;
         $this->broadcastRepo = $broadcastRepo;
@@ -127,7 +128,6 @@ class WebAppAdapter
         $this->FacebookAdapter = $FacebookAdapter;
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
         $this->messageRevisionRepo = $messageRevisionRepo;
-        $this->incomingMessageRepo = $incomingMessageRepo;
         $this->FacebookMessageSender = $FacebookMessageSender;
     }
 
@@ -502,17 +502,17 @@ class WebAppAdapter
         // The page admin payload has a special prefix, followed by his internal artificial ID.
         $prefix = 'SUBSCRIBE_OWNER_';
         if (! starts_with($payload, $prefix)) {
-            return false;
+            return null;
         }
 
         // Parsing his ID.
         if (! ($userId = substr($payload, strlen($prefix)))) {
-            return false;
+            return null;
         }
 
         // Getting user.
         if (! ($user = $this->userRepo->findByIdForBot($userId, $bot))) {
-            return false;
+            return null;
         }
 
         // Subscribing user (message sender)
@@ -542,6 +542,7 @@ class WebAppAdapter
             'event'         => $event,
             'subscriber_id' => null,
             'action_at'     => $actionAt,
+            'incoming'      => 1,
             'original'      => mongo_date($timestamp),
         ];
 
@@ -550,6 +551,6 @@ class WebAppAdapter
             $this->subscriberRepo->update($subscriber, ['last_interaction_at' => Carbon::now()]);
         }
 
-        $this->incomingMessageRepo->create($data);
+        $this->inboxRepo->create($data);
     }
 }
