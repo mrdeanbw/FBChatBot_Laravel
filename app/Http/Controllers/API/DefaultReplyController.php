@@ -6,7 +6,7 @@ use Common\Transformers\DefaultReplyTransformer;
 
 class DefaultReplyController extends APIController
 {
-    
+
     /**
      * @type DefaultReplyService
      */
@@ -19,6 +19,7 @@ class DefaultReplyController extends APIController
     public function __construct(DefaultReplyService $defaultReplies)
     {
         $this->defaultReplies = $defaultReplies;
+        parent::__construct();
     }
 
     /**
@@ -28,12 +29,16 @@ class DefaultReplyController extends APIController
      */
     public function update(Request $request)
     {
-        $rules = $this->validationRules();
-        $this->validate($request, $rules);
-        
+        $bot = $this->enabledBot();
+        $this->validateForBot($bot, $request, [
+            'template'            => 'bail|required|array',
+            'template.messages'   => 'bail|required|array|max:10',
+            'template.messages.*' => 'bail|required|array|message',
+        ]);
+
         $defaultReply = $this->defaultReplies->update($request->all(), $this->enabledBot());
 
-        return $this->itemResponse($defaultReply );
+        return $this->itemResponse($defaultReply);
     }
 
     /**
@@ -43,14 +48,4 @@ class DefaultReplyController extends APIController
     {
         return new DefaultReplyTransformer();
     }
-
-    private function validationRules()
-    {
-        return [
-            'template'            => 'bail|required|array',
-            'template.messages'   => 'bail|required|array|max:10',
-            'template.messages.*' => 'bail|required|message',
-        ];
-    }
-
 }

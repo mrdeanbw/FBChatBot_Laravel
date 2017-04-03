@@ -41,7 +41,7 @@ class DBMessageRevisionRepository extends DBAssociatedWithBotRepository implemen
             ['key' => 'bot_id', 'operator' => '=', 'value' => $bot->_id]
         ];
 
-        return $this->getAll($filter, ['created_at' => 'asc']);
+        return $this->getAll($filter, ['created_at' => 'desc']);
     }
 
     /**
@@ -53,7 +53,6 @@ class DBMessageRevisionRepository extends DBAssociatedWithBotRepository implemen
     {
         $update = [
             '$inc' => ['clicks.total' => 1],
-            '$set' => ['updated_at' => mongo_date()]
         ];
 
         if ($subscriber) {

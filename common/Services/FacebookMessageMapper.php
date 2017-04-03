@@ -7,9 +7,10 @@ use Common\Models\Text;
 use Common\Models\Image;
 use Common\Models\Button;
 use Common\Models\Message;
-use Common\Models\Subscriber;
 use MongoDB\BSON\ObjectID;
+use Common\Models\Subscriber;
 use Common\Models\CardContainer;
+use Intervention\Image\ImageManagerStatic;
 
 class FacebookMessageMapper
 {
@@ -71,7 +72,7 @@ class FacebookMessageMapper
             return [
                 'type'    => 'postback',
                 'title'   => $button->title,
-                'payload' => "MM:{$this->bot->id}:{$button->id}|{$button->last_revision_id}",
+                'payload' => "r:{$button->last_revision_id}",
             ];
 
         }, $this->bot->main_menu->buttons);
@@ -130,11 +131,24 @@ class FacebookMessageMapper
                     'payload' => [
                         'template_type' => 'button',
                         'text'          => $body,
-                        'buttons'       => $this->mapTextButtons($message->buttons, $message->id)
+                        'buttons'       => $this->mapTextButtons($message->buttons, $message->last_revision_id)
                     ]
                 ]
             ]
         ];
+    }
+
+    protected function getRandomOnlineImage($localImagePath = null)
+    {
+        if (! $localImagePath) {
+            return 'https://unsplash.it/400/?random';
+        }
+
+        $localImage = ImageManagerStatic::make($localImagePath);
+        $width = $localImage->width();
+        $height = $localImage->height();
+
+        return "https://unsplash.it/{$width}/{$height}/?random";
     }
 
     /**
@@ -144,12 +158,17 @@ class FacebookMessageMapper
      */
     protected function mapImage(Image $image)
     {
+        $imageUrl = $image->image_url;
+        if (app()->environment('local')) {
+            $imageUrl = $this->getRandomOnlineImage(isset($image->file->path)? $image->file->path : null);
+        }
+
         return [
             'message' => [
                 'attachment' => [
                     'type'    => 'image',
                     'payload' => [
-                        'url' => $image->image_url
+                        'url' => $imageUrl
                     ]
                 ]
             ]
@@ -169,7 +188,7 @@ class FacebookMessageMapper
                     'type'    => 'template',
                     'payload' => [
                         'template_type' => 'generic',
-                        'elements'      => $this->mapCards($cardContainer->cards, $cardContainer->id)
+                        'elements'      => $this->mapCards($cardContainer->cards, $cardContainer->id, $cardContainer->last_revision_id)
                     ]
                 ]
             ]
@@ -178,27 +197,35 @@ class FacebookMessageMapper
 
     /**
      * Map card blocks to Facebook generic template element.
-     * @param Card[]   $cards
-     * @param ObjectID $cardContainerId
+     * @param Card[]        $cards
+     * @param ObjectID      $cardContainerId
+     * @param ObjectID|null $lastRevisionId
      * @return array
      */
-    protected function mapCards(array $cards, $cardContainerId)
+    protected function mapCards(array $cards, ObjectID $cardContainerId, ObjectID $lastRevisionId = null)
     {
-        return array_map(function (Card $card) use ($cardContainerId) {
+        return array_map(function (Card $card) use ($cardContainerId, $lastRevisionId) {
+
+            $imageUrl = $card->image_url;
+            if ($imageUrl && app()->environment('local')) {
+                $imageUrl = $this->getRandomOnlineImage(isset($card->file->path)? $card->file->path : null);
+            }
 
             $ret = [
                 'title'     => $card->title,
                 'subtitle'  => $card->subtitle,
-                'image_url' => $card->image_url,
-                'buttons'   => $this->mapCardButtons($card->buttons, $card->id, $cardContainerId)
+                'image_url' => $imageUrl,
             ];
+
+            if ($card->buttons) {
+                $ret['buttons'] = $this->mapCardButtons($card->buttons, $card->id, $lastRevisionId);
+            }
 
             // If the card has a URL.
             if ($card->url) {
-                $payload = $this->payloadEncoder->card($card->id, $cardContainerId);
                 $ret['default_action'] = [
                     'type' => 'web_url',
-                    'url'  => $this->payloadEncoder->url($payload)
+                    'url'  => $this->payloadEncoder->card($card->id, $lastRevisionId)
                 ];
             }
 
@@ -208,29 +235,29 @@ class FacebookMessageMapper
     }
 
     /**
-     * @param array    $buttons
-     * @param ObjectID $cardId
-     * @param ObjectID $cardContainerId
+     * @param array         $buttons
+     * @param ObjectID      $cardId
+     * @param ObjectID|null $lastRevisionId
      * @return array
      */
-    protected function mapCardButtons(array $buttons, $cardId, $cardContainerId)
+    protected function mapCardButtons(array $buttons, ObjectID $cardId, ObjectID $lastRevisionId = null)
     {
-        return array_map(function (Button $button) use ($cardId, $cardContainerId) {
-            $payload = $this->payloadEncoder->cardButton($button->id, $cardId, $cardContainerId);
+        return array_map(function (Button $button) use ($cardId, $lastRevisionId) {
+            $payload = $this->payloadEncoder->cardButton($button, $cardId, $lastRevisionId);
 
             return $this->mapButton($button, $payload);
         }, $buttons);
     }
 
     /**
-     * @param array    $buttons
-     * @param ObjectID $textId
+     * @param array         $buttons
+     * @param ObjectID|null $lastRevisionId
      * @return array
      */
-    protected function mapTextButtons(array $buttons, $textId)
+    protected function mapTextButtons(array $buttons, ObjectID $lastRevisionId = null)
     {
-        return array_map(function (Button $button) use ($textId) {
-            $payload = $this->payloadEncoder->textButton($button->id, $textId);
+        return array_map(function (Button $button) use ($lastRevisionId) {
+            $payload = $this->payloadEncoder->textButton($button, $lastRevisionId);
 
             return $this->mapButton($button, $payload);
         }, $buttons);
@@ -247,9 +274,9 @@ class FacebookMessageMapper
         // If the button has a URL action, then we map it to Facebook's web_url.
         if ($button->url) {
             return [
-                "type"  => "web_url",
-                "title" => $button->title,
-                "url"   => $this->payloadEncoder->url($payload)
+                'type'  => 'web_url',
+                'title' => $button->title,
+                'url'   => $payload,
             ];
         }
 
@@ -259,7 +286,6 @@ class FacebookMessageMapper
             'title'   => $button->title,
             'payload' => $payload,
         ];
-
     }
 
     /**

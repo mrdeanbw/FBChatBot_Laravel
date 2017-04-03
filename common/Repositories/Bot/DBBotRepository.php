@@ -3,6 +3,7 @@
 use Common\Models\Bot;
 use Common\Models\User;
 use Common\Models\Button;
+use Illuminate\Support\Collection;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
 use Illuminate\Pagination\Paginator;
@@ -166,7 +167,7 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
             return $admin['user_id'] == $user->_id;
         });
 
-        if (! $admin) {
+        if (! $admin && ! empty($admin['subscriber_id'])) {
             return null;
         }
 
@@ -186,12 +187,12 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
     }
 
     /**
-     * @param       $botId
-     * @param array $tags
+     * @param Bot          $bot
+     * @param array|string $tags
      */
-    public function createTagsForBot($botId, array $tags)
+    public function createTagsForBot(Bot $bot, $tags)
     {
-        Bot::where('_id', $botId)->push('tags', $tags, true);
+        $bot->push('tags', $tags, true);
     }
 
     /**
@@ -230,4 +231,16 @@ class DBBotRepository extends DBBaseRepository implements BotRepositoryInterface
 
         return $this->count($filter);
     }
+
+    /**
+     * @param User $user
+     * @return Collection
+     */
+    public function getAllForUser(User $user)
+    {
+        $filter = [['operator' => '=', 'key' => 'users.user_id', 'value' => $user->_id]];
+
+        return $this->getAll($filter);
+    }
+
 }

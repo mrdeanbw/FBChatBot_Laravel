@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Common\Services\SequenceService;
 use Common\Transformers\BaseTransformer;
 use Common\Transformers\SequenceMessageTransformer;
+use MongoDB\BSON\ObjectID;
 
 class SequenceMessageController extends APIController
 {
@@ -16,6 +17,7 @@ class SequenceMessageController extends APIController
     public function __construct(SequenceService $sequences)
     {
         $this->sequences = $sequences;
+        parent::__construct();
     }
 
     /**
@@ -25,6 +27,8 @@ class SequenceMessageController extends APIController
      */
     public function show($sequenceId, $id)
     {
+        $id = new ObjectID($id);
+        $sequenceId = new ObjectID($sequenceId);
         $sequence = $this->sequences->findByIdForBot($sequenceId, $this->enabledBot());
         $message = $this->sequences->findMessageOrFail($id, $sequence);
 
@@ -39,6 +43,7 @@ class SequenceMessageController extends APIController
      */
     public function store($sequenceId, Request $request)
     {
+        $sequenceId = new ObjectID($sequenceId);
         $this->validate($request, $this->allValidationRules());
 
         $message = $this->sequences->createMessage($request->all(), $sequenceId, $this->enabledBot());
@@ -55,6 +60,8 @@ class SequenceMessageController extends APIController
      */
     public function update($id, $sequenceId, Request $request)
     {
+        $id = new ObjectID($id);
+        $sequenceId = new ObjectID($sequenceId);
         $this->validate($request, $this->allValidationRules());
 
         $message = $this->sequences->updateMessage($request->all(), $id, $sequenceId, $this->enabledBot());
@@ -71,6 +78,8 @@ class SequenceMessageController extends APIController
      */
     public function updateConditions($id, $sequenceId, Request $request)
     {
+        $id = new ObjectID($id);
+        $sequenceId = new ObjectID($sequenceId);
         $this->validate($request, $this->conditionsValidationRules());
 
         $message = $this->sequences->updateMessageConditions($request->all(), $id, $sequenceId, $this->enabledBot());
@@ -86,6 +95,8 @@ class SequenceMessageController extends APIController
      */
     public function destroy($id, $sequenceId)
     {
+        $id = new ObjectID($id);
+        $sequenceId = new ObjectID($sequenceId);
         $message = $this->sequences->deleteMessage($id, $sequenceId, $this->enabledBot());
 
         return $this->itemResponse($message);

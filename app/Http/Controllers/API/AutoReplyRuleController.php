@@ -6,6 +6,7 @@ use Illuminate\Validation\Rule;
 use Common\Transformers\BaseTransformer;
 use Common\Services\AutoReplyRuleService;
 use Common\Transformers\AutoReplyRuleTransformer;
+use MongoDB\BSON\ObjectID;
 
 class AutoReplyRuleController extends APIController
 {
@@ -23,6 +24,7 @@ class AutoReplyRuleController extends APIController
     public function __construct(AutoReplyRuleService $AutoReplies)
     {
         $this->autoReplies = $AutoReplies;
+        parent::__construct();
     }
 
     /**
@@ -64,14 +66,13 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Update a rule.
-     *
      * @param         $id
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
     {
+        $id = new ObjectID($id);
         $bot = $this->enabledBot();
 
         $this->validate($request, $this->validationRules($bot, $id));
@@ -90,6 +91,7 @@ class AutoReplyRuleController extends APIController
      */
     public function destroy($id)
     {
+        $id = new ObjectID($id);
         $bot = $this->enabledBot();
 
         $this->autoReplies->delete($id, $bot);
@@ -99,20 +101,15 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Array of validation rules for creating a new auto reply rule.
-     *
-     * @param Bot  $bot
-     * @param null $ruleId
-     *
+     * @param Bot $bot
      * @return array
      */
-    private function validationRules(Bot $bot, $ruleId = null)
+    private function validationRules(Bot $bot)
     {
-        $keywordUniqueRule = "ci_unique:auto_reply_rules,keyword,_id,{$ruleId},bot_id,oi:{$bot->id}";
-
         return [
             'mode'        => 'bail|required|in:is,contains,begins_with',
-            'keyword'     => "bail|required|max:255|{$keywordUniqueRule}",
-            'action'      => 'bail|required|in:send',
+            'keywords'    => "bail|required|array",
+            'keywords.*'  => "bail|required|string",
             'template'    => 'bail|required|array',
             'template.id' => [
                 'bail',

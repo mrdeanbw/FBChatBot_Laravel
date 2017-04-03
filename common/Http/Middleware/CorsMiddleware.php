@@ -1,11 +1,17 @@
 <?php namespace Common\Http\Middleware;
 
 use Closure;
+use Illuminate\Http\Request;
 
 class CorsMiddleware
 {
 
-    public function handle($request, Closure $next)
+    /**
+     * @param Request $request
+     * @param Closure $next
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next)
     {
         $response = $next($request);
 
@@ -17,4 +23,5 @@ class CorsMiddleware
 
         return $response;
     }
+
 }

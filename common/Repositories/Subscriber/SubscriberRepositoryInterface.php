@@ -8,6 +8,7 @@ use Common\Models\Subscriber;
 use Common\Models\AudienceFilter;
 use Illuminate\Support\Collection;
 use Common\Repositories\AssociatedWithBotRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {

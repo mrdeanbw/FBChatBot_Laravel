@@ -1,10 +1,7 @@
 <?php namespace Common\Services;
 
-use Carbon\Carbon;
 use Common\Models\Card;
 use Common\Models\Button;
-use Common\Models\Message;
-use MongoDB\BSON\ObjectID;
 use Common\Models\MessageRevision;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
@@ -26,109 +23,97 @@ class SentMessageService
     }
 
     /**
-     * @param Message|MessageRevision $message
-     * @param ObjectID                $messageId
-     * @param Carbon|null             $startDateTime
-     * @param Carbon|null             $endDateTime
+     * @param MessageRevision $revision
      */
-    public function setFullMessageStats($message, $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    public function setFullMessageStats(MessageRevision $revision)
     {
-        $message->stats = [
+        $revision->stats = [
             'sent' => [
-                'total'          => $this->sentMessageRepo->totalSentForMessage($messageId, $startDateTime, $endDateTime),
-                'per_subscriber' => $this->sentMessageRepo->perSubscriberSentForMessage($messageId, $startDateTime, $endDateTime),
+                'total'          => $this->sentMessageRepo->totalSentForMessage($revision),
+                'per_subscriber' => $this->sentMessageRepo->perSubscriberSentForMessage($revision),
             ],
 
             'delivered' => [
-                'total'          => $this->sentMessageRepo->totalDeliveredForMessage($messageId, $startDateTime, $endDateTime),
-                'per_subscriber' => $this->sentMessageRepo->perSubscriberDeliveredForMessage($messageId, $startDateTime, $endDateTime),
+                'total'          => $this->sentMessageRepo->totalDeliveredForMessage($revision),
+                'per_subscriber' => $this->sentMessageRepo->perSubscriberDeliveredForMessage($revision),
             ],
 
             'read' => [
-                'total'          => $this->sentMessageRepo->totalReadForMessage($messageId, $startDateTime, $endDateTime),
-                'per_subscriber' => $this->sentMessageRepo->perSubscriberReadForMessage($messageId, $startDateTime, $endDateTime),
+                'total'          => $this->sentMessageRepo->totalReadForMessage($revision),
+                'per_subscriber' => $this->sentMessageRepo->perSubscriberReadForMessage($revision),
             ],
         ];
 
-        $this->setMessageClickableStats($message, $messageId, $startDateTime, $endDateTime);
+        $this->setMessageClickableStats($revision);
     }
 
     /**
-     * @param Message|MessageRevision $message
-     * @param ObjectID                $messageId
-     * @param Carbon|null             $startDateTime
-     * @param Carbon|null             $endDateTime
+     * @param MessageRevision $revision
      */
-    public function setMessageClickableStats($message, $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    public function setMessageClickableStats(MessageRevision $revision)
     {
 
-        if ($message->type == 'text') {
-            /** @type \Common\Models\Text $message */
-            foreach ($message->buttons as $button) {
-                $this->setTextButtonStats($button, $messageId, $startDateTime, $endDateTime);
+        if ($revision->type == 'text') {
+            /** @type \Common\Models\Text $revision */
+            foreach (object_get($revision, 'buttons', []) as $button) {
+                $this->setTextButtonStats($button, $revision);
             }
 
             return;
         }
 
-        if ($message->type == 'card_container') {
-            /** @type \Common\Models\CardContainer $message */
-            foreach ($message->cards as $card) {
-                $this->setCardStats($card, $messageId, $startDateTime, $endDateTime);
+        if ($revision->type == 'card_container') {
+            /** @type \Common\Models\CardContainer $revision */
+            foreach ($revision->cards as $card) {
+                $this->setCardStats($card, $revision);
             }
         }
     }
 
     /**
-     * @param Button   $button
-     * @param ObjectID $textMessageId
-     * @param Carbon   $startDateTime
-     * @param Carbon   $endDateTime
+     * @param Button          $button
+     * @param MessageRevision $revision
      */
-    protected function setTextButtonStats(Button $button, $textMessageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    protected function setTextButtonStats(Button $button, MessageRevision $revision)
     {
         $button->stats = [
             'clicked' => [
-                'total'          => $this->sentMessageRepo->totalTextMessageButtonClicks($button->id, $textMessageId, $startDateTime, $endDateTime),
-                'per_subscriber' => $this->sentMessageRepo->perSubscriberTextMessageButtonClicks($button->id, $textMessageId, $startDateTime, $endDateTime),
+                'total'          => $this->sentMessageRepo->totalTextMessageButtonClicks($button, $revision),
+                'per_subscriber' => $this->sentMessageRepo->perSubscriberTextMessageButtonClicks($button, $revision),
             ]
         ];
     }
 
     /**
-     * @param Card     $card
-     * @param ObjectID $cardContainerId
-     * @param Carbon   $startDateTime
-     * @param Carbon   $endDateTime
+     * @param Card            $card
+     * @param MessageRevision $revision
      */
-    protected function setCardStats(Card $card, $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    protected function setCardStats(Card $card, MessageRevision $revision)
     {
         $card->stats = [
             'clicked' => [
-                'total'          => $this->sentMessageRepo->totalCardClicks($card->id, $cardContainerId, $startDateTime, $endDateTime),
-                'per_subscriber' => $this->sentMessageRepo->perSubscriberCardClicks($card->id, $cardContainerId, $startDateTime, $endDateTime),
+                'total'          => $this->sentMessageRepo->totalCardClicks($card, $revision),
+                'per_subscriber' => $this->sentMessageRepo->perSubscriberCardClicks($card, $revision),
             ]
         ];
 
-        foreach ($card->buttons as $button) {
-            $this->setCardButtonStats($button, $card->id, $cardContainerId, $startDateTime, $endDateTime);
+        foreach (object_get($card, 'buttons', []) as $button) {
+            $this->setCardButtonStats($button, $card, $revision);
         }
     }
 
 
     /**
-     * @param Button      $button
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param Button          $button
+     * @param Card            $card
+     * @param MessageRevision $revision
      */
-    protected function setCardButtonStats(Button $button, $cardId, $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
+    protected function setCardButtonStats(Button $button, Card $card, MessageRevision $revision)
     {
         $button->stats = [
             'clicked' => [
-                'total'          => $this->sentMessageRepo->totalCardButtonClicks($button->id, $cardId, $cardContainerId, $startDateTime, $endDateTime),
-                'per_subscriber' => $this->sentMessageRepo->perSubscriberCardButtonClicks($button->id, $cardId, $cardContainerId, $startDateTime, $endDateTime),
+                'total'          => $this->sentMessageRepo->totalCardButtonClicks($button, $card, $revision),
+                'per_subscriber' => $this->sentMessageRepo->perSubscriberCardButtonClicks($button, $card, $revision),
             ]
         ];
     }

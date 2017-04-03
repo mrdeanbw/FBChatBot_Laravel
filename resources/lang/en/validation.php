@@ -84,7 +84,6 @@ return [
     'uploaded'          => 'The :attribute failed to upload.',
     'url'               => 'The :attribute format is invalid.',
 
-
     'attributes' => [
         'name'                => "Name",
         'template'            => "Message Template",
@@ -93,6 +92,16 @@ return [
     ],
 
 
-    'ci_unique' => 'The :attribute has already been taken.',
+    'ci_unique'            => 'The :attribute has already been taken.',
+    'object_id'            => 'The :attribute is invalid.',
+    'template_id'          => 'The :attribute is invalid.',
+    'bot_tag'              => 'The :attribute is invalid.',
+    'main_menu_button_id'  => 'The :attribute is invalid.',
+    'image_url'            => 'The :attribute is invalid.',
+    'imageable'            => 'The :attribute is an invalid image file or exceeds maximum file size.',
+    'incompatible_tags'    => "You cannot add the same tag to 'Tag' and 'Untag' actions.",
+    'card_param'           => 'You need to set up at least one more card content item: subtitle, image or button.',
+    'unique_template_name' => 'The message tree name is already in use. Please choose another one.',
+    'has_main_action'      => 'Every button must have an associated URL, child messages or message tree.',
 ];
 

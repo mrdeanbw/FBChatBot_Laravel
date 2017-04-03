@@ -2,11 +2,14 @@
 
 use Carbon\Carbon;
 use Common\Models\Bot;
+use Common\Models\Card;
+use Common\Models\Button;
 use Common\Models\Message;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDatetime;
 use Common\Models\Subscriber;
 use Common\Models\SentMessage;
+use Common\Models\MessageRevision;
 use Illuminate\Support\Collection;
 use Common\Repositories\DBAssociatedWithBotRepository;
 
@@ -95,422 +98,6 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
         }
 
         return $ret;
-    }
-
-    /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function totalSentForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $messageId],];
-
-        if ($startDateTime) {
-            $filter[] = ['key' => 'sent_at', 'operator' => '>=', 'value' => $startDateTime];
-        }
-
-        if ($endDateTime) {
-            $filter[] = ['key' => 'sent_at', 'operator' => '<', 'value' => $endDateTime];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $filter[] = ['key' => 'sent_at', 'operator' => '!=', 'value' => null];
-        }
-
-        return $this->count($filter);
-    }
-
-    /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function perSubscriberSentForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters = ['$and' => [['message_id' => $messageId]]];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
-        }
-
-        $aggregate = [
-            ['$match' => $matchFilters],
-            ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
-        ];
-
-        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($result)? $result[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function totalDeliveredForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $messageId]];
-
-        if ($startDateTime) {
-            $filter[] = ['key' => 'delivered_at', 'operator' => '>=', 'value' => $startDateTime];
-        }
-
-        if ($endDateTime) {
-            $filter[] = ['key' => 'delivered_at', 'operator' => '<', 'value' => $endDateTime];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $filter[] = ['key' => 'delivered_at', 'operator' => '!=', 'value' => null];
-        }
-
-        return $this->count($filter);
-    }
-
-    /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function perSubscriberDeliveredForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters = ['$and' => [['message_id' => $messageId]]];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ['delivered_at' => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ['delivered_at' => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ['delivered_at' => ['$ne' => null]];
-        }
-
-        $aggregate = [
-            ['$match' => $matchFilters],
-            ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
-        ];
-
-        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($result)? $result[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function totalReadForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $messageId]];
-
-        if ($startDateTime) {
-            $filter[] = ['key' => 'read_at', 'operator' => '>=', 'value' => $startDateTime];
-        }
-
-        if ($endDateTime) {
-            $filter[] = ['key' => 'read_at', 'operator' => '<', 'value' => $endDateTime];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $filter[] = ['key' => 'read_at', 'operator' => '!=', 'value' => null];
-        }
-
-        return $this->count($filter);
-    }
-
-    /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function perSubscriberReadForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters = ['$and' => [['message_id' => $messageId]]];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ['read_at' => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ['read_at' => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ['read_at' => ['$ne' => null]];
-        }
-
-        $aggregate = [
-            ['$match' => $matchFilters],
-            ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
-        ];
-
-        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($result)? $result[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $textMessageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function totalTextMessageButtonClicks(ObjectID $buttonId, ObjectID $textMessageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters = [
-            '$and' => [
-                ['message_id' => $textMessageId],
-                ['buttons.id' => $buttonId],
-            ]
-        ];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
-        }
-
-        $aggregate = [
-            ['$match' => $matchFilters],
-            ['$project' => ['buttons' => 1]],
-            ['$unwind' => '$buttons'],
-            ['$match' => ['buttons.id' => $buttonId]],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$buttons.clicks']]]]
-        ];
-
-        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($ret)? $ret[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $textMessageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function perSubscriberTextMessageButtonClicks(ObjectID $buttonId, ObjectID $textMessageId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters['$and'][] = ["buttons.id" => $buttonId];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ["buttons.clicks" => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ["buttons.clicks" => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ["buttons.clicks.0" => ['$exists' => true]];
-        }
-
-        $aggregate = [
-            ['$match' => ['message_id' => $textMessageId]],
-            ['$project' => ['buttons' => 1, 'subscriber_id' => 1]],
-            ['$unwind' => '$buttons'],
-            ['$match' => $matchFilters],
-            ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
-        ];
-
-        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($result)? $result[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function totalCardButtonClicks(ObjectID $buttonId, ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters = [
-            '$and' => [
-                ['message_id' => $cardContainerId],
-                ["cards.id" => $cardId],
-                ["cards.buttons.id" => $buttonId]
-            ]
-        ];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
-        }
-
-        $filter = [
-            ['$match' => $matchFilters],
-            ['$project' => ['cards' => 1]],
-            ['$unwind' => '$cards'],
-            ['$match' => ['cards.id' => $cardId]],
-            ['$unwind' => '$cards.buttons'],
-            ['$match' => ['cards.buttons.id' => $buttonId]],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.buttons.clicks']]]]
-        ];
-
-        $ret = SentMessage::raw()->aggregate($filter)->toArray();
-
-        return count($ret)? $ret[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function perSubscriberCardButtonClicks(ObjectID $buttonId, ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters = ['$and' => [["cards.buttons.id" => $buttonId]]];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ["cards.buttons.clicks" => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ["cards.buttons.clicks" => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ["cards.buttons.clicks.0" => ['$exists' => true]];
-        }
-
-        $aggregate = [
-            ['$match' => ['message_id' => $cardContainerId]],
-            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
-            ['$unwind' => '$cards'],
-            ['$match' => ['cards.id' => $cardId]],
-            ['$unwind' => '$cards.buttons'],
-            ['$match' => $matchFilters],
-            ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
-        ];
-
-
-        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($result)? $result[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function totalCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters = [
-            '$and' => [
-                ['message_id' => $cardContainerId],
-                ['cards.id' => $cardId],
-            ]
-        ];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ['sent_at' => ['$ne' => null]];
-        }
-
-        $aggregate = [
-            ['$match' => $matchFilters],
-            ['$project' => ['cards' => 1]],
-            ['$unwind' => '$cards'],
-            ['$match' => ['cards.id' => $cardId]],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.clicks']]]]
-        ];
-
-        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($ret)? $ret[0]->count : 0;
-    }
-
-    /**
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
-     * @return int
-     */
-    public function perSubscriberCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null)
-    {
-        $matchFilters['$and'][] = ["cards.id" => $cardId];
-
-        if ($startDateTime) {
-            $matchFilters['$and'][] = ["cards.clicks" => ['$gte' => mongo_date($startDateTime)]];
-        }
-
-        if ($endDateTime) {
-            $matchFilters['$and'][] = ["cards.clicks" => ['$lt' => mongo_date($endDateTime)]];
-        }
-
-        if (! $startDateTime && ! $endDateTime) {
-            $matchFilters['$and'][] = ["cards.clicks.0" => ['$exists' => true]];
-        }
-
-        $aggregate = [
-            ['$match' => ['message_id' => $cardContainerId]],
-            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
-            ['$unwind' => '$cards'],
-            ['$match' => $matchFilters],
-            ['$group' => ['_id' => '$subscriber_id']],
-            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
-        ];
-
-        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
-
-        return count($result)? $result[0]->count : 0;
     }
 
     /**
@@ -659,11 +246,317 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
             $lastInteractionAt = $subscribersCopy->get((string)$document->_id)->last_interaction_at;
             $compare = $lastInteractionAt->copy()->addDay();
             $sentAt = carbon_date($document->sent_at);
-             if ($sentAt->lt($compare)) {
+            if ($sentAt->lt($compare)) {
                 $ret[] = $document->_id;
             }
         }
 
         return $ret;
+    }
+
+    /**
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function totalSentForMessage(MessageRevision $revision)
+    {
+        $filter = [['key' => 'revision_id', 'operator' => '=', 'value' => $revision->_id],];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function perSubscriberSentForMessage(MessageRevision $revision)
+    {
+        $aggregate = [
+            ['$match' => ['revision_id' => $revision->_id]],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function totalDeliveredForMessage(MessageRevision $revision)
+    {
+        $filter = [
+            ['key' => 'revision_id', 'operator' => '=', 'value' => $revision->_id],
+            ['key' => 'delivered_at', 'operator' => '!=', 'value' => null]
+        ];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function perSubscriberDeliveredForMessage(MessageRevision $revision)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['revision_id' => $revision->_id],
+                        ['delivered_at' => ['$ne' => null]],
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function totalReadForMessage(MessageRevision $revision)
+    {
+        $filter = [
+            ['key' => 'revision_id', 'operator' => '=', 'value' => $revision->_id],
+            ['key' => 'read_at', 'operator' => '!=', 'value' => null]
+        ];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function perSubscriberReadForMessage(MessageRevision $revision)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['revision_id' => $revision->_id],
+                        ['read_at' => ['$ne' => null]],
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Card            $card
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function totalCardClicks(Card $card, MessageRevision $revision)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['revision_id' => $revision->_id],
+                        ['cards.id' => $card->id],
+                    ]
+                ]
+            ],
+            ['$project' => ['cards' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $card->id]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.clicks']]]]
+        ];
+
+        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($ret)? $ret[0]->count : 0;
+    }
+
+    /**
+     * @param Card            $card
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function perSubscriberCardClicks(Card $card, MessageRevision $revision)
+    {
+
+        $aggregate = [
+            ['$match' => ['revision_id' => $revision->_id]],
+            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$cards'],
+            [
+                '$match' => [
+                    '$and' => [
+                        ["cards.id" => $card->id],
+                        ["cards.clicks.0" => ['$exists' => true]]
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Button          $button
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function totalTextMessageButtonClicks(Button $button, MessageRevision $revision)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['revision_id' => $revision->_id],
+                        ['buttons.id' => $button->id],
+                    ]
+                ]
+            ],
+            ['$project' => ['buttons' => 1]],
+            ['$unwind' => '$buttons'],
+            ['$match' => ['buttons.id' => $button->id]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$buttons.clicks']]]]
+        ];
+
+        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($ret)? $ret[0]->count : 0;
+    }
+
+    /**
+     * @param Button          $button
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function perSubscriberTextMessageButtonClicks(Button $button, MessageRevision $revision)
+    {
+        $aggregate = [
+            ['$match' => ['revision_id' => $revision->_id]],
+            ['$project' => ['buttons' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$buttons'],
+            [
+                '$match' => [
+                    '$and' => [
+                        ["buttons.id" => $button->id],
+                        ["buttons.clicks.0" => ['$exists' => true]]
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Button          $button
+     * @param Card            $card
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function totalCardButtonClicks(Button $button, Card $card, MessageRevision $revision)
+    {
+        $filter = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['revision_id' => $revision->_id],
+                        ["cards.id" => $card->id],
+                        ["cards.buttons.id" => $button->id]
+                    ]
+                ]
+            ],
+            ['$project' => ['cards' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $card->id]],
+            ['$unwind' => '$cards.buttons'],
+            ['$match' => ['cards.buttons.id' => $button->id]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.buttons.clicks']]]]
+        ];
+
+        $ret = SentMessage::raw()->aggregate($filter)->toArray();
+
+        return count($ret)? $ret[0]->count : 0;
+    }
+
+    /**
+     * @param Button          $button
+     * @param Card            $card
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function perSubscriberCardButtonClicks(Button $button, Card $card, MessageRevision $revision)
+    {
+        $aggregate = [
+            ['$match' => ['revision_id' => $revision->_id]],
+            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $card->id]],
+            ['$unwind' => '$cards.buttons'],
+            [
+                '$match' => [
+                    '$and' => [
+                        ['cards.buttons.id' => $button->id],
+                        ['cards.buttons.clicks.0' => ['$exists' => true]],
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
+        ];
+
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param ObjectID $id
+     * @param int      $cardIndex
+     */
+    public function recordCardClick(ObjectID $id, $cardIndex)
+    {
+        SentMessage::where('_id', $id)->push("cards.{$cardIndex}.clicks", mongo_date());
+    }
+
+    /**
+     * @param ObjectID $id
+     * @param int      $buttonIndex
+     */
+    public function recordTextButtonClick(ObjectID $id, $buttonIndex)
+    {
+        SentMessage::where('_id', $id)->push("buttons.{$buttonIndex}.clicks", mongo_date());
+    }
+
+    /**
+     * @param ObjectID $id
+     * @param int      $cardIndex
+     * @param int      $buttonIndex
+     */
+    public function recordCardButtonClick(ObjectID $id, $cardIndex, $buttonIndex)
+    {
+        SentMessage::where('_id', $id)->push("cards.{$cardIndex}.buttons.{$buttonIndex}.clicks", mongo_date());
     }
 }

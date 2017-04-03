@@ -2,6 +2,9 @@
 
 use Carbon\Carbon;
 use Common\Models\Bot;
+use Common\Models\Button;
+use Common\Models\Card;
+use Common\Models\MessageRevision;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
 use MongoDB\BSON\UTCDatetime;
@@ -28,117 +31,84 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
     public function markAsRead(Subscriber $subscriber, UTCDatetime $dateTime);
 
     /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param MessageRevision $revision
      * @return int
      */
-    public function totalSentForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function totalSentForMessage(MessageRevision $revision);
 
     /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberSentForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function perSubscriberSentForMessage(MessageRevision $revision);
 
     /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param MessageRevision $revision
      * @return int
      */
-    public function totalDeliveredForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function totalDeliveredForMessage(MessageRevision $revision);
 
     /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberDeliveredForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function perSubscriberDeliveredForMessage(MessageRevision $revision);
 
     /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param MessageRevision $revision
      * @return int
      */
-    public function totalReadForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function totalReadForMessage(MessageRevision $revision);
 
     /**
-     * @param ObjectID    $messageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberReadForMessage(ObjectID $messageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function perSubscriberReadForMessage(MessageRevision $revision);
 
     /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $textMessageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param Button          $button
+     * @param MessageRevision $revision
      * @return int
      */
-    public function totalTextMessageButtonClicks(ObjectID $buttonId, ObjectID $textMessageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function totalTextMessageButtonClicks(Button $button, MessageRevision $revision);
 
     /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $textMessageId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param Button          $button
+     * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberTextMessageButtonClicks(ObjectID $buttonId, ObjectID $textMessageId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function perSubscriberTextMessageButtonClicks(Button $button, MessageRevision $revision);
 
     /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param Button          $button
+     * @param Card            $card
+     * @param MessageRevision $revision
      * @return int
      */
-    public function totalCardButtonClicks(ObjectID $buttonId, ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function totalCardButtonClicks(Button $button, Card $card, MessageRevision $revision);
 
     /**
-     * @param ObjectID    $buttonId
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param Button          $button
+     * @param Card            $card
+     * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberCardButtonClicks(ObjectID $buttonId, ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function perSubscriberCardButtonClicks(Button $button, Card $card, MessageRevision $revision);
 
     /**
-     * @param SentMessage $sentMessage
-     * @param array       $cardOrButtonPath
-     * @param UTCDatetime $dateTime
-     * @return
-     */
-    public function recordClick(SentMessage $sentMessage, array $cardOrButtonPath, UTCDatetime $dateTime);
-
-
-    /**
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param Card            $card
+     * @param MessageRevision $revision
      * @return int
      */
-    public function totalCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function totalCardClicks(Card $card, MessageRevision $revision);
 
     /**
-     * @param ObjectID    $cardId
-     * @param ObjectID    $cardContainerId
-     * @param Carbon|null $startDateTime
-     * @param Carbon|null $endDateTime
+     * @param Card            $card
+     * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberCardClicks(ObjectID $cardId, ObjectID $cardContainerId, Carbon $startDateTime = null, Carbon $endDateTime = null);
+    public function perSubscriberCardClicks(Card $card, MessageRevision $revision);
 
     /**
      * @param Bot         $bot
@@ -163,6 +133,34 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @return int
      */
     public function perSubscriberMessageClicksForBot(Bot $bot, Carbon $startDateTime = null, Carbon $endDateTime = null);
+
+    /**
+     * @param SentMessage $sentMessage
+     * @param array       $cardOrButtonPath
+     * @param UTCDatetime $dateTime
+     * @return
+     */
+    public function recordClick(SentMessage $sentMessage, array $cardOrButtonPath, UTCDatetime $dateTime);
+
+    /**
+     * @param ObjectID $id
+     * @param int      $cardIndex
+     */
+    public function recordCardClick(ObjectID $id, $cardIndex);
+
+    /**
+     * @param ObjectID $id
+     * @param int      $buttonIndex
+     */
+    public function recordTextButtonClick(ObjectID $id, $buttonIndex);
+
+    /**
+     * @param ObjectID $id
+     * @param int      $cardIndex
+     * @param int      $buttonIndex
+     * @return
+     */
+    public function recordCardButtonClick(ObjectID $id, $cardIndex, $buttonIndex);
 
     /**
      * @param ObjectID $messageId

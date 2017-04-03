@@ -3,7 +3,6 @@
 use Common\Models\Bot;
 use Common\Models\Button;
 use MongoDB\BSON\ObjectID;
-use Common\Models\Template;
 use Common\Models\Broadcast;
 use Common\Models\Subscriber;
 
@@ -19,10 +18,6 @@ class MessagePayloadEncoder
      */
     protected $subscriber;
     /**
-     * @type Template
-     */
-    protected $template;
-    /**
      * @type Broadcast
      */
     protected $broadcast;
@@ -33,7 +28,15 @@ class MessagePayloadEncoder
     /**
      * @type array
      */
-    protected $buttonPath = [];
+    protected $path = [];
+    /**
+     * @var ObjectID
+     */
+    protected $broadcastId = null;
+    /**
+     * @var string
+     */
+    protected $baseUrl;
 
     /**
      * FacebookMessageMapper constructor.
@@ -42,12 +45,13 @@ class MessagePayloadEncoder
     public function __construct(Bot $bot)
     {
         $this->bot = $bot;
+        $this->baseUrl = config('app.url');
     }
 
     /**
      * Subscriber setter
      * @param Subscriber $subscriber
-     * @return FacebookMessageMapper
+     * @return MessagePayloadEncoder
      */
     public function setSubscriber(Subscriber $subscriber)
     {
@@ -58,44 +62,19 @@ class MessagePayloadEncoder
 
     /**
      * Template Setter
-     * @param Template $template
-     * @return FacebookMessageMapper
-     */
-    public function setTemplate(Template $template)
-    {
-        $this->template = $template;
-
-        return $this;
-    }
-
-    /**
-     * Template Setter
      * @param Broadcast $broadcast
-     * @return FacebookMessageMapper
+     * @return MessagePayloadEncoder
      */
     public function setBroadcast(Broadcast $broadcast)
     {
-        $this->broadcast = $broadcast;
-
-        return $this->setTemplate($broadcast->template);
-    }
-
-    /**
-     * @param Template $template
-     * @param array    $buttonPath
-     * @return FacebookMessageMapper
-     */
-    public function setDeepButton(Template $template, array $buttonPath)
-    {
-        $this->template = $template;
-        $this->buttonPath = $buttonPath;
+        $this->broadcastId = $broadcast->id;
 
         return $this;
     }
 
     /**
      * @param ObjectID $id
-     * @return FacebookMessageMapper
+     * @return MessagePayloadEncoder
      */
     public function setSentMessageInstanceId(ObjectID $id)
     {
@@ -106,100 +85,98 @@ class MessagePayloadEncoder
 
     /**
      * Return a card payload.
-     * @param ObjectID $id
-     * @param ObjectID $cardContainerId
+     * @param ObjectID      $id
+     * @param ObjectID|null $lastRevisionId
      * @return string
      */
-    protected function abstractCard(ObjectID $id, ObjectID $cardContainerId)
+    public function card(ObjectID $id, ObjectID $lastRevisionId = null)
     {
-        $payload = $this->bot->id;
-        $payload .= ':';
-        $payload .= $this->subscriber->id;
-        $payload .= ':';
-        $payload .= $this->template->id;
-        $payload .= ':';
-        if ($this->buttonPath) {
-            $payload .= implode(':', $this->buttonPath);
-            $payload .= ':';
-        }
-        $payload .= 'messages';
-        $payload .= ':' . $cardContainerId;
-        $payload .= ':' . 'cards';
-        $payload .= ':' . $id;
+        $payload = '';
+        $payload .= "i:{$id}|";
+        $payload .= "r:{$lastRevisionId}|";
+        $payload .= "m:{$this->sentMessageId}";
+        $encrypted = EncryptionService::Instance()->encrypt($payload);
 
-        return $payload;
-    }
-
-    /**
-     * Return a card payload.
-     * @param ObjectID $id
-     * @param ObjectID $cardContainerId
-     * @return string
-     */
-    public function card(ObjectID $id, ObjectID $cardContainerId)
-    {
-        $payload = $this->abstractCard($id, $cardContainerId);
-
-        $payload .= '|' . $this->sentMessageId;
-
-        if ($this->broadcast) {
-            $payload .= '|' . $this->broadcast->id;
-        }
-
-        return $payload;
+        return url("{$this->baseUrl}c/c/{$encrypted}");
     }
 
     /**
      * Return a text button payload.
-     * @param ObjectID $id
-     * @param ObjectID $textId
+     * @param Button        $button
+     * @param ObjectID|null $lastRevisionId
      * @return string
      */
-    public function textButton(ObjectID $id, ObjectID $textId)
+    public function textButton(Button $button, ObjectID $lastRevisionId = null)
     {
-        $payload = $this->bot->id;
-        $payload .= ':';
-        $payload .= $this->subscriber->id;
-        $payload .= ':';
-        $payload .= $this->template->id;
-        $payload .= ':';
-        if ($this->buttonPath) {
-            $payload .= implode(':', $this->buttonPath);
-            $payload .= ':';
+        if (! $button->url) {
+            return $this->textPostbackButton($button->id, $lastRevisionId);
         }
-        $payload .= 'messages';
-        $payload .= ':' . $textId;
-        $payload .= ':' . 'buttons';
-        $payload .= ':' . $id;
 
-        $payload .= '|' . $this->sentMessageId;
+        $payload = '';
+        $payload .= "i:{$button->id}|";
+        $payload .= "r:{$lastRevisionId}|";
+        $payload .= "m:{$this->sentMessageId}|";
+        $payload .= "s:{$this->subscriber->id}";
+        $encrypted = EncryptionService::Instance()->encrypt($payload);
 
-        if ($this->broadcast) {
-            $payload .= '|' . $this->broadcast->id;
-        }
+        return url("{$this->baseUrl}c/tb/{$encrypted}");
+    }
+
+    /**
+     * Return a text button payload.
+     * @param ObjectID      $id
+     * @param ObjectID|null $lastRevisionId
+     * @return string
+     */
+    public function textPostbackButton(ObjectID $id, ObjectID $lastRevisionId = null)
+    {
+        $payload = "tb|";
+        $payload .= "i:{$id}|";
+        $payload .= "r:{$lastRevisionId}|";
+        $payload .= "m:{$this->sentMessageId}";
 
         return $payload;
     }
 
     /**
      * Return a card button payload.
-     * @param ObjectID $id
-     * @param ObjectID $cardId
-     * @param ObjectID $cardContainerId
+     * @param Button        $button
+     * @param ObjectID      $cardId
+     * @param ObjectID|null $lastRevisionId
      * @return string
      */
-    public function cardButton(ObjectID $id, ObjectID $cardId, ObjectID $cardContainerId)
+    public function cardButton(Button $button, ObjectID $cardId, ObjectID $lastRevisionId = null)
     {
-        $payload = $this->abstractCard($cardId, $cardContainerId);
-        $payload .= ':' . 'buttons';
-        $payload .= ':' . $id;
-
-        $payload .= '|' . $this->sentMessageId;
-
-        if ($this->broadcast) {
-            $payload .= '|' . $this->broadcast->id;
+        if (! $button->url) {
+            return $this->cardPostbackButton($button->id, $cardId, $lastRevisionId);
         }
 
+        $payload = '';
+        $payload .= "i:{$button->id}|";
+        $payload .= "c:{$cardId}|";
+        $payload .= "r:{$lastRevisionId}|";
+        $payload .= "m:{$this->sentMessageId}|";
+        $payload .= "s:{$this->subscriber->id}";
+        $encrypted = EncryptionService::Instance()->encrypt($payload);
+
+        return url("{$this->baseUrl}c/cb/{$encrypted}");
+    }
+
+    /**
+     * Return a text button payload.
+     * @param ObjectID      $id
+     * @param ObjectID      $cardId
+     * @param ObjectID|null $lastRevisionId
+     * @return string
+     */
+    public function cardPostbackButton(ObjectID $id, ObjectID $cardId, ObjectID $lastRevisionId = null)
+    {
+        $payload = "cb|";
+        $payload .= "i:{$id}|";
+        $payload .= "c:{$cardId}|";
+        $payload .= "r:{$lastRevisionId}|";
+        $payload .= "m:{$this->sentMessageId}|";
+        $payload .= "s:{$this->subscriber->id}";
 
         return $payload;
     }
@@ -211,17 +188,16 @@ class MessagePayloadEncoder
      */
     public function mainMenuUrl(Button $button)
     {
-        return url(config('app.url') . "mb/{$this->bot->id}/{$button->id}/{$button->last_revision_id}");
-    }
+        $jumbled =
+            substr($button->id, 12, 24) .
+            substr($button->last_revision_id, 0, 12) .
+            substr($this->bot->id, 12, 24) .
+            substr($button->id, 0, 12) .
+            substr($this->bot->id, 0, 12) .
+            substr($button->last_revision_id, 12, 24);
 
-    /**
-     * Return the URL to a button/card..
-     * @param string $payload
-     * @return string
-     */
-    public function url($payload)
-    {
-        return url(config('app.url') . "ba/{$payload}");
-    }
+        $encrypted = EncryptionService::Instance()->encrypt($jumbled);
 
+        return url("{$this->baseUrl}c/mb/{$encrypted}");
+    }
 }

@@ -72,18 +72,10 @@ class CreateDatabaseIndexes extends Command
         /** @type Collection $collection */
         $collection = \Common\Models\SentMessage::raw();
 
-        $collection->createIndex(['bot_id' => 1, 'sent_at' => 1]);
-
         $collection->createIndex(['subscriber_id' => 1, 'sent_at' => -1]);
-
-        $collection->createIndex(['sent_at' => 1, 'delivered_at' => 1, 'subscriber_id' => 1]);
-        $collection->createIndex(['sent_at' => 1, 'read_at' => 1, 'subscriber_id' => 1]);
-
-        $collection->createIndex(['read_at' => 1, 'delivered_at' => 1, 'subscriber_id' => 1]);
-
-        $collection->createIndex(['message_id' => 1, 'sent_at' => 1, 'subscriber_id' => 1]);
-        $collection->createIndex(['message_id' => 1, 'delivered_at' => 1, 'subscriber_id' => 1]);
-        $collection->createIndex(['message_id' => 1, 'read_at' => 1, 'subscriber_id' => 1]);
+        $collection->createIndex(['bot_id' => 1, 'sent_at' => 1]);
+        $collection->createIndex(['revision_id' => 1]);
+        $collection->createIndex(['message_id' => 1]);
     }
 
     private function createSequenceIndexes()

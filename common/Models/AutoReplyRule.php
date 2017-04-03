@@ -1,13 +1,17 @@
 <?php namespace Common\Models;
 
+use MongoDB\BSON\ObjectID;
+
 /**
  * @property bool     $readonly
  * @property string   $mode
- * @property string   $keyword
- * @property string   $action
+ * @property string   $keywords
  * @property Template $template
- * @property int      mode_priority
+ * @property bool     subscribe
+ * @property bool     unsubscribe
+ * @property ObjectID template_id
  */
 class AutoReplyRule extends BaseModel
 {
+
 }

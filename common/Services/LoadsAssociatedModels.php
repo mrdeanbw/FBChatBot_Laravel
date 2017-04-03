@@ -46,7 +46,6 @@ trait LoadsAssociatedModels
 
             case 'sequences':
                 $filter = [['operator' => 'in', 'key' => '_id', 'value' => is_array($model)? $model['sequences'] : $model->sequences]];
-
                 return $this->getRepo('sequence')->getAll($filter);
 
             default:

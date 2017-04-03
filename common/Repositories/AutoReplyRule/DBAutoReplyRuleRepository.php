@@ -36,7 +36,9 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
     {
         return AutoReplyRule::where("bot_id", $bot->_id)
                             ->where('mode', AutoReplyRuleRepositoryInterface::MATCH_MODE_IS)
-                            ->where('keyword', 'regexp', "/^{$searchKeyword}$/i")->first();
+                            ->where('keyword', 'regexp', "/^{$searchKeyword}$/i")
+                            ->orderBy('_id')
+                            ->first();
     }
 
     /**
@@ -47,17 +49,16 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
     protected function prefixOrContainsMatch($searchKeyword, Bot $bot)
     {
         foreach ($this->prefixOrContainsRules($bot) as $rule) {
-
-            $escapedKeyword = preg_quote($rule->keyword, "/");
-
-            // prefix
-            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX && preg_match("/^{$escapedKeyword}($|\s)/i", $searchKeyword)) {
-                return $rule;
-            }
-
-            // contains
-            if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS && preg_match("/(^|\s){$escapedKeyword}($|\s)/i", $searchKeyword)) {
-                return $rule;
+            foreach ($rule->keywords as $keyword) {
+                $escapedKeyword = preg_quote($keyword, "/");
+                // prefix
+                if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_PREFIX && preg_match("/^{$escapedKeyword}($|\s)/i", $searchKeyword)) {
+                    return $rule;
+                }
+                // contains
+                if ($rule->mode == AutoReplyRuleRepositoryInterface::MATCH_MODE_CONTAINS && preg_match("/(^|\s){$escapedKeyword}($|\s)/i", $searchKeyword)) {
+                    return $rule;
+                }
             }
         }
 
@@ -73,6 +74,7 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
         $rules = AutoReplyRule::where("bot_id", $bot->_id)
                               ->where('mode', '!=', AutoReplyRuleRepositoryInterface::MATCH_MODE_IS)
                               ->orderBy('mode')
+                              ->orderBy('_id')
                               ->get();
 
         return $rules;

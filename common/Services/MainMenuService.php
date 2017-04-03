@@ -69,34 +69,21 @@ class MainMenuService
 
         $this->botRepo->update($bot, ['main_menu.buttons' => $buttons]);
 
-        dispatch(new UpdateMainMenuOnFacebook($bot, $user->id));
+        dispatch(new UpdateMainMenuOnFacebook($bot, $user->_id));
+
+        $this->messages->persistMessageRevisions();
 
         return $bot->main_menu;
     }
 
     /**
      * Create the default main menu.
-     * @param $botId
+     * @param Button[] $buttons
      * @return MainMenu
      */
-    public function defaultMainMenu($botId)
+    public function defaultMainMenu(array $buttons)
     {
-        return new MainMenu([
-            'buttons' => $this->messages->correspondInputMessagesToOriginal([$this->copyrightedButton()], [], $botId, true)
-        ]);
-    }
-
-    /**
-     * The button array for the button.
-     * @return Button
-     */
-    private function copyrightedButton()
-    {
-        return new Button([
-            'title'    => 'Powered By Mr. Reply',
-            'readonly' => true,
-            'url'      => 'https://www.mrreply.com',
-        ]);
+        return new MainMenu(['buttons' => $buttons]);
     }
 
     /**
@@ -128,18 +115,24 @@ class MainMenuService
     private function cleanButtons(array $buttons)
     {
         return array_map(function (array $button) {
-
+            $ret = new Button([]);
+            $ret->title = $button['title'];
+            if ($id = array_get($button, 'id')) {
+                $ret->id = $button['id'];
+            }
             if ($button['main_action'] == 'url') {
-                $ret = new Button([]);
-                $ret->title = $button['title'];
                 $ret->url = $button['url'];
             } else {
-                $ret = new Button($button, true);
-                $ret->url = "";
+                $ret->template_id = $button['template']['id'];
+                if ($addTags = array_get($button, 'add_tags')) {
+                    $ret->add_tags = $addTags;
+                }
+                if ($removeTags = array_get($button, 'remove_tags')) {
+                    $ret->remove_tags = $removeTags;
+                }
             }
 
             return $ret;
-
         }, $buttons);
     }
 

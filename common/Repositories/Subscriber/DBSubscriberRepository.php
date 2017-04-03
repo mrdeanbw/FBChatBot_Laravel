@@ -298,10 +298,10 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
             ]
         ];
 
-        $update = $this->normalizeBatchUpdateArray($input);
+        list($update, $requiresTwoQueries) = $this->normalizeBatchUpdateArray($input);
 
         // We need 2 queries.
-        if (($input['add_tags'] && $input['remove_tags']) || ($input['add_sequences'] && $input['remove_sequences'])) {
+        if ($requiresTwoQueries) {
 
             Subscriber::raw(function ($collection) use ($filter, $update) {
                 $collection->updateMany($filter, ['$addToSet' => $update['$addToSet']]);
@@ -365,25 +365,32 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     {
         $update = [];
 
-        if ($input['add_tags']) {
+        $tags = 0;
+        $sequences = 0;
+
+        if (array_get($input, 'add_tags')) {
+            $tags++;
             array_set($update, '$addToSet.tags.$each', $input['add_tags']);
         }
 
-        if ($input['remove_tags']) {
+        if (array_get($input, 'remove_tags')) {
+            $tags++;
             array_set($update, '$pull.tags.$in', $input['remove_tags']);
         }
 
-        if ($input['add_sequences']) {
+        if (array_get($input, 'add_sequences')) {
+            $sequences++;
             array_set($update, '$addToSet.sequences.$each', $input['add_sequences']);
             array_set($update, '$pull.removed_sequences.$in', $input['add_sequences']);
         }
 
-        if ($input['remove_sequences']) {
+        if (array_get($input, 'remove_sequences')) {
+            $sequences++;
             array_set($update, '$pull.sequences.$in', $input['remove_sequences']);
             array_set($update, '$addToSet.removed_sequences.$each', $input['remove_sequences']);
         }
 
-        return $update;
+        return [$update, $tags == 2 || $sequences == 2];
     }
 
     /**

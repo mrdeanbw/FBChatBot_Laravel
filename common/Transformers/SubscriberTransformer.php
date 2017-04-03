@@ -36,7 +36,9 @@ class SubscriberTransformer extends BaseTransformer
      */
     public function includeHistory(Subscriber $subscriber)
     {
-        return $this->collection(array_reverse($subscriber->history), new SubscriptionHistoryTransformer(), false);
+        $history = object_get($subscriber, 'history', []);
+
+        return $this->collection(array_reverse($history), new SubscriptionHistoryTransformer(), false);
     }
 
     /**

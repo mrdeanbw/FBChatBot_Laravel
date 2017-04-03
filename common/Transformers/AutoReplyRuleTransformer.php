@@ -14,7 +14,7 @@ class AutoReplyRuleTransformer extends BaseTransformer
             'id'       => $rule->id,
             'readonly' => $rule->readonly,
             'mode'     => AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP[$rule->mode],
-            'keyword'  => $rule->keyword,
+            'keywords'  => $rule->keywords,
             'action'   => $rule->action,
         ];
     }

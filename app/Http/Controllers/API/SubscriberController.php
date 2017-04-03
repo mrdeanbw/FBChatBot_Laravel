@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Common\Services\SubscriberService;
 use Common\Transformers\BaseTransformer;
 use Common\Transformers\SubscriberTransformer;
+use MongoDB\BSON\ObjectID;
 
 class SubscriberController extends APIController
 {
@@ -21,6 +22,7 @@ class SubscriberController extends APIController
     public function __construct(SubscriberService $audience)
     {
         $this->audience = $audience;
+        parent::__construct();
     }
 
     /**
@@ -73,6 +75,7 @@ class SubscriberController extends APIController
      */
     public function show($id)
     {
+        $id = new ObjectID($id);
         $page = $this->enabledBot();
         $subscriber = $this->audience->findForBotOrFail($id, $page);
 

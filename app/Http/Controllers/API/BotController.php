@@ -20,6 +20,7 @@ class BotController extends APIController
     public function __construct(BotService $bots)
     {
         $this->bots = $bots;
+        parent::__construct();
     }
 
     /**
@@ -75,7 +76,13 @@ class BotController extends APIController
      */
     public function store(Request $request)
     {
-        $bots = $this->bots->createBotForPages($this->user(), $request->get('pageIds', []));
+        $this->validate($request, [
+            'pages'    => 'bail|required|array',
+            'pages.*'  => 'bail|required|string',
+            'timezone' => 'bail|required|timezone'
+        ]);
+
+        $bots = $this->bots->createBotForPages($this->user(), $request->all());
 
         return $this->collectionResponse($bots);
     }
@@ -114,6 +121,19 @@ class BotController extends APIController
         return $this->response->accepted();
     }
 
+    public function createTag(Request $request)
+    {
+        $bot = $this->enabledBot();
+
+        $this->validate($request, [
+            'tag' => 'bail|required|string|not_in:' . implode(',', $bot->tags)
+        ]);
+
+        $tags = $this->bots->createTag($bot, trim($request->get('tag')));
+
+        return $this->arrayResponse(['tags' => $tags]);
+    }
+
     /**
      * Patch-update a page.
      * Either enable the bot for the page or update its timezone.
@@ -126,7 +146,7 @@ class BotController extends APIController
         $bot = $this->enabledBot();
 
         $this->validate($request, [
-            'timezone' => 'bail|required|max:255|timezone',
+            'timezone' => 'bail|required|timezone',
         ]);
 
         $bot = $this->bots->updateTimezone($request->all(), $bot);

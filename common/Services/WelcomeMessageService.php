@@ -5,6 +5,7 @@ use Common\Models\Text;
 use Common\Models\Template;
 use Common\Models\WelcomeMessage;
 use Common\Repositories\Bot\BotRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 
 class WelcomeMessageService
 {
@@ -44,61 +45,11 @@ class WelcomeMessageService
 
     /**
      * Create the default welcome message for a page.
-     * @param $botId
+     * @param ObjectID $templateId
      * @return WelcomeMessage
      */
-    public function defaultWelcomeMessage($botId)
+    public function defaultWelcomeMessage(ObjectID $templateId)
     {
-        return new WelcomeMessage([
-            'template_id' => $this->newDefaultTemplateInstance($botId)->_id
-        ]);
-    }
-
-    /**
-     * Attach the default message blocks to the welcome message,
-     * The "copyright message" / second message blocks which contains
-     * "Powered By Mr. Reply" sentence is then disabled, to prevent editing
-     * or removing it.
-     * @param $botId
-     * @return Template
-     */
-    private function newDefaultTemplateInstance($botId)
-    {
-        $messages = $this->defaultMessages();
-
-        return $this->templates->createImplicit($messages, $botId, true);
-    }
-
-    /**
-     * @return array
-     */
-    private function defaultMessages()
-    {
-        return [
-            $this->initialTextMessage(),
-            $this->copyrightMessage()
-        ];
-
-    }
-
-    /**
-     * @return Text
-     */
-    private function initialTextMessage()
-    {
-        return new Text([
-            'text' => "Welcome {{first_name}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
-        ]);
-    }
-
-    /**
-     * @return Text
-     */
-    private function copyrightMessage()
-    {
-        return new Text([
-            'text'     => 'Want to create your own bot? Go to: https://www.mrreply.com',
-            'readonly' => true
-        ]);
+        return new WelcomeMessage(['template_id' => $templateId]);
     }
 }

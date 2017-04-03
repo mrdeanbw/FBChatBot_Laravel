@@ -11,15 +11,31 @@ abstract class DBAssociatedWithBotRepository extends DBBaseRepository implements
 
     /**
      * Find a template for a given bot
-     * @param string|ObjectID $id
-     * @param Bot             $bot
-     * @return BaseModel|null
+     * @param ObjectID $id
+     * @param Bot      $bot
+     * @return bool
      */
-    public function findByIdForBot($id, Bot $bot)
+    public function existsByIdForBot(ObjectID $id, Bot $bot)
     {
         $filter = [
             ['operator' => '=', 'key' => '_id', 'value' => $id],
             ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
+        ];
+
+        return $this->exists($filter);
+    }
+
+    /**
+     * Find a template for a given bot
+     * @param string|ObjectID $id
+     * @param ObjectID        $botId
+     * @return BaseModel|null
+     */
+    public function findByIdForBot(ObjectID $id, ObjectID $botId)
+    {
+        $filter = [
+            ['operator' => '=', 'key' => '_id', 'value' => $id],
+            ['operator' => '=', 'key' => 'bot_id', 'value' => $botId],
         ];
 
         return $this->getOne($filter);

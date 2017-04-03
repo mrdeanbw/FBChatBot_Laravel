@@ -16,7 +16,7 @@ class BroadcastTransformer extends BaseTransformer
         $stats = $broadcast->stats;
         if (in_array($broadcast->status, [BroadcastRepositoryInterface::STATUS_RUNNING, BroadcastRepositoryInterface::STATUS_COMPLETED])) {
             $this->loadModelsIfNotLoaded($broadcast, ['template']);
-            $stats = array_merge($stats, $this->getMessageStats($broadcast->template->messages[0]));
+            $stats = array_merge($stats, $this->getMessageStats($broadcast->template->clean_messages[0]));
         }
 
         return [

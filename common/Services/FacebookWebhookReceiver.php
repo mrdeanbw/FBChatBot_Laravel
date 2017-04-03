@@ -1,8 +1,8 @@
 <?php namespace Common\Services;
 
-use Log;
 use Common\Models\Bot;
 use Common\Models\Subscriber;
+use Common\Models\AutoReplyRule;
 use Common\Services\Facebook\MessengerThread;
 
 class FacebookWebhookReceiver
@@ -56,16 +56,15 @@ class FacebookWebhookReceiver
     private function handleEntry($entry)
     {
         foreach ($entry['messaging'] as $event) {
-            $this->handleEvent($event, $entry['time']);
+            $this->handleEvent($event);
         }
     }
 
     /**
      * Handles a single event.
      * @param $event
-     * @param $timestamp
      */
-    private function handleEvent($event, $timestamp)
+    private function handleEvent($event)
     {
         $bot = $this->adapter->bot($event['recipient']['id']);
 
@@ -109,25 +108,15 @@ class FacebookWebhookReceiver
         if ($text = array_get($event, 'message.text')) {
 
             // Find a matching auto reply rule.
+            /** @var AutoReplyRule $rule */
             $rule = $this->adapter->matchingAutoReplyRule($text, $bot);
 
             // If found
             if ($rule) {
 
                 // If the auto reply rule is a subscription message, subscribe the user.
-                if ($this->adapter->isSubscriptionMessage($rule)) {
+                if ($rule->subscribe) {
                     $subscriber = $this->adapter->subscribe($bot, $event['sender']['id']);
-                    $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
-
-                    return;
-                }
-
-                // If the auto reply rule is a unsubscription message, send the "do you want to unsubscribe?" message .
-                if ($this->adapter->isUnsubscriptionMessage($rule)) {
-                    $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
-                    $this->adapter->initiateUnsubscripingProcess($bot, $subscriber, $event['sender']['id']);
-
-                    return;
                 }
 
                 // Otherwise, send the auto reply message.
@@ -136,8 +125,16 @@ class FacebookWebhookReceiver
                 if (! $subscriber) {
                     $subscriber = $this->adapter->subscribeSilently($bot, $event['sender']['id']);
                 }
-                $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
-                $this->adapter->sendAutoReply($rule, $subscriber);
+
+                // If the auto reply rule is a unsubscription message, send the "do you want to unsubscribe?" message .
+                if ($rule->unsubscribe) {
+                    $this->adapter->concludeUnsubscriptionProcess($bot, $subscriber);
+                }
+
+                $this->adapter->storeIncomingTextMessage($event, $bot, $subscriber);
+                if ($rule->template_id) {
+                    $this->adapter->sendAutoReply($rule, $subscriber);
+                }
 
                 return;
             }
@@ -148,7 +145,7 @@ class FacebookWebhookReceiver
             if (! $subscriber || ! $subscriber->active) {
                 $subscriber = $this->adapter->subscribeSilently($bot, $event['sender']['id']);
             }
-            $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
+            $this->adapter->storeIncomingTextMessage($event, $bot, $subscriber);
             $this->adapter->sendDefaultReply($bot, $subscriber);
 
             return;
@@ -156,7 +153,7 @@ class FacebookWebhookReceiver
 
         // Handle postbacks (button clicks).
         if (array_get($event, 'postback')) {
-            $this->handlePostbackEvent($bot, $subscriber, $event, $timestamp);
+            $this->handlePostbackEvent($bot, $subscriber, $event);
 
             return;
         }
@@ -165,7 +162,7 @@ class FacebookWebhookReceiver
         if (array_get($event, 'optin')) {
             $payload = array_get($event, 'optin.ref');
             $subscriber = $this->adapter->subscribeBotUser($payload, $bot, $event['sender']['id']);
-            $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
+            $this->adapter->storeIncomingOptInMessage($event, $bot, $subscriber);
 
             return;
         }
@@ -179,27 +176,24 @@ class FacebookWebhookReceiver
      * @param Bot             $bot
      * @param Subscriber|null $subscriber
      * @param array           $event
-     * @param int             $timestamp
-     * @return bool
      */
-    private function handlePostbackEvent(Bot $bot, $subscriber, $event, $timestamp)
+    private function handlePostbackEvent(Bot $bot, $subscriber, $event)
     {
         // If clicked on the get started button, then subscribe the user.
         if ($event['postback']['payload'] == MessengerThread::GET_STARTED_PAYLOAD) {
             $subscriber = $this->adapter->subscribe($bot, $event['sender']['id']);
-            $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
+            $this->adapter->storeIncomingGetStartedButtonClick($event['timestamp'], $bot, $subscriber);
 
             return;
         }
 
         // If the user clicks on any other button, then subscribe him silently!
         $subscriber = $subscriber?: $this->adapter->subscribeSilently($bot, $event['sender']['id']);
-        $this->adapter->storeIncomingMessage($event, $timestamp, $bot, $subscriber);
 
         // payload is a hashed button.
-        if (! $this->adapter->handlePostbackButtonClick($event['postback']['payload'], $bot, $subscriber)) {
-            Log::debug("Unknown postback payload: " . $event['postback']['payload']);
-        }
+
+        $button = $this->adapter->handlePostbackButtonClick($event['postback']['payload'], $bot, $subscriber);
+        $this->adapter->storeIncomingButtonClick($button->title, $event['timestamp'], $bot, $subscriber);
     }
 }
 

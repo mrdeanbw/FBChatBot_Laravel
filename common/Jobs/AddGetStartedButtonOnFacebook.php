@@ -5,6 +5,7 @@ use Common\Models\Bot;
 use Common\Services\Facebook;
 use Common\Services\FacebookAdapter;
 use Common\Exceptions\DisallowedBotOperation;
+use MongoDB\BSON\ObjectID;
 
 class AddGetStartedButtonOnFacebook extends BaseJob
 {
@@ -17,11 +18,11 @@ class AddGetStartedButtonOnFacebook extends BaseJob
     protected $frontendFailMessageBody = "Failed to add Get Started Button!";
 
     /**
-     * InitializeBotForFacebookPage constructor.
-     * @param $bot
-     * @param $userId
+     * AddGetStartedButtonOnFacebook constructor.
+     * @param Bot      $bot
+     * @param ObjectID $userId
      */
-    public function __construct($bot, $userId)
+    public function __construct(Bot $bot, ObjectID $userId)
     {
         $this->bot = $bot;
         $this->userId = $userId;

@@ -18,7 +18,7 @@ class TemplateTransformer extends BaseTransformer
 
     protected function includeMessages(Template $template)
     {
-        return $this->collection($template->messages, new MessageTransformer(), false);
+        return $this->collection($template->clean_messages, new MessageTransformer(), false);
     }
 
 }

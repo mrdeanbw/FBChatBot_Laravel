@@ -36,6 +36,19 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
      * @param array $filterBy
      * @param array $orderBy
      * @param array $columns
+     * @return bool
+     */
+    public function exists(array $filterBy = [], array $orderBy = [], array $columns = ['*'])
+    {
+        $query = $this->applyFilterByAndOrderBy($filterBy, $orderBy);
+        /** @type BaseModel $ret */
+        return $query->exists();
+    }
+
+    /**
+     * @param array $filterBy
+     * @param array $orderBy
+     * @param array $columns
      * @return BaseModel|null
      */
     public function getOne(array $filterBy = [], array $orderBy = [], array $columns = ['*'])
@@ -137,7 +150,6 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
 
         foreach (array_keys($data) as $i) {
             $data[$i]['created_at'] = array_get($data[$i], 'created_at', $now);
-            $data[$i]['updated_at'] = array_get($data[$i], 'updated_at', $now);
         }
 
         /** @type string|BaseModel $model */
@@ -159,10 +171,6 @@ abstract class DBBaseRepository implements BaseRepositoryInterface
         $class = $this->model();
 
         if (starts_with(key($data), '$')) {
-
-            if (! array_get($data, '$set.updated_at')) {
-                array_set($data, '$set.updated_at', Carbon::now());
-            }
 
             if (array_get($data, '$set', [])) {
                 $data['$set'] = $this->normalizeCarbonDates($data['$set']);

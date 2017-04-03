@@ -1,16 +1,38 @@
 <?php namespace Common\Http\Controllers;
 
+use MongoDB\BSON\ObjectID;
 use Illuminate\Http\Request;
 use Dingo\Api\Routing\Helpers;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Common\Transformers\BaseTransformer;
 use Dingo\Api\Exception\ValidationHttpException;
+use MongoDB\Driver\Exception\InvalidArgumentException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 abstract class APIController extends Controller
 {
 
     use Helpers;
+
+    /**
+     * APIController constructor.
+     */
+    public function __construct()
+    {
+        /** @var Request $request */
+        $request = app('request');
+        $routeParameters = $request->route()[2];
+        try {
+            foreach ($routeParameters as $key => $value) {
+                if ($key === 'id' || ends_with($value, 'Id')) {
+                    $routeParameters[$key] = new ObjectID($value);
+                }
+            }
+        } catch (InvalidArgumentException $e) {
+            throw new NotFoundHttpException();
+        }
+    }
 
     /**
      * @return BaseTransformer
@@ -83,7 +105,6 @@ abstract class APIController extends Controller
     public function validate(Request $request, array $rules, $callback = null, array $messages = [], array $customAttributes = [])
     {
         $input = $request->all();
-
         $validator = \Validator::make($input, $rules, $messages, $customAttributes);
 
         /**
@@ -96,7 +117,6 @@ abstract class APIController extends Controller
 
             return $validator;
         });
-
 
         /**
          * If the validation fails, terminate the request and return the error messages.

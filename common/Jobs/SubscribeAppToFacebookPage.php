@@ -1,6 +1,7 @@
 <?php namespace Common\Jobs;
 
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Common\Services\FacebookAdapter;
 use Common\Exceptions\DisallowedBotOperation;
 
@@ -15,11 +16,11 @@ class SubscribeAppToFacebookPage extends BaseJob
     protected $frontendFailMessageBody = "Failed to subscriber our app to your page!";
 
     /**
-     * InitializeBotForFacebookPage constructor.
-     * @param $bot
-     * @param $userId
+     * SubscribeAppToFacebookPage constructor.
+     * @param Bot      $bot
+     * @param ObjectID $userId
      */
-    public function __construct(Bot $bot, $userId)
+    public function __construct(Bot $bot, ObjectID $userId)
     {
         $this->bot = $bot;
         $this->userId = $userId;

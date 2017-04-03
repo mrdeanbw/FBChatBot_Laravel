@@ -40,21 +40,21 @@ class GreetingTextService
      */
     public function update(array $input, Bot $bot, User $user)
     {
-        $this->botRepo->update($bot, ['greeting_text.text' => trim($input['text'])]);
-        dispatch(new UpdateGreetingTextOnFacebook($bot, $user->id));
+        $this->botRepo->update($bot, ['greeting_text.0.text' => trim($input['text'])]);
+        dispatch(new UpdateGreetingTextOnFacebook($bot, $user->_id));
 
         return $bot;
     }
 
     /**
      * Get the default greeting text.
-     * @param string $pageName
      * @return GreetingText
      */
-    public function defaultGreetingText($pageName)
+    public function defaultGreetingText()
     {
         return new GreetingText([
-            'text' => "Hello {{first_name}}, Welcome to {$pageName}! - Powered By: MrReply.com"
+            'locale' => 'default',
+            'text'   => "Hello {{user_first_name}}, Welcome to {{page_name|fallback:our page}}! - Powered By: MrReply.com"
         ]);
     }
 

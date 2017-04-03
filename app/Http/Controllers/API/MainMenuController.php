@@ -7,7 +7,7 @@ use Common\Transformers\MainMenuTransformer;
 
 class MainMenuController extends APIController
 {
-    
+
     /**
      * @type MainMenuService
      */
@@ -16,6 +16,7 @@ class MainMenuController extends APIController
     public function __construct(MainMenuService $mainMenu)
     {
         $this->mainMenu = $mainMenu;
+        parent::__construct();
     }
 
     /**
@@ -25,9 +26,13 @@ class MainMenuController extends APIController
      */
     public function update(Request $request)
     {
-        $rules = $this->validationRules();
-        $this->validate($request, $rules);
-        $mainMenu = $this->mainMenu->update($request->all(), $this->enabledBot(), $this->user());
+        $bot = $this->enabledBot();
+        $this->validateForBot($bot, $request, [
+            'buttons'   => 'bail|required|array|max:5',
+            'buttons.*' => 'bail|required|array|main_menu_button',
+        ]);
+
+        $mainMenu = $this->mainMenu->update($request->all(), $bot, $this->user());
 
         return $this->itemResponse($mainMenu);
     }
@@ -37,16 +42,4 @@ class MainMenuController extends APIController
     {
         return new MainMenuTransformer();
     }
-
-    /**
-     * @return array
-     */
-    public function validationRules()
-    {
-        return [
-            'buttons'   => 'bail|required|array|max:5',
-            'buttons.*' => 'bail|required|message:main_menu_button',
-        ];
-    }
-
 }

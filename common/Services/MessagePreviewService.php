@@ -120,16 +120,16 @@ class MessagePreviewService
         return array_map(function ($message) {
             unset($message['id']);
 
-            if (in_array($message['type'], ['text', 'card'])) {
-                $message['buttons'] = $this->removeMessageIds($message['buttons']);
+            if (in_array($message['type'], ['text', 'card']) && $buttons = array_get($message, 'buttons', [])) {
+                $message['buttons'] = $this->removeMessageIds($buttons);
             }
 
             if ($message['type'] == 'card_container') {
                 $message['cards'] = $this->removeMessageIds($message['cards']);
             }
 
-            if ($message['type'] == 'button') {
-                $message['messages'] = $this->removeMessageIds($message['messages']);
+            if ($message['type'] == 'button' && $buttonMessages = array_get($message, 'messages', [])) {
+                $message['messages'] = $this->removeMessageIds($buttonMessages);
             }
 
             return $message;

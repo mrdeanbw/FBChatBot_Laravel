@@ -35,6 +35,7 @@ class StatsController extends APIController
     {
         $this->subscribers = $audience;
         $this->sentMessageRepo = $sentMessageRepo;
+        parent::__construct();
     }
 
     /**
@@ -62,16 +63,16 @@ class StatsController extends APIController
      * 1. Total number of active subscribers.
      * 2. New subscription actions today.
      * 3. New unsubscription actions today.
-     * @param Bot $page
+     * @param Bot $bot
      * @return array
      */
-    private function summary(Bot $page)
+    private function summary(Bot $bot)
     {
         return [
-            'total' => $this->subscriberCount($page),
+            'total' => $this->subscriberCount($bot),
             'today' => [
-                'plus'     => $this->subscribers->newSubscriptions($page, 'today'),
-                'negative' => $this->subscribers->newUnsubscriptions($page, 'today'),
+                'plus'     => $this->subscribers->newSubscriptions($bot, 'today'),
+                'negative' => $this->subscribers->newUnsubscriptions($bot, 'today'),
             ],
         ];
     }
@@ -119,8 +120,8 @@ class StatsController extends APIController
 
     /**
      * Total number of clicks on relevant message blocks in a specific time period.
-     * @param Bot  $bot
-     * @param      $dateString
+     * @param Bot    $bot
+     * @param string $dateString
      * @return array
      */
     private function clickCount(Bot $bot, $dateString)
@@ -135,15 +136,15 @@ class StatsController extends APIController
 
     /**
      * Total number of messages sent in a specific time period
-     * @param Bot  $page
-     * @param      $dateString
+     * @param Bot    $bot
+     * @param string $dateString
      * @return mixed
      */
-    private function messageCount(Bot $page, $dateString)
+    private function messageCount(Bot $bot, $dateString)
     {
         $dateBoundaries = date_boundaries($dateString);
 
-        return $this->sentMessageRepo->totalSentForBot($page, $dateBoundaries[0], $dateBoundaries[1]);
+        return $this->sentMessageRepo->totalSentForBot($bot, $dateBoundaries[0], $dateBoundaries[1]);
     }
 
     /**

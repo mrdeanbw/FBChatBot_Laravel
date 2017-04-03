@@ -11,11 +11,19 @@ interface AssociatedWithBotRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * Find a template for a given bot
-     * @param int $id
-     * @param Bot $bot
+     * @param ObjectID $id
+     * @param Bot      $bot
+     * @return bool
+     */
+    public function existsByIdForBot(ObjectID $id, Bot $bot);
+
+    /**
+     * Find a template for a given bot
+     * @param ObjectID $id
+     * @param ObjectID $botId
      * @return BaseModel|null
      */
-    public function findByIdForBot($id, Bot $bot);
+    public function findByIdForBot(ObjectID $id, ObjectID $botId);
 
     /**
      * Get all broadcasts that

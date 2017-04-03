@@ -70,7 +70,7 @@ class FacebookMessageSender
         $mapper = (new FacebookMessageMapper($broadcast->bot))->forSubscriber($subscriber);
         $mapper->payloadEncoder->setBroadcast($broadcast);
 
-        return $this->sendMessages($mapper, $broadcast->template->messages, $subscriber, $broadcast->bot, $broadcast->notification);
+        return $this->sendMessages($mapper, $broadcast->template->clean_messages, $subscriber, $broadcast->bot, $broadcast->notification);
     }
 
     /**
@@ -84,27 +84,23 @@ class FacebookMessageSender
         $this->loadModelsIfNotLoaded($template, ['bot']);
 
         $mapper = (new FacebookMessageMapper($template->bot))->forSubscriber($subscriber);
-        $mapper->payloadEncoder->setTemplate($template);
 
-        return $this->sendMessages($mapper, $template->messages, $subscriber, $template->bot);
+        return $this->sendMessages($mapper, $template->clean_messages, $subscriber, $template->bot);
     }
 
     /**
      * @param Button     $button
      * @param Subscriber $subscriber
      * @param Bot        $bot
-     * @param Template   $template
-     * @param array      $buttonPath
      * @return \object[]
      */
-    public function sendFromButton(Button $button, Subscriber $subscriber, Bot $bot, Template $template = null, array $buttonPath = [])
+    public function sendFromButton(Button $button, Subscriber $subscriber, Bot $bot)
     {
         if ($button->template_id) {
             return $this->sendFromContext($button, $subscriber, $bot);
         }
 
         $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
-        $mapper->payloadEncoder->setDeepButton($template, $buttonPath);
 
         return $this->sendMessages($mapper, $button->messages, $subscriber, $bot);
     }
@@ -122,9 +118,8 @@ class FacebookMessageSender
 
         $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
         $template = is_array($context)? $context['template'] : $context->template;
-        $mapper->payloadEncoder->setTemplate($template);
 
-        return $this->sendMessages($mapper, $template->messages, $subscriber, $bot);
+        return $this->sendMessages($mapper, $template->clean_messages, $subscriber, $bot);
     }
 
     /**
@@ -147,9 +142,12 @@ class FacebookMessageSender
             $mapper->payloadEncoder->setSentMessageInstanceId($data['_id']);
 
             $mappedMessage = $mapper->toFacebookMessage($message);
+            $mappedMessage['recipient'] = ['id' => $subscriber->facebook_id];
+            $mappedMessage['notification_type'] = self::_NOTIFICATION_MAP[$notificationType];
 
             try {
-                $facebookMessageId = $this->send($mappedMessage, $subscriber, $bot, $notificationType);
+                $response = $this->FacebookAdapter->sendMessage($bot, $mappedMessage);
+                $facebookMessageId = $response->message_id;
                 $sentAt = Carbon::now();
                 $ret[] = $this->sentMessageRepo->create(array_merge($data, [
                     'facebook_id' => $facebookMessageId,
@@ -158,9 +156,11 @@ class FacebookMessageSender
                 $this->inboxRepo->create([
                     'bot_id'        => $bot->_id,
                     'subscriber_id' => $subscriber->_id,
-                    'sent_at'       => $sentAt,
+                    'action_at'     => $sentAt,
                     'incoming'      => 0,
-                    'message'       => $mappedMessage,
+                    'facebook_id'   => $facebookMessageId,
+                    'message'       => $mappedMessage['message'],
+                    'notification'  => $mappedMessage['notification_type']
                 ]);
             } catch (MessageNotSentException $e) {
                 // do nothing
@@ -177,53 +177,8 @@ class FacebookMessageSender
      */
     public function sendBotMessage($messageIndex, Bot $bot, Subscriber $subscriber)
     {
-        $context = $bot->messages[$messageIndex];
+        $context = $bot->templates[$messageIndex];
         $this->sendFromContext($context, $subscriber, $bot);
-    }
-
-    /**
-     * Add recipient header, notification type and send the message through Facebook API.
-     * @param array      $message
-     * @param Subscriber $subscriber
-     * @param Bot        $bot
-     * @param int        $notificationType
-     * @return \object[]
-     * @throws Exception
-     */
-    protected function send(array $message, Subscriber $subscriber, Bot $bot, $notificationType = self::NOTIFICATION_REGULAR)
-    {
-        $message = $this->addRecipientHeader($message, $subscriber);
-        $message = $this->addNotificationType($message, $notificationType);
-
-        $response = $this->FacebookAdapter->sendMessage($bot, $message);
-
-        return $response->message_id;
-    }
-
-    /**
-     * Add recipient information to the message.
-     * @param array      $message
-     * @param Subscriber $subscriber
-     * @return array
-     */
-    protected function addRecipientHeader(array $message, Subscriber $subscriber)
-    {
-        $message['recipient'] = ['id' => $subscriber->facebook_id];
-
-        return $message;
-    }
-
-    /**
-     * Add the notification type to the message.
-     * @param $message
-     * @param $notificationType
-     * @return array
-     */
-    protected function addNotificationType($message, $notificationType)
-    {
-        $message['notification_type'] = self::_NOTIFICATION_MAP[$notificationType];
-
-        return $message;
     }
 
     /**
@@ -239,13 +194,14 @@ class FacebookMessageSender
             'bot_id'        => $bot->_id,
             'subscriber_id' => $subscriber->_id,
             'message_id'    => $message->id,
+            'revision_id'   => $message->last_revision_id,
             'delivered_at'  => null,
             'read_at'       => null,
         ];
 
 
-        if ($message->type == 'text') {
-            /** @type Text $message */
+        /** @type Text $message */
+        if ($message->type == 'text' && $message->buttons) {
             $data['buttons'] = [];
             foreach ($message->buttons as $button) {
                 $data['buttons'][] = [
@@ -264,11 +220,13 @@ class FacebookMessageSender
                     'clicks'  => [],
                     'buttons' => []
                 ];
-                foreach ($card->buttons as $button) {
-                    $cardStats['buttons'][] = [
-                        'id'     => $button->id,
-                        'clicks' => []
-                    ];
+                if ($card->buttons) {
+                    foreach ($card->buttons as $button) {
+                        $cardStats['buttons'][] = [
+                            'id'     => $button->id,
+                            'clicks' => []
+                        ];
+                    }
                 }
                 $data['cards'][] = $cardStats;
             }

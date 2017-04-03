@@ -1,9 +1,9 @@
 <?php namespace Common\Services;
 
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Common\Models\DefaultReply;
 use Common\Repositories\Bot\BotRepositoryInterface;
-use MongoDB\BSON\ObjectID;
 
 class DefaultReplyService
 {
@@ -48,13 +48,15 @@ class DefaultReplyService
     }
 
     /**
-     * @param $botId
+     * @param ObjectID $templateId
      * @return DefaultReply
      */
-    public function defaultDefaultReply(ObjectID $botId)
+    public function defaultDefaultReply(ObjectID $templateId)
     {
         return new DefaultReply([
-            'template_id' => $this->templates->createImplicit([], $botId)->_id
+            'enabled'     => true,
+            'always'      => true,
+            'template_id' => $templateId,
         ]);
     }
 }

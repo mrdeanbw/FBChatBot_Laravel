@@ -327,6 +327,37 @@ if (! function_exists('change_date')) {
     }
 }
 
+if (! function_exists('replace_text_vars')) {
+
+    function replace_text_vars($text, $replacement, $maxLength)
+    {
+        $fallbackText = $text;
+        $variables = implode('|', array_keys($replacement));
+        while (preg_match("/{{({$variables})\|(.*?)}}/", $text, $matches, PREG_OFFSET_CAPTURE)) {
+            $start = $matches[0][1];
+            $length = strlen($matches[0][0]);
+            $variable = $matches[1][0];
+            $fallback = $matches[2][0];
+            $value = $replacement[$variable];
+            $value = $value?: $fallback;
+            $text = substr_replace($text, $value, $start, $length);
+        }
+
+        if (strlen($text) <= $maxLength) {
+            return $text;
+        }
+
+        while (preg_match("/{{({$variables})\|(.*?)}}/", $fallbackText, $matches, PREG_OFFSET_CAPTURE)) {
+            $start = $matches[0][1];
+            $length = strlen($matches[0][0]);
+            $fallback = $matches[2][0];
+            $fallbackText = substr_replace($fallbackText, $fallback, $start, $length);
+        }
+
+        return $fallbackText;
+    }
+}
+
 if (! function_exists('valid_url')) {
 
     /**
@@ -353,6 +384,20 @@ if (! function_exists('valid_url')) {
         $~ixu';
 
         return preg_match($pattern, $url) > 0;
+    }
+}
+
+if (! function_exists('object_only')) {
+    function object_only($obj, $keys)
+    {
+        $ret = [];
+        foreach ($keys as $key) {
+            if ($value = object_get($obj, $key)) {
+                $ret[$key] = $value;
+            }
+        }
+
+        return $ret;
     }
 }
 

@@ -11,7 +11,7 @@ class ImplicitTemplateTransformer extends TemplateTransformer
             'id'       => $template->id,
             'name'     => $template->name,
             'explicit' => $template->explicit,
-            'messages' => $this->transformInclude($template->messages, new MessageTransformer())
+            'messages' => $this->transformInclude($template->clean_messages, new MessageTransformer())
         ];
     }
 }

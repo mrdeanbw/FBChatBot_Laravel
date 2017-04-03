@@ -1,9 +1,10 @@
 <?php namespace Common\Services;
 
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Common\Models\Message;
 use Common\Models\Template;
-use MongoDB\BSON\ObjectID;
+use Common\Models\ImageFile;
 use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Template\TemplateRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -14,11 +15,19 @@ class TemplateService
     /**
      * @type MessageService
      */
-    private $messages;
+    public $messages;
     /**
      * @type TemplateRepositoryInterface
      */
     private $templateRepo;
+
+    CONST ALLOWED_MESSAGE_FIELDS = [
+        'text'           => ['text', 'buttons'],
+        'image'          => ['image_url', 'file'],
+        'card_container' => ['cards'],
+        'card'           => ['title', 'subtitle', 'url', 'image_url', 'file', 'buttons'],
+        'button'         => ['title', 'url', 'messages', 'template', 'add_tags', 'remove_tags', 'add_sequences', 'remove_sequences', 'subscribe', 'unsubscribe'],
+    ];
 
     /**
      * TemplateService constructor.
@@ -71,17 +80,16 @@ class TemplateService
 
     /**
      * Create a new explicit template.
-     *
      * @param Bot   $bot
      * @param array $input
-     *
      * @return Template
      */
     public function createExplicit(array $input, Bot $bot)
     {
         $input['explicit'] = true;
+        $input['bot_id'] = $bot->_id;
 
-        return $this->create($input, $bot->_id);
+        return $this->create($input, false, true);
     }
 
     /**
@@ -93,49 +101,63 @@ class TemplateService
      */
     public function createImplicit(array $messages, ObjectID $botId, $allowReadOnly = false)
     {
-        $input['name'] = null;
-        $input['explicit'] = false;
-        $input['messages'] = $messages;
+        $input = [
+            'messages' => $messages,
+            'bot_id'   => $botId
+        ];
 
-        return $this->create($input, $botId, $allowReadOnly);
+        return $this->create($input, $allowReadOnly);
     }
 
     /**
      * @param array $input
-     * @param       $botId
-     *
      * @param bool  $allowReadOnly
-     *
-     * @return \Common\Models\BaseModel|Template
+     * @param bool  $allowButtonMessages
+     * @return Template
      */
-    private function create(array $input, ObjectID $botId, $allowReadOnly = false)
+    public function create(array $input, $allowReadOnly = false, $allowButtonMessages = false)
     {
-        $messages = $this->normalizeMessages($input['messages'], [], $botId, $allowReadOnly);
+        $messages = $this->normalizeMessages($input['messages'], [], $input['bot_id'], $allowReadOnly, $allowButtonMessages);
         if ($input['messages'] && ! $messages) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }
+        $input['messages'] = $messages;
 
-        return $this->templateRepo->create([
-            'bot_id'   => $botId,
-            'name'     => $input['name'],
-            'explicit' => $input['explicit'],
-            'messages' => $messages
-        ]);
+        /** @var Template $ret */
+        $ret = $this->templateRepo->create($input);
+
+        return $ret;
+    }
+
+    /**
+     * @param array $data
+     * @param bool  $allowReadOnly
+     * @return bool
+     */
+    public function bulkCreate(array $data, $allowReadOnly = false)
+    {
+        foreach ($data as &$input) {
+            $messages = $this->normalizeMessages($input['messages'], [], $input['bot_id'], $allowReadOnly);
+            if ($input['messages'] && ! $messages) {
+                throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
+            }
+            $input['messages'] = $messages;
+        }
+
+        return $this->templateRepo->bulkCreate($data);
     }
 
     /**
      * Update a message template.
-     *
-     * @param       $id
-     * @param Bot   $bot
-     * @param array $input
-     *
+     * @param ObjectID $id
+     * @param Bot      $bot
+     * @param array    $input
      * @return Template
      */
     public function updateExplicit($id, array $input, Bot $bot)
     {
         $template = $this->findExplicitOrFail($id, $bot);
-        $template = $this->update($template, array_only($input, ['name', 'messages']), $bot);
+        $template = $this->update($template, array_only($input, ['name', 'messages']), $bot, false, true);
 
         return $template;
     }
@@ -144,7 +166,6 @@ class TemplateService
      * @param string $templateId
      * @param array  $data
      * @param Bot    $bot
-     *
      * @return Template
      */
     public function updateImplicit($templateId, array $data, Bot $bot)
@@ -159,12 +180,13 @@ class TemplateService
      * @param Template $template
      * @param array    $input
      * @param Bot      $bot
-     *
+     * @param bool     $allowReadOnly
+     * @param bool     $allowButtonMessages
      * @return Template
      */
-    private function update(Template $template, array $input, Bot $bot)
+    private function update(Template $template, array $input, Bot $bot, $allowReadOnly = false, $allowButtonMessages = false)
     {
-        $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages, $bot->_id);
+        $input['messages'] = $this->normalizeMessages($input['messages'], $template->messages, $bot->_id, $allowReadOnly, $allowButtonMessages);
         if (! $input['messages']) {
             throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
         }
@@ -177,15 +199,20 @@ class TemplateService
     /**
      * @param array     $messages
      * @param Message[] $original
-     * @param           $botId
+     * @param ObjectID  $botId
      * @param bool      $allowReadOnly
-     * @return \Common\Models\Message[]
+     * @param bool      $allowButtonMessages
+     * @return Message[]
      */
-    private function normalizeMessages(array $messages, array $original, ObjectID $botId, $allowReadOnly = false)
+    private function normalizeMessages(array $messages, array $original, ObjectID $botId, $allowReadOnly = false, $allowButtonMessages = false)
     {
-        $messages = $this->messages->normalizeMessages($messages);
+        $messages = $this->recursivelyConstructMessage($messages, $allowButtonMessages);
 
-        return $this->messages->correspondInputMessagesToOriginal($messages, $original, $botId, $allowReadOnly);
+        $ret = $this->messages->correspondInputMessagesToOriginal($messages, $original, $botId, $allowReadOnly);
+
+        $this->messages->persistMessageRevisions();
+
+        return $ret;
     }
 
     /**
@@ -197,6 +224,44 @@ class TemplateService
         $this->messages->setVersioning($versioning);
 
         return $this;
+    }
+
+    private function recursivelyConstructMessage(array $messages, $allowButtonMessages)
+    {
+        foreach ($messages as $i => $message) {
+
+            $message = array_filter(array_only($message, array_merge(['id', 'readonly', 'type'], self::ALLOWED_MESSAGE_FIELDS[$message['type']])));
+
+            if (in_array($message['type'], ['text', 'card']) && $buttons = array_get($message, 'buttons')) {
+                $message['buttons'] = $this->recursivelyConstructMessage($buttons, $allowButtonMessages);
+            }
+
+            if ($message['type'] === 'card_container' && $cards = array_get($message, 'cards')) {
+                $message['cards'] = $this->recursivelyConstructMessage($cards, $allowButtonMessages);
+            }
+
+            if (in_array($message['type'], ['image', 'card']) && $file = array_get($message, 'file')) {
+                $message['file'] = new ImageFile($file);
+            }
+
+            if ($message['type'] == 'button') {
+                if ($template = array_get($message, 'template')) {
+                    $message['template_id'] = new ObjectID($template['id']);
+                    unset($message['template']);
+                } else {
+                    unset($message['template']);
+                    if ($allowButtonMessages && $buttonMessages = array_get($message, 'messages')) {
+                        $message['messages'] = $this->recursivelyConstructMessage($buttonMessages, $allowButtonMessages);
+                    } else {
+                        unset($message['messages']);
+                    }
+                }
+            }
+
+            $messages[$i] = Message::factory($message);
+        }
+
+        return $messages;
     }
 
 }

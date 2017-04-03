@@ -21,6 +21,7 @@ class GreetingTextController extends APIController
     public function __construct(GreetingTextService $greetingTexts)
     {
         $this->greetingTexts = $greetingTexts;
+        parent::__construct();
     }
 
     /**
@@ -40,7 +41,7 @@ class GreetingTextController extends APIController
 
         $this->greetingTexts->update($request->all(), $bot, $this->user());
 
-        return $this->itemResponse($bot->greeting_text);
+        return $this->itemResponse($bot->greeting_text[0]);
     }
 
     /** @return BaseTransformer */

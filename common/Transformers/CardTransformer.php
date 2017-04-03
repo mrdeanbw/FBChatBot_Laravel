@@ -17,7 +17,7 @@ class CardTransformer extends BaseTransformer
             'title'     => $card->title,
             'subtitle'  => $card->subtitle,
             'image_url' => $card->image_url,
-            'buttons'   => $this->transformInclude($card->buttons, new MessageTransformer())
+            'buttons'   => (array)$this->transformInclude($card->buttons, new MessageTransformer())
         ];
     }
 }

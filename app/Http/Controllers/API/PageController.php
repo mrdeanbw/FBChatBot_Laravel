@@ -28,6 +28,7 @@ class PageController extends APIController
     {
         $this->pages = $pages;
         $this->timezones = $timezones;
+        parent::__construct();
     }
 
     /**

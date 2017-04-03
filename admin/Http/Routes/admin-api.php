@@ -8,6 +8,7 @@ $api = app(Router::class);
 $options = [
     'middleware' => [
         Common\Http\Middleware\CorsMiddleware::class,
+        Common\Http\Middleware\RedirectCrawlers::class,
         'api.throttle'
     ],
     'limit'      => config('api.throttle.limit'),

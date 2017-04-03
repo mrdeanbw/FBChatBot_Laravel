@@ -36,6 +36,7 @@ class UserController extends APIController
         $this->account = $account;
         $this->JWTAuth = app('tymon.jwt.auth');
         $this->userRepository = $userRepo;
+        parent::__construct();
     }
 
     /**

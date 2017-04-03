@@ -5,6 +5,7 @@ use Common\Models\Bot;
 use Common\Services\Facebook;
 use Common\Services\FacebookAdapter;
 use Common\Exceptions\DisallowedBotOperation;
+use MongoDB\BSON\ObjectID;
 
 class UpdateGreetingTextOnFacebook extends BaseJob
 {
@@ -19,10 +20,10 @@ class UpdateGreetingTextOnFacebook extends BaseJob
 
     /**
      * UpdateGreetingTextOnFacebook constructor.
-     * @param Bot $bot
-     * @param     $userId
+     * @param Bot      $bot
+     * @param ObjectID $userId
      */
-    public function __construct(Bot $bot, $userId)
+    public function __construct(Bot $bot, ObjectID $userId)
     {
         $this->bot = $bot;
         $this->userId = $userId;
@@ -37,10 +38,9 @@ class UpdateGreetingTextOnFacebook extends BaseJob
     public function handle(FacebookAdapter $FacebookAdapter)
     {
         $this->setSentryContext($this->bot->_id);
-        $text = $this->normaliseGreetingText($this->bot->greeting_text);
 
         try {
-            $response = $FacebookAdapter->addGreetingText($this->bot, $text);
+            $response = $FacebookAdapter->addGreetingText($this->bot);
         } catch (DisallowedBotOperation $e) {
             return;
         }
@@ -50,21 +50,5 @@ class UpdateGreetingTextOnFacebook extends BaseJob
         if (! $success) {
             throw new Exception("{$this->frontendFailMessageBody}. Facebook response: " . $response->result);
         }
-    }
-
-
-    /**
-     * Map our own name placeholder {{SHORT_CODE}} to Facebook processed placeholder.
-     * @see https://developers.facebook.com/docs/messenger-platform/thread-settings/greeting-text#personalization
-     * @param $greetingText
-     * @return string
-     */
-    public function normaliseGreetingText($greetingText)
-    {
-        return str_replace(
-            ['{{first_name}}', '{{last_name}}', '{{full_name}}'],
-            ['{{user_first_name}}', '{{user_last_name}}', '{{user_full_name}}'],
-            $greetingText->text
-        );
     }
 }

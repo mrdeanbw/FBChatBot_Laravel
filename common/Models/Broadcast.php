@@ -31,6 +31,21 @@ class Broadcast extends BaseModel
 
     protected $dates = ['send_at', 'completed_at'];
 
-    public $arrayModels = ['filter' => AudienceFilter::class];
-    public $multiArrayModels = ['schedules' => BroadcastSchedule::class];
+//    public $embedded = [
+//        'filter.groups.rules' => [AudienceFilterRule::class],
+//        'filter.groups'       => [AudienceFilterGroup::class],
+//        'filter'              => AudienceFilter::class,
+//        'schedules'           => [BroadcastSchedule::class]
+//    ];
+
+    /**
+     * @param array $attributes
+     * @param bool  $sync
+     * @return BaseModel
+     */
+    public function setRawAttributes(array $attributes, $sync = false)
+    {
+        return parent::setRawAttributes($attributes, $sync);
+    }
+
 }

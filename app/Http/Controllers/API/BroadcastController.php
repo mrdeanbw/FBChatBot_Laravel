@@ -1,5 +1,6 @@
 <?php namespace App\Http\Controllers\API;
 
+use MongoDB\BSON\ObjectID;
 use Illuminate\Http\Request;
 use Common\Models\Broadcast;
 use Common\Jobs\SendDueBroadcast;
@@ -24,6 +25,7 @@ class BroadcastController extends APIController
     public function __construct(BroadcastService $broadcasts)
     {
         $this->broadcasts = $broadcasts;
+        parent::__construct();
     }
 
     /**
@@ -48,7 +50,7 @@ class BroadcastController extends APIController
     {
         $page = (int)$request->get('page', 1);
         $broadcasts = $this->broadcasts->paginateNonPending($this->enabledBot(), $page);
-        
+
         return $this->paginatorResponse($broadcasts);
     }
 
@@ -59,6 +61,7 @@ class BroadcastController extends APIController
      */
     public function show($id)
     {
+        $id = new ObjectID($id);
         $broadcast = $this->broadcasts->broadcastWithDetailedStats($id, $this->enabledBot());
 
         return $this->itemResponse($broadcast);
@@ -92,6 +95,7 @@ class BroadcastController extends APIController
      */
     public function update($id, Request $request)
     {
+        $id = new ObjectID($id);
         $bot = $this->enabledBot();
 
         $this->validate($request, $this->validationRules(), $this->filterGroupRuleValidationCallback($bot));
@@ -112,6 +116,7 @@ class BroadcastController extends APIController
      */
     public function destroy($id)
     {
+        $id = new ObjectID($id);
         $this->broadcasts->delete($id, $this->enabledBot());
 
         return $this->response->accepted();
@@ -125,7 +130,7 @@ class BroadcastController extends APIController
         return [
             'template'                      => 'bail|required|array',
             'template.messages'             => 'bail|required|array|max:10',
-            'template.messages.*'           => 'bail|required|message',
+            'template.messages.*'           => 'bail|required|array|message',
             'name'                          => 'bail|required|max:255',
             'message_type'                  => 'bail|required|in:subscription,promotional,follow_up',
             'filter'                        => 'bail|required|array',

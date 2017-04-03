@@ -5,6 +5,7 @@ use Common\Models\User;
 use Common\Models\Button;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
+use Illuminate\Support\Collection;
 use Illuminate\Pagination\Paginator;
 use Common\Repositories\BaseRepositoryInterface;
 
@@ -13,8 +14,7 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
 
     const MESSAGE_ALREADY_SUBSCRIBED = 0;
     const MESSAGE_ALREADY_UNSUBSCRIBED = 1;
-    const MESSAGE_CONFIRM_UNSUBSCRIPTION = 2;
-    const MESSAGE_SUCCESSFUL_UNSUBSCRIPTION = 3;
+    const MESSAGE_SUCCESSFUL_UNSUBSCRIPTION = 2;
 
     /**
      * Find a bot by its id.
@@ -96,10 +96,11 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
     public function setSubscriberForUser(User $user, Subscriber $subscriber, Bot $bot);
 
     /**
-     * @param       $botId
-     * @param array $tags
+     * @param Bot          $bot
+     * @param array|string $tags
+     * @return
      */
-    public function createTagsForBot($botId, array $tags);
+    public function createTagsForBot(Bot $bot, $tags);
 
     /**
      * @param Bot    $bot
@@ -112,10 +113,16 @@ interface BotRepositoryInterface extends BaseRepositoryInterface
      * @return int
      */
     public function countEnabledForUser(User $user);
-    
+
     /**
      * @param User $user
      * @return int
      */
     public function countDisabledForUser(User $user);
+
+    /**
+     * @param User $user
+     * @return Collection
+     */
+    public function getAllForUser(User $user);
 }

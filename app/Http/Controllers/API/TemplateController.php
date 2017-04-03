@@ -1,6 +1,7 @@
 <?php namespace App\Http\Controllers\API;
 
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Illuminate\Http\Request;
 use Common\Services\TemplateService;
 use Common\Transformers\BaseTransformer;
@@ -21,6 +22,7 @@ class TemplateController extends APIController
     public function __construct(TemplateService $templates)
     {
         $this->templates = $templates;
+        parent::__construct();
     }
 
     /**
@@ -36,7 +38,6 @@ class TemplateController extends APIController
             ['name' => $request->get('name')]
         );
 
-
         return $this->paginatorResponse($paginator);
     }
 
@@ -47,6 +48,7 @@ class TemplateController extends APIController
      */
     public function show($id)
     {
+        $id = new ObjectID($id);
         $template = $this->templates->findExplicitOrFail($id, $this->enabledBot());
 
         return $this->itemResponse($template);
@@ -60,7 +62,12 @@ class TemplateController extends APIController
     public function store(Request $request)
     {
         $bot = $this->enabledBot();
-        $this->validate($request, $this->validationRules(null, $bot));
+        $this->validateForBot($bot, $request, [
+            'name'       => "bail|required|max:255|unique_template_name",
+            'messages'   => 'bail|required|array|max:10',
+            'messages.*' => 'bail|required|message',
+        ], true);
+
         $template = $this->templates->createExplicit($request->all(), $bot);
 
         return $this->itemResponse($template);
@@ -68,36 +75,22 @@ class TemplateController extends APIController
 
     /**
      * Update a message tree.
-     * @param         $id
+     * @param string  $id
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function update($id, Request $request)
     {
+        $id = new ObjectID($id);
         $bot = $this->enabledBot();
-        $this->validate($request, $this->validationRules($id, $bot));
+        $this->validateForBot($bot, $request, [
+            'name'       => "bail|required|max:255|unique_template_name:{$id}",
+            'messages'   => 'bail|required|array|max:10',
+            'messages.*' => 'bail|required|message',
+        ], true);
         $template = $this->templates->updateExplicit($id, $request->all(), $bot);
 
         return $this->itemResponse($template);
-    }
-
-    /**
-     * Make the validator for message trees.
-     * @param     $id
-     * @param Bot $bot
-     * @return array
-     */
-    protected function validationRules($id, Bot $bot)
-    {
-        $nameUniqueRule = "ci_unique:templates,name,_id,{$id},bot_id,oi:{$bot->id}";
-
-        $rules = [
-            'name'       => "bail|required|max:255|{$nameUniqueRule}",
-            'messages'   => 'bail|required|array|max:10',
-            'messages.*' => 'bail|required|message',
-        ];
-
-        return $rules;
     }
 
     /**

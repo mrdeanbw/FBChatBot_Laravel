@@ -5,6 +5,7 @@ use Common\Models\Subscriber;
 use Common\Models\Template;
 use Illuminate\Support\Collection;
 use Common\Repositories\DBAssociatedWithBotRepository;
+use MongoDB\BSON\ObjectID;
 
 class DBTemplateRepository extends DBAssociatedWithBotRepository implements TemplateRepositoryInterface
 {
@@ -47,5 +48,21 @@ class DBTemplateRepository extends DBAssociatedWithBotRepository implements Temp
         ];
 
         return $this->getOne($filter);
+    }
+
+    /**
+     * @param string        $value
+     * @param Bot           $bot
+     * @param ObjectID|null $exception
+     * @return bool
+     */
+    public function nameExists($value, Bot $bot, ObjectID $exception = null)
+    {
+        $query = Template::where('name', $value)->where('bot_id', $bot->_id);
+        if ($exception) {
+            $query->where('_id', '!=', $exception);
+        }
+
+        return $query->exists();
     }
 }

@@ -1,13 +1,13 @@
 <?php namespace Common\Services;
 
-use HttpException;
 use Common\Models\Page;
 use Common\Models\User;
 use Illuminate\Support\Collection;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Services\Facebook\Pages as FacebookPage;
 use Common\Repositories\User\UserRepositoryInterface;
-use Common\Exceptions\InvalidBotAccessTokenException;
+use Common\Exceptions\MissingUserPermissionsException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class PageService
 {
@@ -52,14 +52,14 @@ class PageService
     /**
      * @param User $user
      * @return array
-     * @throws HttpException
+     * @throws AccessDeniedHttpException
      */
     public function getAdministratedFacebookPages(User $user)
     {
         try {
             $pages = $this->FacebookAdapter->getManagedPageList($user);
-        } catch (InvalidBotAccessTokenException $e) {
-            throw new HttpException(403, "missing_permissions");
+        } catch (MissingUserPermissionsException $e) {
+            throw new AccessDeniedHttpException("missing_permissions");
         }
 
         return array_filter((array)$pages, function ($page) {

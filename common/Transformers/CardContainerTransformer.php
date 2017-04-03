@@ -13,7 +13,7 @@ class CardContainerTransformer extends BaseTransformer
     public function transform($cardContainer)
     {
         return [
-            'cards'    => $this->transformInclude($cardContainer->cards, new MessageTransformer())
+            'cards' => $this->transformInclude($cardContainer->cards, new MessageTransformer())
         ];
     }
 }

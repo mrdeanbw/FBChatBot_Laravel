@@ -19,8 +19,9 @@ class MessagePreviewController extends APIController
     public function __construct(MessagePreviewService $messagePreviews)
     {
         $this->messagePreviews = $messagePreviews;
+        parent::__construct();
     }
-    
+
     /**
      * Create a message preview.
      * @param Request $request
@@ -28,25 +29,20 @@ class MessagePreviewController extends APIController
      */
     public function store(Request $request)
     {
-        $rules = $this->validationRules();
-        $this->validate($request, $rules);
+        $bot = $this->enabledBot();
+        $this->validateForBot($bot, $request, [
+            'template'            => 'bail|required|array',
+            'template.messages'   => 'bail|required|array|max:10',
+            'template.messages.*' => 'bail|required|array|message',
+        ]);
 
         $this->messagePreviews->createAndSend($request->all(), $this->user(), $this->enabledBot());
 
         return $this->response->created();
     }
-    
+
     /** @return BaseTransformer */
     protected function transformer()
     {
-    }
-
-    private function validationRules()
-    {
-        return [
-            'template'            => 'bail|required|array',
-            'template.messages'   => 'bail|required|array|max:10',
-            'template.messages.*' => 'bail|required|message',
-        ];
     }
 }

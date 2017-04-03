@@ -1,6 +1,8 @@
 <?php namespace App\Http\Controllers\API;
 
 use Common\Models\Bot;
+use Common\Services\Validation\BotValidator;
+use MongoDB\BSON\ObjectID;
 use Illuminate\Http\Request;
 use Common\Services\BotService;
 use Common\Http\Controllers\APIController as BaseAPIController;
@@ -66,7 +68,7 @@ abstract class APIController extends BaseAPIController
             return $this->bot = $bot;
         }
 
-        return $this->response->errorNotFound();
+        $this->response->errorNotFound();
     }
 
     /**
@@ -83,7 +85,7 @@ abstract class APIController extends BaseAPIController
             return $this->enabledBot = $bot;
         }
 
-        return $this->response->errorNotFound();
+        $this->response->errorNotFound();
     }
 
     /**
@@ -100,7 +102,7 @@ abstract class APIController extends BaseAPIController
             return $this->disabledBot = $bot;
         }
 
-        return $this->response->errorNotFound();
+        $this->response->errorNotFound();
     }
 
     /**
@@ -114,13 +116,26 @@ abstract class APIController extends BaseAPIController
         $routeParameters = $request->route()[2];
 
         $botId = array_get($routeParameters, 'botId');
+        $botId = $botId?: array_get($routeParameters, 'id');
 
-        if (! $botId) {
-            $botId = array_get($routeParameters, 'id');
+        return new ObjectID($botId);
+    }
 
-            return $botId;
+
+    /**
+     * A helper method to make the Validator.
+     * @param Bot     $bot
+     * @param Request $request
+     * @param array   $rules
+     * @param bool    $allowButtonMessages
+     */
+    public function validateForBot(Bot $bot, Request $request, array $rules, $allowButtonMessages = false)
+    {
+        $input = $request->all();
+        $validator = BotValidator::factory($bot, \Validator::make($input, $rules, [], []), $allowButtonMessages);
+        //If the validation fails, terminate the request and return the error messages.
+        if ($validator->fails()) {
+            $this->errorsResponse($validator->errors());
         }
-
-        return $botId;
     }
 }

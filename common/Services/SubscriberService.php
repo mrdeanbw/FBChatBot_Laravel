@@ -9,6 +9,7 @@ use Common\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\Sequence\SequenceRepositoryInterface;
+use phpDocumentor\Reflection\Project;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Common\Repositories\Sequence\SequenceScheduleRepositoryInterface;
@@ -97,13 +98,13 @@ class SubscriberService
     }
 
     /**
-     * @param      $id
-     * @param Bot  $bot
+     * @param ObjectID $id
+     * @param Bot      $bot
      * @return \Common\Models\BaseModel|Subscriber
      */
-    public function findForBotOrFail($id, Bot $bot)
+    public function findForBotOrFail(ObjectID $id, Bot $bot)
     {
-        if ($subscriber = $this->subscriberRepo->findByIdForBot($id, $bot)) {
+        if ($subscriber = $this->subscriberRepo->findByIdForBot($id, $bot->_id)) {
             return $subscriber;
         }
         throw new NotFoundHttpException;
@@ -111,9 +112,9 @@ class SubscriberService
 
     /**
      * Get or create a new subscriber to a given page.
-     * @param      $id
-     * @param Bot  $bot
-     * @param bool $isActive whether or not the user is actually an active subscriber or not.
+     * @param string $id
+     * @param Bot    $bot
+     * @param bool   $isActive whether or not the user is actually an active subscriber or not.
      * @return Subscriber|null
      */
     public function getByFacebookIdOrCreate($id, Bot $bot, $isActive = false)
@@ -125,22 +126,24 @@ class SubscriberService
         $publicProfile = $this->FacebookAdapter->publicUserProfile($bot, $id);
 
         $data = [
-            'facebook_id'          => $id,
-            'first_name'           => $publicProfile->first_name,
-            'last_name'            => $publicProfile->last_name,
-            'avatar_url'           => $publicProfile->profile_pic,
-            'locale'               => $publicProfile->locale,
-            'timezone'             => $publicProfile->timezone,
-            'gender'               => isset($publicProfile->gender)? $publicProfile->gender : null,
-            'active'               => $isActive,
-            'bot_id'               => $bot->_id,
-            'last_subscribed_at'   => $isActive? Carbon::now() : null,
-            'last_unsubscribed_at' => null,
-            'tags'                 => [],
-            'sequences'            => [],
-            'removed_sequences'    => [],
-            'history'              => [],
+            'facebook_id' => $id,
+            'first_name'  => $publicProfile->first_name,
+            'last_name'   => $publicProfile->last_name,
+            'avatar_url'  => $publicProfile->profile_pic,
+            'locale'      => $publicProfile->locale,
+            'timezone'    => $publicProfile->timezone,
+            'bot_id'      => $bot->_id,
+            'tags'        => ['new'],
         ];
+
+        if ($gender = object_get($publicProfile, 'gender')) {
+            $data['gender'] = $gender;
+        }
+
+        if ($isActive) {
+            $data['active'] = $isActive;
+            $data['last_subscribed_at'] = Carbon::now();
+        }
 
         /** @type Subscriber $subscriber */
         $subscriber = $this->subscriberRepo->create($data);
@@ -358,20 +361,14 @@ class SubscriberService
 
     /**
      * Update a subscriber.
-     *
-     * @param array $input
-     * @param int   $subscriberId
-     * @param Bot   $bot
-     *
+     * @param array    $input
+     * @param ObjectID $subscriberId
+     * @param Bot      $bot
      * @return Subscriber
      */
-    public function update(array $input, $subscriberId, Bot $bot)
+    public function update(array $input, ObjectID $subscriberId, Bot $bot)
     {
         $subscriber = $this->findForBotOrFail($subscriberId, $bot);
-
-        if ($tags = array_get($input, 'tags', [])) {
-            $this->botRepo->createTagsForBot($bot->_id, $tags);
-        }
 
         $newSequenceIDs = array_map(function ($sequence) {
             return new ObjectID($sequence['id']);
@@ -415,7 +412,7 @@ class SubscriberService
             $actions = $input['actions'];
 
             if ($tags = array_merge(array_get($actions, 'add_tags', []), array_get($actions, 'remove_tags', []))) {
-                $this->botRepo->createTagsForBot($bot->_id, $tags);
+                //                $this->botRepo->createTagsForBot($bot->_id, $tags);
             }
 
             $actions['add_sequences'] = array_map(function ($sequence) {

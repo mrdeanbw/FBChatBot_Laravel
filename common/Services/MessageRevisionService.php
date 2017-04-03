@@ -33,13 +33,13 @@ class MessageRevisionService
     }
 
     /**
-     * @param     $messageId
-     * @param Bot $bot
+     * @param ObjectID $messageId
+     * @param Bot      $bot
      * @return Collection
      */
-    public function getRevisionsWithStatsForMessage($messageId, Bot $bot)
+    public function getRevisionsWithStatsForMessage(ObjectID $messageId, Bot $bot)
     {
-        $revisions = $this->messageRevisionRepo->getMessageRevisionsWithBot(new ObjectID($messageId), $bot);
+        $revisions = $this->messageRevisionRepo->getMessageRevisionsWithBot($messageId, $bot);
         $this->associateRevisionStats($revisions);
 
         return $revisions;
@@ -53,28 +53,16 @@ class MessageRevisionService
         $revisionCount = count($revisions);
         for ($i = 0; $i < $revisionCount; $i++) {
             $revision = $revisions[$i];
-            $nextRevision = $i == $revisionCount - 1? null : $revisions[$i + 1];
-            $this->setRevisionStats($revision, $nextRevision);
+            $this->sentMessages->setFullMessageStats($revision);
         }
     }
 
     /**
-     * @param MessageRevision      $revision
-     * @param MessageRevision|null $nextRevision
-     * @return array
-     */
-    private function setRevisionStats(MessageRevision $revision, $nextRevision)
-    {
-        $end = $nextRevision? $nextRevision->created_at : null;
-        $this->sentMessages->setFullMessageStats($revision, $revision->message_id, $revision->created_at, $end);
-    }
-
-    /**
-     * @param     $buttonId
-     * @param Bot $bot
+     * @param ObjectID $buttonId
+     * @param Bot      $bot
      * @return Collection
      */
-    public function getRevisionsWithStatsForMainMenuButton($buttonId, Bot $bot)
+    public function getRevisionsWithStatsForMainMenuButton(ObjectID $buttonId, Bot $bot)
     {
         $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
             return (string)$button->id === $buttonId;
@@ -84,7 +72,7 @@ class MessageRevisionService
             throw new NotFoundHttpException;
         }
 
-        $revisions = $this->messageRevisionRepo->getMessageRevisionsWithBot(new ObjectID($buttonId), $bot);
+        $revisions = $this->messageRevisionRepo->getMessageRevisionsWithBot($buttonId, $bot);
 
         return $this->normalizeMainMenuButtonRevisions($revisions);
     }
@@ -98,8 +86,8 @@ class MessageRevisionService
         $revisions->map(function (MessageRevision $revision) {
             $revision->stats = [
                 'clicked' => [
-                    'total'          => $revision->clicks['total'],
-                    'per_subscriber' => count($revision->clicks['subscribers'])
+                    'total'          => array_get($revision->clicks, 'total', 0),
+                    'per_subscriber' => count(array_get($revision->clicks, 'subscribers', []))
                 ]
             ];
         });

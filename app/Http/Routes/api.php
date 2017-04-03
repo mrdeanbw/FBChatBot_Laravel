@@ -1,7 +1,16 @@
 <?php
 
+use Common\Models\Bot;
+use Common\Models\SentMessage;
+use Common\Models\Subscriber;
+use Common\Models\User;
+use Common\Repositories\Bot\BotRepositoryInterface;
+use Common\Repositories\SentMessage\DBSentMessageRepository;
+use Common\Services\FacebookMessageSender;
 use Dingo\Api\Routing\Router;
+use Common\Jobs\UpdateMainMenuOnFacebook;
 use Common\Http\Middleware\AuthorizedMiddleware;
+use MongoDB\BSON\ObjectID;
 
 /** @type Router $api */
 $api = app(Router::class);
@@ -9,6 +18,7 @@ $api = app(Router::class);
 $options = [
     'middleware' => [
         Common\Http\Middleware\CorsMiddleware::class,
+        Common\Http\Middleware\RedirectCrawlers::class,
         'api.throttle'
     ],
     'limit'      => config('api.throttle.limit'),
@@ -18,7 +28,11 @@ $options = [
 
 $api->version('v1', $options, function (Router $api) {
 
-    $api->get('/test', function () {
+    $api->get('/test', function (DBSentMessageRepository $repo) {
+        $id = new ObjectId("58e245d05d3a1441e8007e5b");
+        $cardId = new ObjectId("58e245085d3a1441e8007e57");
+        $buttonId = new ObjectId("58e245085d3a1441e8007e58");
+        return SentMessage::where('_id', $id)->where('cards.id', $cardId)->push('cards.$.buttons.1.clicks', mongo_date());
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');
@@ -46,6 +60,8 @@ $api->version('v1', $options, function (Router $api) {
         $api->get('/bots/disabled/count', 'BotController@countDisabled');
         $api->post('/bots/disabled/{id}/enable', 'BotController@enable');
 
+        // Tags
+        $api->post('/bots/enabled/{id}/tags', 'BotController@createTag');
 
         // Greeting Text.
         $api->put('/bots/enabled/{botId}/greeting-text', 'GreetingTextController@update');
@@ -81,19 +97,19 @@ $api->version('v1', $options, function (Router $api) {
         $api->patch('/bots/enabled/{botId}/subscribers/{id}', 'SubscriberController@update');
         $api->patch('/bots/enabled/{botId}/subscribers', 'SubscriberController@batchUpdate');
 
-        // Sequences
-        $api->get('/bots/enabled/{botId}/sequences', 'SequenceController@index');
-        $api->get('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@show');
-        $api->post('/bots/enabled/{botId}/sequences', 'SequenceController@store');
-        $api->delete('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@destroy');
-        $api->put('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@update');
-
-        // Sequence Messages
-        $api->get('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@show');
-        $api->post('/bots/enabled/{botId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
-        $api->put('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@update');
-        $api->put('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}/conditions', 'SequenceMessageController@updateConditions');
-        $api->delete('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
+        //        // Sequences
+        //        $api->get('/bots/enabled/{botId}/sequences', 'SequenceController@index');
+        //        $api->get('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@show');
+        //        $api->post('/bots/enabled/{botId}/sequences', 'SequenceController@store');
+        //        $api->delete('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@destroy');
+        //        $api->put('/bots/enabled/{botId}/sequences/{id}', 'SequenceController@update');
+        //
+        //        // Sequence Messages
+        //        $api->get('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@show');
+        //        $api->post('/bots/enabled/{botId}/sequences/{sequenceId}/messages', 'SequenceMessageController@store');
+        //        $api->put('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@update');
+        //        $api->put('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}/conditions', 'SequenceMessageController@updateConditions');
+        //        $api->delete('/bots/enabled/{botId}/sequences/{sequenceId}/messages/{id}', 'SequenceMessageController@destroy');
 
         // Broadcasts
         $api->get('/bots/enabled/{botId}/broadcasts/pending', 'BroadcastController@pending');

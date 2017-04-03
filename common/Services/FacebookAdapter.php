@@ -1,6 +1,7 @@
 <?php namespace Common\Services;
 
 use Closure;
+use Common\Exceptions\MissingUserPermissionsException;
 use Common\Models\Bot;
 use Common\Models\User;
 use Illuminate\Support\Collection;
@@ -88,19 +89,26 @@ class FacebookAdapter
     /**
      * @param User $user
      * @return false|object
+     * @throws MissingUserPermissionsException
      */
     public function getManagedPageList(User $user)
     {
         try {
             $response = $this->pages->getManagedPageList($user->access_token);
+            if (! count($response)) {
+                $permissions = $this->auth->getGrantedPermissionList($user->access_token);
+                if (! $this->userService->hasAllManagingPagePermissions($permissions)) {
+                    $this->userRepo->update($user, ['granted_permissions' => $permissions]);
+                    throw new MissingUserPermissionsException();
+                }
+            }
         } catch (ClientException $e) {
             $response = $e->getResponse();
             if ($this->isRevokedAccess($response)) {
                 $permissions = $this->auth->getGrantedPermissionList($user->access_token);
                 if (! $this->userService->hasAllManagingPagePermissions($permissions)) {
                     $this->userRepo->update($user, ['granted_permissions' => $permissions]);
-
-                    return false;
+                    throw new MissingUserPermissionsException();
                 }
             }
             throw  $e;
@@ -110,19 +118,20 @@ class FacebookAdapter
     }
 
     /**
-     * @param Bot    $bot
-     * @param string $text
+     * @param Bot $bot
      * @return object
      * @throws DisallowedBotOperation
      */
-    public function addGreetingText(Bot $bot, $text)
+    public function addGreetingText(Bot $bot)
     {
+        $text = replace_text_vars($bot->greeting_text[0]->text, ['page_name' => $bot->page->name], 160);
+
         $facebookCallback = function ($accessToken) use ($text) {
             return $this->messengerThreads->addGreetingText($accessToken, $text);
         };
 
-        $retryCallback = function (Bot $bot) use ($text) {
-            return $this->addGreetingText($bot, $text);
+        $retryCallback = function (Bot $bot) {
+            return $this->addGreetingText($bot);
         };
 
         $message = "Failed to add the greeting text because of denied Facebook permissions!";

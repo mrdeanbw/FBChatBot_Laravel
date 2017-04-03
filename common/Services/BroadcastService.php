@@ -7,6 +7,7 @@ use Common\Models\AudienceFilter;
 use Common\Models\BroadcastSchedule;
 use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
+use MongoDB\BSON\ObjectID;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 
@@ -97,25 +98,25 @@ class BroadcastService
     }
 
     /**
-     * @param      $id
-     * @param Bot  $bot
+     * @param ObjectID $id
+     * @param Bot      $bot
      * @return Broadcast|null
      */
-    public function findById($id, Bot $bot)
+    public function findById(ObjectID $id, Bot $bot)
     {
         /** @type Broadcast $ret */
-        $ret = $this->broadcastRepo->findByIdForBot($id, $bot);
+        $ret = $this->broadcastRepo->findByIdForBot($id, $bot->_id);
 
         return $ret;
     }
 
     /**
      * Find a broadcast by ID, throw exception if it doesn't exist.
-     * @param      $id
-     * @param Bot  $bot
+     * @param ObjectID $id
+     * @param Bot      $bot
      * @return Broadcast|null
      */
-    public function findByIdOrFail($id, Bot $bot)
+    public function findByIdOrFail(ObjectID $id, Bot $bot)
     {
         if ($broadcast = $this->findById($id, $bot)) {
             return $broadcast;
@@ -125,12 +126,12 @@ class BroadcastService
 
     /**
      * Find a broadcast by ID and status, throw exception if it doesn't exist.
-     * @param     $id
-     * @param Bot $bot
-     * @param int $status
+     * @param ObjectID $id
+     * @param Bot      $bot
+     * @param int      $status
      * @return Broadcast
      */
-    public function findByIdAndStatusOrFail($id, $status, Bot $bot)
+    public function findByIdAndStatusOrFail(ObjectID $id, $status, Bot $bot)
     {
         $broadcast = $this->findById($id, $bot);
 
@@ -174,14 +175,12 @@ class BroadcastService
 
     /**
      * Update a broadcast.
-     *
-     * @param        $id
-     * @param array  $input
-     * @param Bot    $bot
-     *
+     * @param ObjectID $id
+     * @param array    $input
+     * @param Bot      $bot
      * @return Broadcast
      */
-    public function update($id, array $input, Bot $bot)
+    public function update(ObjectID $id, array $input, Bot $bot)
     {
         $broadcast = $this->findByIdAndStatusOrFail($id, BroadcastRepositoryInterface::STATUS_PENDING, $bot);
 
@@ -291,21 +290,21 @@ class BroadcastService
     }
 
     /**
-     * @param      $id
-     * @param Bot  $bot
+     * @param ObjectID $id
+     * @param Bot      $bot
      */
-    public function delete($id, $bot)
+    public function delete(ObjectID $id, $bot)
     {
         $broadcast = $this->findByIdAndStatusOrFail($id, BroadcastRepositoryInterface::STATUS_PENDING, $bot);
         $this->broadcastRepo->delete($broadcast);
     }
 
     /**
-     * @param     $broadcastId
-     * @param Bot $bot
+     * @param ObjectID $broadcastId
+     * @param Bot      $bot
      * @return Broadcast
      */
-    public function broadcastWithDetailedStats($broadcastId, Bot $bot)
+    public function broadcastWithDetailedStats(ObjectID $broadcastId, Bot $bot)
     {
         $broadcast = $this->findByIdOrFail($broadcastId, $bot);
         if ($broadcast->status == BroadcastRepositoryInterface::STATUS_PENDING) {
@@ -314,13 +313,13 @@ class BroadcastService
 
         $this->loadModelsIfNotLoaded($broadcast, ['template']);
 
-
-        foreach ($broadcast->template->messages as $i => $message) {
+        foreach ($broadcast->template->clean_messages as $i => $message) {
             if (! $i) {
-                $this->sentMessages->setFullMessageStats($message, $message->id);
+                //                $this->sentMessages->setFullMessageStats($message, $message->id);
             } else {
-                $this->sentMessages->setMessageClickableStats($message, $message->id);
+                //              $this->sentMessages->setMessageClickableStats($message, $message->id);
             }
+            throw new \Exception("Unimplmented");
         }
 
         return $broadcast;

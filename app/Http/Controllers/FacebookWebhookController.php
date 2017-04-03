@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Common\Services\BotService;
+use Common\Jobs\DeAuthorizeUser;
 use Common\Http\Controllers\Controller;
 use Common\Services\Facebook\AppVerifier;
 use Common\Jobs\HandleIncomingFacebookCallback;
@@ -44,34 +45,23 @@ class FacebookWebhookController extends Controller
 
     /**
      * Handle when a Facebook user de-authorizes our app.
-     * @param Request    $request
-     * @param BotService $pages
+     * @param Request $request
      * @return \Illuminate\Http\Response|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function deauthorize(Request $request, BotService $pages)
+    public function deauthorize(Request $request)
     {
-//        $signedRequest = $request->get('signed_request', '');
-//        $FacebookAppSecret = config('services.facebook.client_secret');
-//
-//        $parsedRequest = parse_Facebook_signed_request($signedRequest, $FacebookAppSecret);
-//        $id = array_get($parsedRequest, 'user_id');
-//        if (! $id) {
-//            return response('');
-//        }
-//
-//        $user = User::whereFacebookId($id)->first();
-//        if (! $user) {
-//            return response('');
-//        }
-//
-//        DB::transaction(function () use ($user, $pages) {
-//            foreach ($user->pages as $page) {
-//                if (! $page->users()->where('id', '!=', $user->id)->count()) {
-//                    $pages->disableBot($page);
-//                }
-//            }
-//            $user->delete();
-//        });
+        \Log::debug($request->method());
+        \Log::debug(json_encode($request->all()));
+        $signedRequest = $request->get('signed_request', '');
+        $FacebookAppSecret = config('services.facebook.client_secret');
+
+        $parsedRequest = parse_Facebook_signed_request($signedRequest, $FacebookAppSecret);
+        $id = array_get($parsedRequest, 'user_id');
+        if (! $id) {
+            return response('');
+        }
+
+        dispatch(new DeAuthorizeUser($id));
 
         return response('');
     }

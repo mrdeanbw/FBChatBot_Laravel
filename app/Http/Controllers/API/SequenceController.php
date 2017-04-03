@@ -5,6 +5,7 @@ use Common\Services\SequenceService;
 use Common\Transformers\BaseTransformer;
 use Common\Transformers\SequenceTransformer;
 use Common\Services\Validation\FilterAudienceRuleValidator;
+use MongoDB\BSON\ObjectID;
 
 class SequenceController extends APIController
 {
@@ -24,6 +25,7 @@ class SequenceController extends APIController
     public function __construct(SequenceService $sequences)
     {
         $this->sequences = $sequences;
+        parent::__construct();
     }
 
     /**
@@ -55,6 +57,7 @@ class SequenceController extends APIController
      */
     public function show($id)
     {
+        $id = new ObjectID($id);
         $page = $this->enabledBot();
         $sequence = $this->sequences->findByIdForBotOrFail($id, $page);
 
@@ -93,6 +96,7 @@ class SequenceController extends APIController
      */
     public function update($id, Request $request)
     {
+        $id = new ObjectID($id);
         $bot = $this->enabledBot();
 
         $nameUniqueRule = "ci_unique:sequences,name,_id,{$id},bot_id,oi:{$bot->id}";
@@ -126,6 +130,7 @@ class SequenceController extends APIController
      */
     public function destroy($id)
     {
+        $id = new ObjectID($id);
         $this->sequences->delete($id, $this->enabledBot());
 
         return $this->response->accepted();

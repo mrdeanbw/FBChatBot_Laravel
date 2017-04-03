@@ -8,6 +8,7 @@ use Jenssegers\Mongodb\Eloquent\Model;
 
 class Subscription extends Model
 {
+
     /**
      * The attributes that aren't mass assignable.
      *
@@ -20,10 +21,7 @@ class Subscription extends Model
      *
      * @var array
      */
-    protected $dates = [
-        'trial_ends_at', 'ends_at',
-        'created_at', 'updated_at',
-    ];
+    protected $dates = ['trial_ends_at', 'ends_at'];
 
     /**
      * Indicates if the plan change should be prorated.
@@ -52,7 +50,7 @@ class Subscription extends Model
      */
     public function owner()
     {
-        $model = getenv('STRIPE_MODEL') ?: config('services.stripe.model', 'App\\User');
+        $model = getenv('STRIPE_MODEL')?: config('services.stripe.model', 'App\\User');
 
         $model = new $model;
 
@@ -120,7 +118,7 @@ class Subscription extends Model
     /**
      * Increment the quantity of the subscription.
      *
-     * @param  int  $count
+     * @param  int $count
      * @return $this
      */
     public function incrementQuantity($count = 1)
@@ -133,7 +131,7 @@ class Subscription extends Model
     /**
      *  Increment the quantity of the subscription, and invoice immediately.
      *
-     * @param  int  $count
+     * @param  int $count
      * @return $this
      */
     public function incrementAndInvoice($count = 1)
@@ -148,7 +146,7 @@ class Subscription extends Model
     /**
      * Decrement the quantity of the subscription.
      *
-     * @param  int  $count
+     * @param  int $count
      * @return $this
      */
     public function decrementQuantity($count = 1)
@@ -161,8 +159,8 @@ class Subscription extends Model
     /**
      * Update the quantity of the subscription.
      *
-     * @param  int  $quantity
-     * @param  \Stripe\Customer|null  $customer
+     * @param  int                   $quantity
+     * @param  \Stripe\Customer|null $customer
      * @return $this
      */
     public function updateQuantity($quantity, $customer = null)
@@ -197,7 +195,7 @@ class Subscription extends Model
     /**
      * Change the billing cycle anchor on a plan change.
      *
-     * @param  int|string  $date
+     * @param  int|string $date
      * @return $this
      */
     public function anchorBillingCycleOn($date = 'now')
@@ -228,7 +226,7 @@ class Subscription extends Model
     /**
      * Swap the subscription to a new Stripe plan.
      *
-     * @param  string  $plan
+     * @param  string $plan
      * @return $this
      */
     public function swap($plan)
@@ -265,7 +263,7 @@ class Subscription extends Model
 
         $this->fill([
             'stripe_plan' => $plan,
-            'ends_at' => null,
+            'ends_at'     => null,
         ])->save();
 
         return $this;

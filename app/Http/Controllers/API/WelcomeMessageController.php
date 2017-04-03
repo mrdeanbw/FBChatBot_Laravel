@@ -20,6 +20,7 @@ class WelcomeMessageController extends APIController
     public function __construct(WelcomeMessageService $welcomeMessages)
     {
         $this->welcomeMessages = $welcomeMessages;
+        parent::__construct();
     }
 
     /**
@@ -29,10 +30,14 @@ class WelcomeMessageController extends APIController
      */
     public function update(Request $request)
     {
-        $rules = $this->validationRules();
-        $this->validate($request, $rules);
+        $bot = $this->enabledBot();
+        $this->validateForBot($bot, $request, [
+            'template'            => 'bail|required|array',
+            'template.messages'   => 'bail|required|array|max:10',
+            'template.messages.*' => 'bail|required|array|message',
+        ]);
 
-        $welcomeMessage = $this->welcomeMessages->update($request->all(), $this->enabledBot());
+        $welcomeMessage = $this->welcomeMessages->update($request->all(), $bot);
 
         return $this->itemResponse($welcomeMessage);
     }
@@ -41,14 +46,5 @@ class WelcomeMessageController extends APIController
     protected function transformer()
     {
         return new WelcomeMessageTransformer();
-    }
-
-    private function validationRules()
-    {
-        return [
-            'template'            => 'bail|required|array',
-            'template.messages'   => 'bail|required|array|max:10',
-            'template.messages.*' => 'bail|required|message',
-        ];
     }
 }

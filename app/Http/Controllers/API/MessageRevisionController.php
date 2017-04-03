@@ -3,6 +3,7 @@
 use Common\Transformers\BaseTransformer;
 use Common\Services\MessageRevisionService;
 use Common\Transformers\MessageTransformer;
+use MongoDB\BSON\ObjectID;
 
 class MessageRevisionController extends APIController
 {
@@ -20,14 +21,16 @@ class MessageRevisionController extends APIController
     public function __construct(MessageRevisionService $messageRevisions)
     {
         $this->messageRevisions = $messageRevisions;
+        parent::__construct();
     }
-    
+
     /**
      * @param $messageId
      * @return \Dingo\Api\Http\Response
      */
     public function index($messageId)
     {
+        $messageId = new ObjectID($messageId);
         $revisions = $this->messageRevisions->getRevisionsWithStatsForMessage($messageId, $this->enabledBot());
 
         return $this->collectionResponse($revisions);
@@ -39,6 +42,7 @@ class MessageRevisionController extends APIController
      */
     public function mainMenuButton($buttonId)
     {
+        $buttonId = new ObjectID($buttonId);
         $revisions = $this->messageRevisions->getRevisionsWithStatsForMainMenuButton($buttonId, $this->enabledBot());
 
         return $this->collectionResponse($revisions);

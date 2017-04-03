@@ -1,8 +1,8 @@
 <?php namespace Common\Services;
 
 use Common\Models\User;
-use Common\Services\Facebook\Auth as FacebookAuthService;
 use GuzzleHttp\Exception\ClientException;
+use Common\Services\Facebook\Auth as FacebookAuthService;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class AuthService

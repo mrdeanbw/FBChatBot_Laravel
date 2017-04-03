@@ -26,12 +26,26 @@ class Subscriber extends BaseModel
 
     use HasEmbeddedArrayModels;
 
-    protected $multiArrayModels = ['history' => SubscriptionHistory::class];
-
     public $dates = ['last_interaction_at', 'last_subscribed_at', 'last_unsubscribed_at'];
 
     public function getFullNameAttribute()
     {
         return $this->first_name . ' ' . $this->last_name;
+    }
+
+    /**
+     * @param array $attributes
+     * @param bool  $sync
+     * @return BaseModel
+     */
+    public function setRawAttributes(array $attributes, $sync = false)
+    {
+        if ($history = array_get($attributes, 'history')) {
+            $attributes['history'] = array_map(function ($record) {
+                return new SubscriptionHistory($record);
+            }, $history);
+        }
+
+        return parent::setRawAttributes($attributes, $sync);
     }
 }

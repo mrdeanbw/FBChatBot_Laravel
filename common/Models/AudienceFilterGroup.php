@@ -1,24 +1,12 @@
 <?php namespace Common\Models;
 
+/**
+ * Class AudienceFilterGroup
+ * @package Common\Models
+ * @property string               join_type
+ * @property AudienceFilterRule[] rules
+ */
 class AudienceFilterGroup extends ArrayModel
 {
-
-    public $join_type;
-    /** @type  AudienceFilterRule[] */
-    public $rules;
-
-    /**
-     * AudienceFilterGroup constructor.
-     * @param array $data
-     * @param bool  $strict
-     */
-    public function __construct(array $data, $strict = false)
-    {
-        foreach (array_pull($data, 'rules', []) as $rule) {
-            $this->rules[] = new AudienceFilterRule($rule, $strict);
-        }
-
-        parent::__construct($data, $strict);
-    }
 
 }

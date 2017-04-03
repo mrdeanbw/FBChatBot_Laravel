@@ -1,7 +1,7 @@
 <?php namespace Common\Transformers;
 
-use Common\Services\LoadsAssociatedModels;
 use League\Fractal\TransformerAbstract;
+use Common\Services\LoadsAssociatedModels;
 
 abstract class BaseTransformer extends TransformerAbstract
 {
@@ -34,6 +34,10 @@ abstract class BaseTransformer extends TransformerAbstract
      */
     public function transformInclude($data, $transformer)
     {
+        if (is_null($data)) {
+            return null;
+        }
+
         if (is_array($data)) {
             return $this->transformIncludeCollection($data, $transformer);
         }

@@ -16,13 +16,20 @@ class ButtonTransformer extends BaseTransformer
      */
     public function transform($button)
     {
-        return [
+        $ret = [
             'title'    => $button->title,
             'url'      => $button->url,
-            'actions'  => $this->transformActions($button->actions),
             'template' => $this->getTransformedTemplate($button),
-            'messages' => $this->transformInclude($button->messages, new MessageTransformer())
+            'messages' => (array)$this->transformInclude($button->messages, new MessageTransformer())
         ];
+
+        foreach (['add_tags', 'remove_tags', 'add_sequences', 'remove_sequences'] as $key) {
+            if ($value = $button->{$key}) {
+                $ret[$key] = $value;
+            }
+        }
+
+        return $ret;
     }
 
     /**

@@ -14,7 +14,7 @@ class TextTransformer extends BaseTransformer
     {
         return [
             'text'    => $text->text,
-            'buttons' => $this->transformInclude($text->buttons, new MessageTransformer())
+            'buttons' => (array)$this->transformInclude($text->buttons, new MessageTransformer())
         ];
     }
 

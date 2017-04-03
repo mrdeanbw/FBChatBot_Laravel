@@ -26,7 +26,7 @@ class MessagePayloadDecoder
      */
     protected $isValid;
     /**
-     * @type Message
+     * @type Button|Card
      */
     protected $message;
     /**
@@ -215,74 +215,47 @@ class MessagePayloadDecoder
     }
 
 
-    protected function process()
+    public function processMessagePostback()
     {
-        list($fullMessagePath, $sentMessageId, $broadcastId) = $this->slicePayload();
-
-        if (array_get($fullMessagePath, 0, null) == 'MM') {
-            return $this->processMainMenuButton($fullMessagePath, $sentMessageId);
+        $type = substr($this->payload, 2);
+        $payloadChunks = explode('|', substr($this->payload, 3));
+        $clean = [];
+        foreach ($payloadChunks as $chunk) {
+            $arr = explode(':', $chunk);
+            $clean[$arr[0]] = $arr[1];
         }
 
-        $cnt = count($fullMessagePath);
 
-        if ($cnt < 7 || ! $sentMessageId) {
-            return $this->invalid();
-        }
+        $id = $clean['i'];
+        $path = $clean['p'];
+        $revisionId = $clean['r'];
+        $broadcastId = $clean['b']? new ObjectID($clean['b']) : null;
+        $templateId = $clean['tp'];
+        $sentMessageId = $clean['s'];
 
-        $this->bot = $this->bot?: $this->botRepo->findById($fullMessagePath[0]);
-        if (! $this->bot) {
-            return $this->invalid();
-        }
 
-        $this->subscriber = $this->subscriber?: $this->subscriberRepo->findById($fullMessagePath[1]);
-        if (! $this->subscriber) {
-            return $this->invalid();
-        }
 
-        if ($this->bot->id != $fullMessagePath[0] || $this->subscriber->id != $fullMessagePath[1]) {
-            return $this->invalid();
-        }
-
-        $reversedMessagePath = array_reverse($fullMessagePath);
         $this->sentMessage = $this->sentMessageRepo->findById($sentMessageId);
+        $this->template = $this->templateRepo->findByIdForBot($templateId, $this->bot->_id);
 
-        $index = 2;
-        for ($i = 0; $i < count($reversedMessagePath); $i++) {
-            if ($reversedMessagePath[$i] == 'messages') {
-                $index = $i - 1;
-                break;
+
+        $this->navigateThroughMessagePath($template, $this->templatePath);
+        $this->isValidMessagePath($fullMessagePath);
+
+        if ($type == 'tb') {
+            $messageId = $textId = $clean['t'];
+        } else {
+            if ($type == 'cb') {
+                $cardId = $clean['c'];
+                $messageId = $cardContainerId = $clean['cc'];
+            } else {
+                throw new \Exception("Invalid message type");
             }
         }
 
-        if (
-            ! $this->sentMessage ||
-            $this->sentMessage->bot_id != $this->bot->_id ||
-            $this->sentMessage->subscriber_id != $this->subscriber->_id ||
-            (string)$this->sentMessage->message_id != $reversedMessagePath[$index]
-        ) {
-            return $this->invalid();
+        if ($this->sentMessage->message_id != $messageId) {
+            throw new \Exception("Invalid sent message id");
         }
-
-        /** @type Template $template */
-        $template = $this->templateRepo->findByIdForBot($fullMessagePath[2], $this->bot);
-        if (! $template) {
-            return $this->invalid();
-        }
-
-        $this->templatePath = array_slice($fullMessagePath, 3);
-        $this->message = $this->navigateThroughMessagePath($template, $this->templatePath);
-        if (! $this->message || ! is_object($this->message) || (! is_a($this->message, Button::class) && ! is_a($this->message, Card::class))) {
-            return $this->invalid();
-        }
-
-        if (! $this->isValidMessagePath($fullMessagePath)) {
-            return $this->invalid();
-        }
-
-
-        $this->isValid = true;
-        $this->template = $template;
-        $this->broadcastId = new ObjectID($broadcastId);
     }
 
     /**
@@ -347,16 +320,6 @@ class MessagePayloadDecoder
         }
 
         return $ret;
-    }
-
-    /**
-     * @return array|null
-     */
-    private function slicePayload()
-    {
-        $payload = explode('|', $this->payload);
-
-        return [explode(':', $payload[0]), array_get($payload, 1, null), array_get($payload, 2, null)];
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php namespace Common\Services;
 
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Common\Models\AutoReplyRule;
 use Illuminate\Pagination\Paginator;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -14,26 +15,33 @@ class AutoReplyRuleService
      * @type AutoReplyRuleRepositoryInterface
      */
     private $autoReplyRuleRepo;
+    /**
+     * @var TemplateService
+     */
+    private $templates;
 
     /**
      * AutoReplyRuleService constructor.
      *
      * @param AutoReplyRuleRepositoryInterface $autoReplyRuleRepo
+     * @param TemplateService                  $templates
+     * @internal param TemplateRepositoryInterface $templateRepo
      */
-    public function __construct(AutoReplyRuleRepositoryInterface $autoReplyRuleRepo)
+    public function __construct(AutoReplyRuleRepositoryInterface $autoReplyRuleRepo, TemplateService $templates)
     {
+        $this->templates = $templates;
         $this->autoReplyRuleRepo = $autoReplyRuleRepo;
     }
 
     /**
-     * @param      $ruleId
-     * @param Bot  $bot
-     *
+     * @param ObjectID $ruleId
+     * @param Bot      $bot
      * @return AutoReplyRule
      */
-    private function findOrFail($ruleId, Bot $bot)
+    private function findOrFail(ObjectID $ruleId, Bot $bot)
     {
-        $rule = $this->autoReplyRuleRepo->findByIdForBot($ruleId, $bot);
+        /** @var AutoReplyRule $rule */
+        $rule = $this->autoReplyRuleRepo->findByIdForBot($ruleId, $bot->_id);
 
         if (! $rule) {
             throw new NotFoundHttpException;
@@ -55,7 +63,7 @@ class AutoReplyRuleService
     {
         $filterBy = [];
         if ($keyword = array_get($filter, 'keyword')) {
-            $filterBy[] = ['operator' => 'prefix', 'key' => 'keyword', 'value' => $keyword];
+            $filterBy[] = ['operator' => 'prefix', 'key' => 'keywords', 'value' => $keyword];
         }
 
         $orderBy = $orderBy?: ['_id' => 'asc'];
@@ -72,15 +80,17 @@ class AutoReplyRuleService
     public function create(array $input, Bot $bot)
     {
         $data = [
-            'action'      => 'send',
             'mode'        => array_search($input['mode'], AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP),
-            'keyword'     => $input['keyword'],
+            'keywords'    => $input['keywords'],
             'template_id' => $input['template']['id'],
             'bot_id'      => $bot->_id,
             'readonly'    => false,
         ];
 
-        return $this->autoReplyRuleRepo->create($data);
+        /** @var AutoReplyRule $ret */
+        $ret = $this->autoReplyRuleRepo->create($data);
+
+        return $ret;
     }
 
     /**
@@ -92,6 +102,7 @@ class AutoReplyRuleService
      */
     public function update($id, array $input, Bot $bot)
     {
+        $id = new ObjectID($id);
         $rule = $this->findOrFail($id, $bot);
 
         if ($rule->readonly) {
@@ -100,7 +111,7 @@ class AutoReplyRuleService
 
         $data = [
             'mode'        => array_search($input['mode'], AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP),
-            'keyword'     => $input['keyword'],
+            'keywords'    => $input['keywords'],
             'template_id' => $input['template']['id'],
         ];
 
@@ -128,35 +139,30 @@ class AutoReplyRuleService
 
     /**
      * Create the default (subscription/unsubscription) auto reply rules.
-     *
-     * @param Bot $bot
-     *
+     * @param Bot      $bot
+     * @param ObjectID $confirmUnsubscriptionTemplateId
      * @return bool
      */
-    public function createDefaultAutoReplyRules(Bot $bot)
+    public function createDefaultAutoReplyRules(Bot $bot, ObjectID $confirmUnsubscriptionTemplateId)
     {
-        // The default subscription / unsubscription auto reply rules.
-        $defaultRules = [
-            'subscribe'   => ['start', 'subscribe'],
-            'unsubscribe' => ['stop', 'unsubscribe']
+
+        $data = [
+            [
+                'mode'      => AutoReplyRuleRepositoryInterface::MATCH_MODE_IS,
+                'keywords'  => ['start', 'subscribe'],
+                'bot_id'    => $bot->_id,
+                'readonly'  => true,
+                'subscribe' => true
+            ],
+            [
+                'mode'        => AutoReplyRuleRepositoryInterface::MATCH_MODE_IS,
+                'keywords'    => ['stop', 'unsubscribe'],
+                'bot_id'      => $bot->_id,
+                'readonly'    => true,
+                'template_id' => $confirmUnsubscriptionTemplateId,
+            ]
         ];
 
-        $bot_id = $bot->_id;
-
-        // Exact Match
-        $mode = AutoReplyRuleRepositoryInterface::MATCH_MODE_IS;
-
-        // Non-editable
-        $readonly = true;
-
-        $data = [];
-
-        // Loop and save everyone of them
-        foreach ($defaultRules as $action => $keywords) {
-            foreach ($keywords as $keyword) {
-                $data[] = compact('mode', 'action', 'keyword', 'readonly', 'bot_id');
-            }
-        }
 
         return $this->autoReplyRuleRepo->bulkCreate($data);
     }

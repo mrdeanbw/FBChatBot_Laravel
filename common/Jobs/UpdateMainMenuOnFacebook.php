@@ -2,6 +2,7 @@
 
 use Exception;
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Common\Services\FacebookAdapter;
 use Common\Services\FacebookMessageMapper;
 use Common\Exceptions\DisallowedBotOperation;
@@ -15,14 +16,14 @@ class UpdateMainMenuOnFacebook extends BaseJob
     private $bot;
 
     protected $pushErrorsToFrontendOnFail = true;
-    protected $frontendFailMessageBody = "Failed to update the main menu on Facebook. We are looking into it!";
+    protected $frontendFailMessageBody = "Failed to update the main menu on Facebook. Please try again later!";
 
     /**
      * UpdateMainMenuOnFacebook constructor.
-     * @param Bot $bot
-     * @param     $userId
+     * @param Bot      $bot
+     * @param ObjectID $userId
      */
-    public function __construct(Bot $bot, $userId)
+    public function __construct(Bot $bot, ObjectID $userId)
     {
         $this->bot = $bot;
         $this->userId = $userId;
@@ -43,7 +44,7 @@ class UpdateMainMenuOnFacebook extends BaseJob
         } catch (DisallowedBotOperation $e) {
             return;
         }
-        
+
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 
         if (! $success) {

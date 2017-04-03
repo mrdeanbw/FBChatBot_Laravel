@@ -90,26 +90,25 @@ class SequenceService
 
     /**
      * Find a sequence for a page.
-     *
-     * @param             $id
-     * @param Bot         $bot
-     *
+     * @param ObjectID $id
+     * @param Bot      $bot
      * @return Sequence
      */
-    public function findByIdForBot($id, Bot $bot)
+    public function findByIdForBot(ObjectID $id, Bot $bot)
     {
-        return $this->sequenceRepo->findByIdForBot($id, $bot);
+        /** @var Sequence $ret */
+        $ret = $this->sequenceRepo->findByIdForBot($id, $bot->_id);
+
+        return $ret;
     }
 
     /**
      * Find a sequence for page, or thrown an exception if the sequence doesn't exit.
-     *
-     * @param             $id
-     * @param Bot         $page
-     *
+     * @param ObjectID $id
+     * @param Bot      $page
      * @return Sequence
      */
-    public function findByIdForBotOrFail($id, Bot $page)
+    public function findByIdForBotOrFail(ObjectID $id, Bot $page)
     {
         if ($sequence = $this->findByIdForBot($id, $page)) {
             return $sequence;
@@ -244,14 +243,14 @@ class SequenceService
     /**
      * Update a sequence message.
      *
-     * @param array $input
-     * @param int   $id
-     * @param int   $sequenceId
-     * @param Bot   $bot
+     * @param array    $input
+     * @param ObjectID $id
+     * @param ObjectID $sequenceId
+     * @param Bot      $bot
      *
      * @return SequenceMessage
      */
-    public function updateMessage(array $input, $id, $sequenceId, Bot $bot)
+    public function updateMessage(array $input, ObjectID $id, ObjectID $sequenceId, Bot $bot)
     {
         $sequence = $this->findByIdForBotOrFail($sequenceId, $bot);
         $message = $this->findMessageOrFail($id, $sequence);

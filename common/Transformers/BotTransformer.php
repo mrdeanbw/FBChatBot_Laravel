@@ -22,11 +22,8 @@ class BotTransformer extends BaseTransformer
             'timezone'        => $bot->timezone,
             'timezone_offset' => $bot->timezone_offset,
             'tags'            => $bot->tags,
+            'subscriber_id'   => $this->getSubscriberId($bot),
         ];
-
-        if ($subscriberId = $this->getSubscriberId($bot)) {
-            $ret['subscriber_id'] = $subscriberId;
-        }
 
         return $ret;
     }
@@ -46,7 +43,7 @@ class BotTransformer extends BaseTransformer
      */
     public function includeGreetingText(Bot $bot)
     {
-        return $this->item($bot->greeting_text, new GreetingTextTransformer(), false);
+        return $this->item($bot->greeting_text[0], new GreetingTextTransformer(), false);
     }
 
     /**
@@ -89,7 +86,7 @@ class BotTransformer extends BaseTransformer
 
         foreach ($bot->users as $user) {
             if ($user['user_id'] == $bot->current_user->_id) {
-                return $user['subscriber_id']? (string)$user['subscriber_id'] : null;
+                return empty($user['subscriber_id'])? null : (string)$user['subscriber_id'];
             }
         }
 

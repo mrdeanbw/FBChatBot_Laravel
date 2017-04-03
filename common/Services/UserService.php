@@ -45,12 +45,21 @@ class UserService
             'full_name'           => $userData['name'],
             'first_name'          => $userData['first_name'],
             'last_name'           => $userData['last_name'],
-            'gender'              => array_get($userData, 'gender'),
-            'avatar_url'          => array_get($userData, 'picture.data.url'),
-            'email'               => array_get($userData, 'email'),
             'access_token'        => $userData['access_token'],
             'granted_permissions' => $userData['granted_permissions'],
         ];
+
+        if ($gender = array_get($userData, 'gender')) {
+            $data['gender'] = $gender;
+        }
+
+        if ($gender = array_get($userData, 'picture.data.url')) {
+            $data['avatar_url'] = $gender;
+        }
+
+        if ($email = array_get($userData, 'email')) {
+            $data['email'] = $email;
+        }
 
         /**
          * If the user already exists, then log him in.
