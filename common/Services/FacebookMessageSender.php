@@ -57,6 +57,47 @@ class FacebookMessageSender
     }
 
     /**
+     * @param array      $messages
+     * @param Subscriber $subscriber
+     * @param Bot        $bot
+     * @return \object[]
+     */
+    public function sendMessageArray(array $messages, Subscriber $subscriber, Bot $bot)
+    {
+        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
+
+        return $this->sendMessages($mapper, $messages, $subscriber, $bot);
+    }
+
+    /**
+     * @param Template   $template
+     * @param Subscriber $subscriber
+     * @return \object[]
+     */
+    public function sendTemplate(Template $template, Subscriber $subscriber)
+    {
+        /** @type Bot $bot */
+        $this->loadModelsIfNotLoaded($template, ['bot']);
+
+        return $this->sendMessageArray($template->clean_messages, $subscriber, $template->bot);
+    }
+
+    /**
+     * @param array|object $context
+     * @param Subscriber   $subscriber
+     * @param Bot          $bot
+     * @return \object[]
+     */
+    public function sendFromTemplateWrapper($context, Subscriber $subscriber, Bot $bot)
+    {
+        /** @type Template $template */
+        $this->loadModelsIfNotLoaded($context, ['template']);
+        $template = is_array($context)? $context['template'] : $context->template;
+
+        return $this->sendTemplate($template, $subscriber);
+    }
+
+    /**
      * Send broadcast to a subscriber, using Facebook API.
      * @param Broadcast  $broadcast
      * @param Subscriber $subscriber
@@ -74,55 +115,6 @@ class FacebookMessageSender
     }
 
     /**
-     * @param Template   $template
-     * @param Subscriber $subscriber
-     * @return \object[]
-     */
-    public function sendTemplate(Template $template, Subscriber $subscriber)
-    {
-        /** @type Bot $bot */
-        $this->loadModelsIfNotLoaded($template, ['bot']);
-
-        $mapper = (new FacebookMessageMapper($template->bot))->forSubscriber($subscriber);
-
-        return $this->sendMessages($mapper, $template->clean_messages, $subscriber, $template->bot);
-    }
-
-    /**
-     * @param Button     $button
-     * @param Subscriber $subscriber
-     * @param Bot        $bot
-     * @return \object[]
-     */
-    public function sendFromButton(Button $button, Subscriber $subscriber, Bot $bot)
-    {
-        if ($button->template_id) {
-            return $this->sendFromContext($button, $subscriber, $bot);
-        }
-
-        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
-
-        return $this->sendMessages($mapper, $button->messages, $subscriber, $bot);
-    }
-
-    /**
-     * @param array|object $context
-     * @param Subscriber   $subscriber
-     * @param Bot          $bot
-     * @return \object[]
-     */
-    public function sendFromContext($context, Subscriber $subscriber, Bot $bot)
-    {
-        /** @type Template $template */
-        $this->loadModelsIfNotLoaded($context, ['template']);
-
-        $mapper = (new FacebookMessageMapper($bot))->forSubscriber($subscriber);
-        $template = is_array($context)? $context['template'] : $context->template;
-
-        return $this->sendMessages($mapper, $template->clean_messages, $subscriber, $bot);
-    }
-
-    /**
      * Send message blocks to a subscriber, using Facebook API.
      * @param FacebookMessageMapper $mapper
      * @param Message[]             $messages
@@ -132,7 +124,7 @@ class FacebookMessageSender
      * @return \object[]
      * @throws Exception
      */
-    public function sendMessages(FacebookMessageMapper $mapper, array $messages, Subscriber $subscriber, Bot $bot, $notificationType = self::NOTIFICATION_REGULAR)
+    protected function sendMessages(FacebookMessageMapper $mapper, array $messages, Subscriber $subscriber, Bot $bot, $notificationType = self::NOTIFICATION_REGULAR)
     {
         $ret = [];
 
@@ -178,7 +170,7 @@ class FacebookMessageSender
     public function sendBotMessage($messageIndex, Bot $bot, Subscriber $subscriber)
     {
         $context = $bot->templates[$messageIndex];
-        $this->sendFromContext($context, $subscriber, $bot);
+        $this->sendFromTemplateWrapper($context, $subscriber, $bot);
     }
 
     /**

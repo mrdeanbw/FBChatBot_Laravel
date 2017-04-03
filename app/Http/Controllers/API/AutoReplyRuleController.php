@@ -1,12 +1,12 @@
 <?php namespace App\Http\Controllers\API;
 
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Common\Transformers\BaseTransformer;
 use Common\Services\AutoReplyRuleService;
 use Common\Transformers\AutoReplyRuleTransformer;
-use MongoDB\BSON\ObjectID;
 
 class AutoReplyRuleController extends APIController
 {
@@ -18,7 +18,6 @@ class AutoReplyRuleController extends APIController
 
     /**
      * AIResponseController constructor.
-     *
      * @param AutoReplyRuleService $AutoReplies
      */
     public function __construct(AutoReplyRuleService $AutoReplies)
@@ -29,9 +28,7 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Return the list of auto reply rules.
-     *
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function index(Request $request)
@@ -42,23 +39,18 @@ class AutoReplyRuleController extends APIController
             ['keyword' => $request->get('keyword')]
         );
 
-
         return $this->paginatorResponse($paginator);
     }
 
     /**
      * Create a new rule.
-     *
      * @param Request $request
-     *
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function create(Request $request)
     {
         $bot = $this->enabledBot();
-
         $this->validate($request, $this->validationRules($bot));
-
         $rule = $this->autoReplies->create($request->all(), $bot);
 
         return $this->itemResponse($rule);
@@ -74,9 +66,7 @@ class AutoReplyRuleController extends APIController
     {
         $id = new ObjectID($id);
         $bot = $this->enabledBot();
-
-        $this->validate($request, $this->validationRules($bot, $id));
-
+        $this->validate($request, $this->validationRules($bot));
         $rule = $this->autoReplies->update($id, $request->all(), $bot);
 
         return $this->itemResponse($rule);
@@ -84,16 +74,13 @@ class AutoReplyRuleController extends APIController
 
     /**
      * Delete a rule.
-     *
      * @param $id
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function destroy($id)
     {
         $id = new ObjectID($id);
         $bot = $this->enabledBot();
-
         $this->autoReplies->delete($id, $bot);
 
         return $this->response->accepted();
@@ -114,7 +101,7 @@ class AutoReplyRuleController extends APIController
             'template.id' => [
                 'bail',
                 'required',
-                'required',
+                'string',
                 Rule::exists('templates', '_id')->where(function ($query) use ($bot) {
                     $query->where('bot_id', $bot->_id);
                 }),

@@ -1,10 +1,10 @@
 <?php namespace App\Http\Controllers\API;
 
+use MongoDB\BSON\ObjectID;
 use Illuminate\Http\Request;
 use Common\Services\SubscriberService;
 use Common\Transformers\BaseTransformer;
 use Common\Transformers\SubscriberTransformer;
-use MongoDB\BSON\ObjectID;
 
 class SubscriberController extends APIController
 {
@@ -76,49 +76,51 @@ class SubscriberController extends APIController
     public function show($id)
     {
         $id = new ObjectID($id);
-        $page = $this->enabledBot();
-        $subscriber = $this->audience->findForBotOrFail($id, $page);
+        $bot = $this->enabledBot();
+        $subscriber = $this->audience->findForBotOrFail($id, $bot);
 
         return $this->itemResponse($subscriber);
     }
 
     /**
      * Update a subscriber.
-     *
      * @param         $id
      * @param Request $request
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function update($id, Request $request)
     {
-        $this->validate($request, [
-            'tags'      => 'bail|array|subscriber_tags',
-            'sequences' => 'bail|array|subscriber_sequences',
+        $id = new ObjectID($id);
+        $bot = $this->enabledBot();
+        $this->validateForBot($bot, $request, [
+            'tags'   => 'bail|array',
+            'tags.*' => 'bail|required|string|bot_tag'
         ]);
 
-        $subscriber = $this->audience->update($request->all(), $id, $this->enabledBot());
+        $subscriber = $this->audience->update($request->all(), $id, $bot);
 
         return $this->itemResponse($subscriber);
     }
 
     /**
      * Batch update subscribers.
-     *
      * @param Request $request
-     *
      * @return \Dingo\Api\Http\Response
      */
     public function batchUpdate(Request $request)
     {
-        $this->validate($request, [
-            'actions'          => 'bail|required|array|button_actions',
+        $bot = $this->enabledBot();
+        $this->validateForBot($bot, $request, [
+            'add_tags'         => 'bail|array',
+            'add_tags.*'       => 'bail|required|string|bot_tag',
+            'remove_tags'      => 'bail|array',
+            'remove_tags.*'    => 'bail|required|string|bot_tag|incompatible_tags:add_tags,remove_tags',
             'subscribers'      => 'bail|required|array',
             'subscribers.*'    => 'bail|required|array',
             'subscribers.*.id' => 'bail|required',
         ]);
 
-        $this->audience->batchUpdate($request->all(), $this->enabledBot());
+        $this->audience->batchUpdate($request->all(), $bot);
 
         return $this->response->accepted();
     }

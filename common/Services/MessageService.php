@@ -1,5 +1,6 @@
 <?php namespace Common\Services;
 
+use Common\Models\Button;
 use Common\Models\Card;
 use Common\Models\Image;
 use Common\Models\Message;
@@ -190,11 +191,8 @@ class MessageService
             $normalized[] = $inputMessage;
 
             if ($this->versioning && in_array($inputMessage->type, ['text', 'image', 'card_container']) && ($isNew || $this->messagesAreDifferent($inputMessage, $originalMessage))) {
-                $temp = get_object_vars($inputMessage);
-                $temp['bot_id'] = $botId;
-                $temp['message_id'] = $temp['id'];
-                $inputMessage->last_revision_id = $temp['_id'] = new ObjectID(null);
-                unset($temp['id']);
+                $temp = $this->getVersionData($botId, $inputMessage);
+                $inputMessage->last_revision_id = $temp['_id'];
                 $this->newMessageRevisions[] = $temp;
             }
         }
@@ -352,5 +350,59 @@ class MessageService
         $this->forMainMenuButtons = $value;
 
         return $this;
+    }
+
+    /**
+     * @param $botId
+     * @param $inputMessage
+     * @return array
+     */
+    protected function getVersionData($botId, $inputMessage)
+    {
+        $temp = get_object_vars(unserialize(serialize($inputMessage)));
+        $temp['bot_id'] = $botId;
+        $temp['message_id'] = $temp['id'];
+        unset($temp['id']);
+        $temp['_id'] = new ObjectID(null);
+
+        return $temp;
+        //
+        //        if ($temp['type'] == 'text' && isset($temp['buttons'])) {
+        //            /**
+        //             * @var Button $button
+        //             */
+        //            foreach ($temp['buttons'] as $i => $button) {
+        //                if ($button->messages) {
+        //                    unset($button->messages);
+        //                    $temp['buttons'][$i] = $button;
+        //                }
+        //            }
+        //        }
+        //
+        //        if ($temp['type'] == 'card_container') {
+        //            /**
+        //             * @var Card $card
+        //             */
+        //            foreach ($temp['cards'] as $i => $card) {
+        //                if (! $card->buttons) {
+        //                    continue;
+        //                }
+        //                $cardChanged = false;
+        //                /**
+        //                 * @var Button $button
+        //                 */
+        //                foreach ($card->buttons as $j => $button) {
+        //                    if ($button->messages) {
+        //                        unset($button->messages);
+        //                        $card->buttons[$j] = $button;
+        //                        $cardChanged = true;
+        //                    }
+        //                }
+        //                if ($cardChanged) {
+        //                    $temp['cards'][$i] = $card;
+        //                }
+        //            }
+        //        }
+
     }
 }

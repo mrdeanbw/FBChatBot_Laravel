@@ -45,7 +45,7 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
     /**
      * Count the number of active subscribers for a certain page.
      * @param Bot $page
-     * @return Subscriber
+     * @return int
      */
     public function activeSubscriberCountForBot(Bot $page);
 

@@ -46,8 +46,6 @@ class ClickHandlingController extends Controller
             return redirect($redirectTo);
         }
 
-        dd('oops');
-
         return redirect(config('app.invalid_button_url'));
     }
 
@@ -70,19 +68,7 @@ class ClickHandlingController extends Controller
      */
     public function menuButton($payload)
     {
-        try {
-            $payload = EncryptionService::Instance()->decrypt($payload);
-            $botId = substr($payload, 48, 12) . substr($payload, 24, 12);
-            $buttonId = substr($payload, 36, 12) . substr($payload, 0, 12);
-            $revisionId = substr($payload, 12, 12) . substr($payload, 60, 12);
-            $botId = new ObjectID($botId);
-            $buttonId = new ObjectID($buttonId);
-            $revisionId = new ObjectID($revisionId);
-        } catch (Exception $e) {
-            return redirect(config('app.invalid_button_url'));
-        }
-
-        if ($redirectTo = $this->adapter->handleUrlMainMenuButtonClick($botId, $buttonId, $revisionId)) {
+        if ($redirectTo = $this->adapter->handleUrlMainMenuButtonClick($payload)) {
             return redirect($redirectTo);
         }
 

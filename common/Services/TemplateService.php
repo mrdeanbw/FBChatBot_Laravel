@@ -93,20 +93,21 @@ class TemplateService
     }
 
     /**
-     * @param array $messages
-     * @param       $botId
-     * @param bool  $allowReadOnly
+     * @param array    $messages
+     * @param ObjectID $botId
+     * @param bool     $allowReadOnly
      *
+     * @param bool     $allowButtonMessages
      * @return Template
      */
-    public function createImplicit(array $messages, ObjectID $botId, $allowReadOnly = false)
+    public function createImplicit(array $messages, ObjectID $botId, $allowReadOnly = false, $allowButtonMessages = false)
     {
         $input = [
             'messages' => $messages,
             'bot_id'   => $botId
         ];
 
-        return $this->create($input, $allowReadOnly);
+        return $this->create($input, $allowReadOnly, $allowButtonMessages);
     }
 
     /**

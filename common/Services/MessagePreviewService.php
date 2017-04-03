@@ -78,7 +78,7 @@ class MessagePreviewService
     {
         $input['template']['messages'] = $this->removeMessageIds($input['template']['messages']);
 
-        $template = $this->templates->createImplicit($input['template']['messages'], $bot->_id);
+        $template = $this->templates->createImplicit($input['template']['messages'], $bot->_id, false, true);
 
         /** @type MessagePreview $messagePreview */
         $messagePreview = $this->messagePreviewRepo->create([

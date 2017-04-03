@@ -36,7 +36,7 @@ class DBAutoReplyRuleRepository extends DBAssociatedWithBotRepository implements
     {
         return AutoReplyRule::where("bot_id", $bot->_id)
                             ->where('mode', AutoReplyRuleRepositoryInterface::MATCH_MODE_IS)
-                            ->where('keyword', 'regexp', "/^{$searchKeyword}$/i")
+                            ->where('keywords', 'regexp', "/^{$searchKeyword}$/i")
                             ->orderBy('_id')
                             ->first();
     }

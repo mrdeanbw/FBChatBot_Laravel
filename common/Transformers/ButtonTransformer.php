@@ -33,6 +33,33 @@ class ButtonTransformer extends BaseTransformer
     }
 
     /**
+     * @param $button
+     * @param $isMessageRevision
+     * @return array
+     */
+    public function flexibleTransform($button, $isMessageRevision)
+    {
+        if (! $isMessageRevision) {
+            return $this->transform($button);
+        }
+
+        $ret = [
+            'title'    => $button->title,
+            'url'      => $button->url,
+            'template' => $this->getTransformedTemplate($button),
+        ];
+
+        foreach (['add_tags', 'remove_tags', 'add_sequences', 'remove_sequences'] as $key) {
+            if ($value = $button->{$key}) {
+                $ret[$key] = $value;
+            }
+        }
+
+        return $ret;
+    }
+
+
+    /**
      * @param Button|MessageRevision $button
      * @return null
      */
@@ -49,6 +76,7 @@ class ButtonTransformer extends BaseTransformer
 
         return null;
     }
+
 
     private function transformActions(array $actions)
     {

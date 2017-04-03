@@ -11,6 +11,7 @@ use MongoDB\BSON\ObjectID;
  * @property Button[]  buttons
  * @property ObjectID  bot_id
  * @property array     clicks
+ * @property mixed     url
  */
 class MessageRevision extends BaseModel
 {
@@ -55,6 +56,9 @@ class MessageRevision extends BaseModel
             }
             if (in_array($message['type'], ['image', 'card']) && $file = array_get($message, 'file')) {
                 $message['file'] = new ImageFile($file);
+            }
+            if ($message['type'] == 'button' && $buttonMessages = array_get($message, 'messages')) {
+                $message['messages'] = $this->recursivelyConstructMessage($buttonMessages);
             }
             $messages[$i] = Message::factory($message);
         }

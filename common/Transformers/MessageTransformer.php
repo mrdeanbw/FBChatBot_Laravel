@@ -13,6 +13,8 @@ class MessageTransformer extends BaseTransformer
      */
     public function transform($message)
     {
+        $isMessageRevision = is_a($message, MessageRevision::class);
+
         switch ($message->type) {
             case 'text':
                 $ret = (new TextTransformer)->transform($message);
@@ -31,7 +33,7 @@ class MessageTransformer extends BaseTransformer
                 break;
 
             case 'button':
-                $ret = (new ButtonTransformer)->transform($message);
+                $ret = (new ButtonTransformer)->flexibleTransform($message, $isMessageRevision);
                 break;
 
             default:
@@ -42,7 +44,7 @@ class MessageTransformer extends BaseTransformer
             $ret['stats'] = $message->stats;
         }
 
-        if (is_a($message, MessageRevision::class)) {
+        if ($isMessageRevision) {
             $objectId = $message->_id;
             $ret['created_at'] = $message->created_at->toAtomString();
         } else {

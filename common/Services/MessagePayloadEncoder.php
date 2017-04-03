@@ -189,12 +189,10 @@ class MessagePayloadEncoder
     public function mainMenuUrl(Button $button)
     {
         $jumbled =
-            substr($button->id, 12, 24) .
-            substr($button->last_revision_id, 0, 12) .
-            substr($this->bot->id, 12, 24) .
-            substr($button->id, 0, 12) .
-            substr($this->bot->id, 0, 12) .
-            substr($button->last_revision_id, 12, 24);
+            substr($button->last_revision_id, 00, 06) .
+            substr($button->last_revision_id, 18, 24) .
+            substr($button->last_revision_id, 06, 12) .
+            substr($button->last_revision_id, 12, 18);
 
         $encrypted = EncryptionService::Instance()->encrypt($jumbled);
 

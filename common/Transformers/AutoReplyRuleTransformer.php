@@ -11,11 +11,12 @@ class AutoReplyRuleTransformer extends BaseTransformer
     public function transform(AutoReplyRule $rule)
     {
         return [
-            'id'       => $rule->id,
-            'readonly' => $rule->readonly,
-            'mode'     => AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP[$rule->mode],
-            'keywords'  => $rule->keywords,
-            'action'   => $rule->action,
+            'id'          => $rule->id,
+            'readonly'    => $rule->readonly,
+            'mode'        => AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP[$rule->mode],
+            'keywords'    => $rule->keywords,
+            'subscribe'   => $rule->subscribe,
+            'unsubscribe' => $rule->unsubscribe,
         ];
     }
 }

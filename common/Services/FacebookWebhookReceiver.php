@@ -189,11 +189,11 @@ class FacebookWebhookReceiver
 
         // If the user clicks on any other button, then subscribe him silently!
         $subscriber = $subscriber?: $this->adapter->subscribeSilently($bot, $event['sender']['id']);
-
-        // payload is a hashed button.
-
-        $button = $this->adapter->handlePostbackButtonClick($event['postback']['payload'], $bot, $subscriber);
-        $this->adapter->storeIncomingButtonClick($button->title, $event['timestamp'], $bot, $subscriber);
+        $title = $this->adapter->handlePostbackButtonClick($event['postback']['payload'], $bot, $subscriber);
+        // false on main menu buttons.
+        if ($title !== false){
+            $this->adapter->storeIncomingButtonClick($title, $event['timestamp'], $bot, $subscriber);
+        }
     }
 }
 

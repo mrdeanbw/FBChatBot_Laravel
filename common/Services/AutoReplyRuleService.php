@@ -42,7 +42,6 @@ class AutoReplyRuleService
     {
         /** @var AutoReplyRule $rule */
         $rule = $this->autoReplyRuleRepo->findByIdForBot($ruleId, $bot->_id);
-
         if (! $rule) {
             throw new NotFoundHttpException;
         }
@@ -82,7 +81,7 @@ class AutoReplyRuleService
         $data = [
             'mode'        => array_search($input['mode'], AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP),
             'keywords'    => $input['keywords'],
-            'template_id' => $input['template']['id'],
+            'template_id' => new ObjectID($input['template']['id']),
             'bot_id'      => $bot->_id,
             'readonly'    => false,
         ];
@@ -112,7 +111,7 @@ class AutoReplyRuleService
         $data = [
             'mode'        => array_search($input['mode'], AutoReplyRuleRepositoryInterface::_MATCH_MODE_MAP),
             'keywords'    => $input['keywords'],
-            'template_id' => $input['template']['id'],
+            'template_id' => new ObjectID($input['template']['id']),
         ];
 
         $this->autoReplyRuleRepo->update($rule, $data);
@@ -122,7 +121,6 @@ class AutoReplyRuleService
 
     /**
      * Delete an auto reply rule.
-     *
      * @param      $ruleId
      * @param Bot  $page
      */
@@ -145,7 +143,6 @@ class AutoReplyRuleService
      */
     public function createDefaultAutoReplyRules(Bot $bot, ObjectID $confirmUnsubscriptionTemplateId)
     {
-
         $data = [
             [
                 'mode'      => AutoReplyRuleRepositoryInterface::MATCH_MODE_IS,
@@ -162,7 +159,6 @@ class AutoReplyRuleService
                 'template_id' => $confirmUnsubscriptionTemplateId,
             ]
         ];
-
 
         return $this->autoReplyRuleRepo->bulkCreate($data);
     }

@@ -1,23 +1,23 @@
 <?php namespace Common\Services;
 
+use Exception;
 use Carbon\Carbon;
-use Common\Jobs\CarryOutCardButtonActions;
-use Common\Jobs\CarryOutTextButtonActions;
 use Common\Models\Bot;
 use Common\Models\Button;
-use Common\Models\Card;
 use MongoDB\BSON\ObjectID;
-use Common\Models\Template;
 use Common\Models\Subscriber;
 use Common\Models\AutoReplyRule;
 use Common\Models\MessageRevision;
+use Common\Jobs\CarryOutCardButtonActions;
+use Common\Jobs\CarryOutTextButtonActions;
+use Common\Exceptions\InactiveBotException;
 use Common\Exceptions\MessageNotSentException;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\User\UserRepositoryInterface;
 use Common\Repositories\Inbox\InboxRepositoryInterface;
-use Common\Services\Facebook\MessengerSender as FacebookSender;
 use Common\Repositories\Template\TemplateRepositoryInterface;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
+use Common\Services\Facebook\MessengerSender as FacebookSender;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use Common\Repositories\AutoReplyRule\AutoReplyRuleRepositoryInterface;
@@ -168,7 +168,7 @@ class WebAppAdapter
 
         // If not silent mode, send the welcome message!
         if (! $silentMode) {
-            $this->FacebookMessageSender->sendFromContext($bot->welcome_message, $subscriber, $bot);
+            $this->FacebookMessageSender->sendFromTemplateWrapper($bot->welcome_message, $subscriber, $bot);
         }
 
         return $subscriber;
@@ -249,67 +249,7 @@ class WebAppAdapter
      */
     public function sendDefaultReply(Bot $bot, Subscriber $subscriber)
     {
-        $this->FacebookMessageSender->sendFromContext($bot->default_reply, $subscriber, $bot);
-    }
-
-    /**
-     * @param ObjectID $botId
-     * @param ObjectID $buttonId
-     * @param ObjectID $revisionId
-     * @return null|string
-     */
-    public function handleUrlMainMenuButtonClick(ObjectID $botId, ObjectID $buttonId, ObjectID $revisionId)
-    {
-        /** @type Bot $bot */
-        $bot = $this->botRepo->findById($botId);
-        if (! $bot || ! $bot->enabled || is_null($bot->access_token)) {
-            return null;
-        }
-
-        /** @type Button $button */
-        $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
-            return (string)$button->id == $buttonId;
-        });
-
-        if (! $button || ! $button->url) {
-            return null;
-        }
-
-        $this->messageRevisionRepo->recordMainMenuButtonClick($revisionId, $bot, null);
-
-        if (valid_url($button->url)) {
-            return $button->url;
-        }
-
-        return "http://{$button->url}";
-    }
-
-    /**
-     * Return the redirect URL from a button/card, via the message block hash.
-     *
-     * @param $payload
-     * @return null|string
-     */
-    public function handleUrlMessageClick($payload)
-    {
-        $decoder = MessagePayloadDecoder::factory($payload);
-        $bot = $decoder->getBot();
-        if (! $bot || ! $bot->enabled || is_null($bot->access_token)) {
-            return null;
-        }
-
-        $message = $decoder->getClickedMessage();
-        if (! $message || ! $message->url) {
-            return null;
-        }
-
-        $this->handleClick($decoder);
-
-        if (valid_url($message->url)) {
-            return $message->url;
-        }
-
-        return "http://{$message->url}";
+//        $this->FacebookMessageSender->sendFromTemplateWrapper($bot->default_reply, $subscriber, $bot);
     }
 
     /**
@@ -317,75 +257,29 @@ class WebAppAdapter
      * @param Bot        $bot
      * @param Subscriber $subscriber
      * @param string     $payload
-     * @return Button
+     * @return string|null|false
      */
-    public function handlePostbackButtonClick($payload, Bot $bot, Subscriber $subscriber = null)
+    public function handlePostbackButtonClick($payload, Bot $bot, Subscriber $subscriber)
     {
-        $decoder = MessagePayloadDecoder::factory($payload, $bot, $subscriber)->processMessagePostback();
-        $message = $decoder->getClickedMessage();
-        if (! $message || $message->type != 'button') {
+        if (strlen($payload) < 3) {
             return null;
         }
 
-        $this->handleClick($decoder);
-
-        return $message;
-    }
-
-    /**
-     * @param MessagePayloadDecoder $decoder
-     */
-    protected function handleClick(MessagePayloadDecoder $decoder)
-    {
-        $bot = $decoder->getBot();
-        $message = $decoder->getClickedMessage();
-        $subscriber = $decoder->getSubscriber();
-
-        if ($message->type == 'button') {
-            $this->carryOutButtonActionsOld($message, $subscriber, $bot, $decoder->getTemplate(), $decoder->getTemplatePath());
-        }
-
-        if ($decoder->isMainMenuButton()) {
-            return $this->messageRevisionRepo->recordMainMenuButtonClick($decoder->getMainMenuButtonRevisionId(), $bot, $subscriber);
-        }
-
-        $sentMessage = $decoder->getSentMessageInstance();
-        $sentMessagePath = $decoder->getSentMessagePath();
-        $this->sentMessageRepo->recordClick($sentMessage, $sentMessagePath, mongo_date());
-
-        if ($broadcastId = $decoder->getBroadcastId()) {
-            $this->broadcastRepo->recordClick($bot, $broadcastId, $subscriber->_id);
-        }
-    }
-
-    /**
-     * Execute the actions associate with a button.
-     * @param Button     $button
-     * @param Subscriber $subscriber
-     * @param Bot        $bot
-     * @param Template   $buttonTemplate
-     * @param array      $buttonPath
-     */
-    protected function carryOutButtonActionsOld(Button $button, Subscriber $subscriber, Bot $bot, Template $buttonTemplate = null, array $buttonPath = null)
-    {
-        if ($button->actions['add_tags'] || $button->actions['remove_tags'] || $button->actions['add_sequences'] || $button->actions['remove_sequences']) {
-            $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, [$subscriber->_id], $button->actions);
-        }
-
-        if ($button->template_id || $button->messages) {
-            $this->FacebookMessageSender->sendFromButton($button, $subscriber, $bot, $buttonTemplate, (array)$buttonPath);
-        }
-
-        if ($button->unsubscribe) {
-            $this->concludeUnsubscriptionProcess($bot, $subscriber);
+        switch (substr($payload, 0, 2)) {
+            case 'tb':
+                return $this->handleTextPostbackButtonClick(substr($payload, 3), $bot, $subscriber);
+            case 'cb':
+                return $this->handleCardPostbackButtonClick(substr($payload, 3), $bot, $subscriber);
+            case 'mm':
+                return $this->handlePostbackMainMenuButtonClick(substr($payload, 3), $bot, $subscriber);
+            default:
+                return null;
         }
     }
 
     /**
      * Get a bot by page facebook ID.
-     *
-     * @param $facebookId
-     *
+     * @param string $facebookId
      * @return Bot
      */
     public function bot($facebookId)
@@ -395,10 +289,8 @@ class WebAppAdapter
 
     /**
      * Get a subscriber by Facebook ID.
-     *
-     * @param      $senderId
-     * @param Bot  $bot
-     *
+     * @param string $senderId
+     * @param Bot    $bot
      * @return Subscriber|null
      */
     public function subscriber($senderId, Bot $bot)
@@ -408,20 +300,17 @@ class WebAppAdapter
 
     /**
      * Get matching AI Rules.
-     *
-     * @param      $message
-     * @param Bot  $bot
-     *
+     * @param string $text
+     * @param Bot    $bot
      * @return AutoReplyRule
      */
-    public function matchingAutoReplyRule($message, Bot $bot)
+    public function matchingAutoReplyRule($text, Bot $bot)
     {
-        return $this->autoReplyRuleRepo->getMatchingRuleForBot($message, $bot);
+        return $this->autoReplyRuleRepo->getMatchingRuleForBot($text, $bot);
     }
 
     /**
      * Send an auto reply.
-     *
      * @param AutoReplyRule $rule
      * @param Subscriber    $subscriber
      */
@@ -433,7 +322,6 @@ class WebAppAdapter
 
     /**
      * Mark all messages sent to a subscriber before a specific date as read.
-     *
      * @param Subscriber $subscriber
      * @param int        $timestamp
      */
@@ -445,7 +333,6 @@ class WebAppAdapter
 
     /**
      * Mark all messages sent to a subscriber before a specific date as read.
-     *
      * @param Subscriber $subscriber
      * @param            $timestamp
      */
@@ -458,22 +345,10 @@ class WebAppAdapter
     }
 
     /**
-     * If the auto reply rule should trigger unsubscription action
-     *
-     * @param AutoReplyRule $rule
-     *
-     * @return bool
-     */
-    public function isUnsubscriptionMessage(AutoReplyRule $rule)
-    {
-        return $rule->action == 'unsubscribe';
-    }
-
-    /**
      * Make a user (page admin) into "subscriber" for a page.
-     * @param      $payload
-     * @param Bot  $bot
-     * @param      $senderId
+     * @param string $payload
+     * @param Bot    $bot
+     * @param string $senderId
      * @return Subscriber
      */
     public function subscribeBotUser($payload, Bot $bot, $senderId)
@@ -531,7 +406,6 @@ class WebAppAdapter
             'facebook_id' => $event['message']['mid'],
             'action_at'   => mongo_date($event['timestamp'])
         ];
-
         $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
@@ -590,6 +464,55 @@ class WebAppAdapter
     }
 
     /**
+     * @param string $payload
+     * @return null|string
+     */
+    public function handleUrlMainMenuButtonClick($payload)
+    {
+        try {
+            $payload = EncryptionService::Instance()->decrypt($payload);
+            $revisionId =
+                substr($payload, 00, 06) .
+                substr($payload, 12, 06) .
+                substr($payload, 18, 06) .
+                substr($payload, 06, 06);
+            $revisionId = new ObjectID($revisionId);
+            /** @var MessageRevision $revision */
+            $revision = $this->messageRevisionRepo->findById($revisionId);
+            /** @var Bot $bot */
+            $bot = $this->botRepo->findById($revision->bot_id);
+            if (! $bot->enabled) {
+                throw new InactiveBotException();
+            }
+            $this->messageRevisionRepo->recordMainMenuButtonClick($revisionId, $bot, null);
+
+            return valid_url($revision->url)? $revision->url : "http://{$revision->url}";
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param ObjectID   $revisionId
+     * @param Bot        $bot
+     * @param Subscriber $subscriber
+     * @return null|false
+     */
+    public function handlePostbackMainMenuButtonClick(ObjectID $revisionId, Bot $bot, Subscriber $subscriber)
+    {
+        try {
+            /** @var MessageRevision $revision */
+            $revision = $this->messageRevisionRepo->findById($revisionId);
+            $this->carryOutButtonActions($revision, $bot, $subscriber);
+            $this->messageRevisionRepo->recordMainMenuButtonClick($revisionId, $bot, $subscriber);
+
+            return false;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
      * @param $payload
      * @return null|string
      */
@@ -599,6 +522,90 @@ class WebAppAdapter
             $clean = [];
             $decrypted = explode('|', EncryptionService::Instance()->decrypt($payload));
             foreach ($decrypted as $section) {
+                $temp = explode(':', $section);
+                $clean[$temp[0]] = $temp[1];
+            }
+            $clean['r'] = new ObjectID($clean['r']);
+            $clean['m'] = new ObjectID($clean['m']);
+            $clean['i'] = new ObjectID($clean['i']);
+            /** @var MessageRevision $revision */
+            $revision = $this->messageRevisionRepo->findById($clean['r']);
+            /** @var Bot $bot */
+            $bot = $this->botRepo->findById($revision->bot_id);
+            if (! $bot->enabled) {
+                throw new InactiveBotException();
+            }
+            $card = null;
+            $cardIndex = -1;
+            foreach ($revision->cards as $i => $revisionCard) {
+                if ($revisionCard->id == $clean['i'] && $revisionCard->url) {
+                    $card = $revisionCard;
+                    $cardIndex = $i;
+                    break;
+                }
+            }
+            $this->sentMessageRepo->recordCardClick($clean['m'], $cardIndex);
+
+            return valid_url($card->url)? $card->url : "http://{$card->url}";
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param string     $payload
+     * @param Bot        $bot
+     * @param Subscriber $subscriber
+     * @return null|string
+     */
+    public function handleTextPostbackButtonClick($payload, Bot $bot, Subscriber $subscriber)
+    {
+        try {
+            $clean = [];
+            $segmented = explode('|', $payload);
+            foreach ($segmented as $section) {
+                $temp = explode(':', $section);
+                $clean[$temp[0]] = $temp[1];
+            }
+
+            $clean['r'] = new ObjectID($clean['r']);
+            $clean['m'] = new ObjectID($clean['m']);
+            $clean['i'] = new ObjectID($clean['i']);
+
+            /** @var MessageRevision $revision */
+            $revision = $this->messageRevisionRepo->findById($clean['r']);
+            $button = null;
+            $buttonIndex = -1;
+            foreach ($revision->buttons as $i => $revisionButton) {
+                if ($revisionButton->id == $clean['i']) {
+                    $button = $revisionButton;
+                    $buttonIndex = $i;
+                    break;
+                }
+            }
+
+            $this->carryOutButtonActions($button, $bot, $subscriber);
+            $this->sentMessageRepo->recordTextButtonClick($clean['m'], $buttonIndex);
+
+            return $button->title;
+
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param string     $payload
+     * @param Bot        $bot
+     * @param Subscriber $subscriber
+     * @return null|string
+     */
+    public function handleCardPostbackButtonClick($payload, Bot $bot, Subscriber $subscriber)
+    {
+        try {
+            $clean = [];
+            $segmented = explode('|', $payload);
+            foreach ($segmented as $section) {
                 $temp = explode(':', $section);
                 $clean[$temp[0]] = $temp[1];
             }
@@ -613,23 +620,29 @@ class WebAppAdapter
             $card = null;
             $cardIndex = -1;
             foreach ($revision->cards as $i => $revisionCard) {
-                if ($revisionCard->id == $clean['i'] && $revisionCard->url) {
+                if ($revisionCard->id == $clean['c'] && $revisionCard->buttons) {
                     $card = $revisionCard;
                     $cardIndex = $i;
                     break;
                 }
             }
 
-
-            $ret = valid_url($card->url)? $card->url : "http://{$card->url}";
-
-            /** @var Bot $bot */
-            $bot = $this->botRepo->findById($revision->bot_id);
-            if ($bot->enabled) {
-                $this->sentMessageRepo->recordCardClick($clean['m'], $cardIndex);
+            /** @var Button $button */
+            $button = null;
+            $buttonIndex = -1;
+            foreach ($card->buttons as $i => $cardButton) {
+                if ($cardButton->id == $clean['i']) {
+                    $button = $cardButton;
+                    $buttonIndex = $i;
+                    break;
+                }
             }
 
-            return $ret;
+            $this->carryOutButtonActions($button, $bot, $subscriber);
+            $this->sentMessageRepo->recordCardButtonClick($clean['m'], $cardIndex, $buttonIndex);
+
+            return $button->title;
+
         } catch (\Exception $e) {
             return null;
         }
@@ -648,16 +661,14 @@ class WebAppAdapter
                 $temp = explode(':', $section);
                 $clean[$temp[0]] = $temp[1];
             }
-
             $clean['r'] = new ObjectID($clean['r']);
             $clean['m'] = new ObjectID($clean['m']);
             $clean['i'] = new ObjectID($clean['i']);
             $clean['s'] = new ObjectID($clean['s']);
-
-
             /** @var MessageRevision $revision */
             $revision = $this->messageRevisionRepo->findById($clean['r']);
-
+            /** @var Bot $bot */
+            $bot = $this->botRepo->findById($revision->bot_id);
             $button = null;
             $buttonIndex = -1;
             foreach ($revision->buttons as $i => $revisionButton) {
@@ -667,18 +678,9 @@ class WebAppAdapter
                     break;
                 }
             }
+            dispatch(new CarryOutTextButtonActions($button, $buttonIndex, $bot, $clean['s'], $clean['m']));
 
-            $ret = valid_url($button->url)? $button->url : "http://{$button->url}";
-
-            /** @var Bot $bot */
-            $bot = $this->botRepo->findById($revision->bot_id);
-
-            if ($bot->enabled) {
-                dispatch(new CarryOutTextButtonActions($button, $buttonIndex, $bot, $clean['s'], $clean['m']));
-            }
-
-            return $ret;
-
+            return valid_url($button->url)? $button->url : "http://{$button->url}";
         } catch (\Exception $e) {
             return null;
         }
@@ -706,6 +708,11 @@ class WebAppAdapter
 
             /** @var MessageRevision $revision */
             $revision = $this->messageRevisionRepo->findById($clean['r']);
+            /** @var Bot $bot */
+            $bot = $this->botRepo->findById($revision->bot_id);
+            if (! $bot->enabled) {
+                throw new InactiveBotException();
+            }
 
             $card = null;
             $cardIndex = -1;
@@ -727,17 +734,9 @@ class WebAppAdapter
                     break;
                 }
             }
+            dispatch(new CarryOutCardButtonActions($button, $buttonIndex, $cardIndex, $bot, $clean['s'], $clean['m']));
 
-            $ret = valid_url($button->url)? $button->url : "http://{$button->url}";
-
-            /** @var Bot $bot */
-            $bot = $this->botRepo->findById($revision->bot_id);
-
-            if ($bot->enabled) {
-                dispatch(new CarryOutCardButtonActions($button, $buttonIndex, $cardIndex, $bot, $clean['s'], $clean['m']));
-            }
-
-            return $ret;
+            return valid_url($button->url)? $button->url : "http://{$button->url}";
 
         } catch (\Exception $e) {
             return null;
@@ -753,8 +752,9 @@ class WebAppAdapter
      */
     public function carryOutTextButtonActions(Button $button, Bot $bot, ObjectID $subscriberId, ObjectID $sentMessageId, $buttonIndex)
     {
-        $this->carryOutButtonActions($button, $bot, $subscriberId);
-
+        /** @var Subscriber $subscriber */
+        $subscriber = $this->subscriberRepo->findByIdForBot($subscriberId, $bot->_id);
+        $this->carryOutButtonActions($button, $bot, $subscriber);
         $this->sentMessageRepo->recordTextButtonClick($sentMessageId, $buttonIndex);
     }
 
@@ -768,32 +768,39 @@ class WebAppAdapter
      */
     public function carryOutCardButtonActions(Button $button, Bot $bot, ObjectID $subscriberId, ObjectID $sentMessageId, $buttonIndex, $cardIndex)
     {
-        $this->carryOutButtonActions($button, $bot, $subscriberId);
-
+        /** @var Subscriber $subscriber */
+        $subscriber = $this->subscriberRepo->findByIdForBot($subscriberId, $bot->_id);
+        $this->carryOutButtonActions($button, $bot, $subscriber);
         $this->sentMessageRepo->recordCardButtonClick($sentMessageId, $cardIndex, $buttonIndex);
     }
 
     /**
-     * @param Button   $button
-     * @param Bot      $bot
-     * @param ObjectID $subscriberId
+     * @param Button|MessageRevision $button
+     * @param Bot                    $bot
+     * @param Subscriber             $subscriber
      */
-    protected function carryOutButtonActions(Button $button, Bot $bot, ObjectID $subscriberId)
+    protected function carryOutButtonActions($button, Bot $bot, Subscriber $subscriber)
     {
-        /** @var Subscriber $subscriber */
-        $subscriber = $this->subscriberRepo->findByIdForBot($subscriberId, $bot->_id);
-
         if ($button->add_tags || $button->remove_tags) {
             $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, [$subscriber->_id], object_only($button, ['add_tags', 'remove_tags']));
         }
 
         if ($button->template_id) {
-            $this->FacebookMessageSender->sendFromContext($button, $subscriber, $bot);
+            $this->FacebookMessageSender->sendFromTemplateWrapper($button, $subscriber, $bot);
+        } else {
+            if ($button->messages) {
+                $this->FacebookMessageSender->sendMessageArray($button->messages, $subscriber, $bot);
+            }
         }
 
         if ($button->unsubscribe) {
             $this->concludeUnsubscriptionProcess($bot, $subscriber);
         }
+
+        //        if ($broadcastId = $decoder->getBroadcastId()) {
+        //            $this->broadcastRepo->recordClick($bot, $broadcastId, $subscriber->_id);
+        //        }
+
     }
 
 

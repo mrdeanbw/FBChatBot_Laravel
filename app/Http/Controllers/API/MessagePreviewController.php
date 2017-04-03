@@ -34,7 +34,7 @@ class MessagePreviewController extends APIController
             'template'            => 'bail|required|array',
             'template.messages'   => 'bail|required|array|max:10',
             'template.messages.*' => 'bail|required|array|message',
-        ]);
+        ], true);
 
         $this->messagePreviews->createAndSend($request->all(), $this->user(), $this->enabledBot());
 

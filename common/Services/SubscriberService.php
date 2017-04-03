@@ -2,16 +2,15 @@
 
 use Carbon\Carbon;
 use Common\Models\Bot;
-use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
 use Common\Models\AudienceFilter;
 use Illuminate\Pagination\Paginator;
 use Common\Repositories\Bot\BotRepositoryInterface;
 use Common\Repositories\Sequence\SequenceRepositoryInterface;
-use phpDocumentor\Reflection\Project;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
+use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 use Common\Repositories\Sequence\SequenceScheduleRepositoryInterface;
 
 class SubscriberService
@@ -144,13 +143,8 @@ class SubscriberService
             $data['active'] = $isActive;
             $data['last_subscribed_at'] = Carbon::now();
         }
-
         /** @type Subscriber $subscriber */
         $subscriber = $this->subscriberRepo->create($data);
-
-        if ($isActive) {
-            $this->subscribeToBotSequences($subscriber, $bot);
-        }
 
         return $subscriber;
     }
@@ -165,7 +159,6 @@ class SubscriberService
     {
         $subscriber = $this->subscriberRepo->findByFacebookIdForBot($id, $bot);
         $this->subscriberRepo->resubscribe($subscriber);
-        $this->subscribeToBotSequences($subscriber, $bot);
     }
 
     /**
@@ -369,29 +362,7 @@ class SubscriberService
     public function update(array $input, ObjectID $subscriberId, Bot $bot)
     {
         $subscriber = $this->findForBotOrFail($subscriberId, $bot);
-
-        $newSequenceIDs = array_map(function ($sequence) {
-            return new ObjectID($sequence['id']);
-        }, array_get($input, 'sequences', []));
-
-        $sequencesToAdd = array_diff($newSequenceIDs, $subscriber->sequences);
-        $sequencesToRemove = array_diff($subscriber->sequences, $newSequenceIDs);
-
-        $data = [
-            'tags'              => $tags,
-            'sequences'         => $newSequenceIDs,
-            'removed_sequences' => array_merge(array_diff($subscriber->removed_sequences, $sequencesToAdd), $sequencesToRemove),
-        ];
-
-        if ($sequencesToAdd) {
-            $this->subscribeToSequences($subscriber, $sequencesToAdd);
-        }
-
-        if ($sequencesToRemove) {
-            $this->unsubscribeFromSequences($subscriber, $sequencesToRemove);
-        }
-
-        $this->subscriberRepo->update($subscriber, $data);
+        $this->subscriberRepo->update($subscriber, array_only($input, 'tags'));
 
         return $subscriber;
     }
@@ -409,32 +380,13 @@ class SubscriberService
         }, $input['subscribers']);
 
         if ($subscriberIds) {
-            $actions = $input['actions'];
-
-            if ($tags = array_merge(array_get($actions, 'add_tags', []), array_get($actions, 'remove_tags', []))) {
-                //                $this->botRepo->createTagsForBot($bot->_id, $tags);
-            }
-
-            $actions['add_sequences'] = array_map(function ($sequence) {
-                return new ObjectID($sequence['id']);
-            }, array_get($actions, 'add_sequences', []));
-
-            $actions['remove_sequences'] = array_map(function ($sequence) {
-                return new ObjectID($sequence['id']);
-            }, array_get($actions, 'remove_sequences', []));
-
-            $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, $subscriberIds, $actions);
-
-            $this->bulkSubscribeToSequences($bot->_id, $subscriberIds, $actions['add_sequences']);
-            $this->bulkUnsubscribeFromSequences($bot->_id, $subscriberIds, $actions['remove_sequences']);
+            $this->subscriberRepo->bulkAddRemoveTagsAndSequences($bot, $subscriberIds, $input);
         }
     }
 
     /**
      * Return the number of active subscribers for a certain page.
-     *
      * @param Bot $bot
-     *
      * @return int
      */
     public function activeSubscribers(Bot $bot)
@@ -495,136 +447,5 @@ class SubscriberService
         $allowed = in_array($attribute, array_keys($this->filterFieldsMap));
 
         return $allowed;
-    }
-
-    /**
-     * @param Subscriber $subscriber
-     * @param Bot        $bot
-     */
-    private function subscribeToBotSequences(Subscriber $subscriber, Bot $bot)
-    {
-        $sequencesToAdd = [];
-        $sequences = $this->sequenceRepo->getAllForBot($bot);
-
-        foreach ($sequences as $sequence) {
-
-            if (in_array($sequence->id, $subscriber->sequences)) {
-                continue;
-            }
-
-            if (in_array($sequence->id, $subscriber->removed_sequences)) {
-                continue;
-            }
-
-            if ($this->subscriberRepo->subscriberMatchesRules($subscriber, $sequence->filter)) {
-                continue;
-            }
-
-            $sequencesToAdd[] = $sequence->id;
-        }
-
-        if ($sequencesToAdd) {
-            $this->subscribeToSequences($subscriber, $sequencesToAdd);
-        }
-    }
-
-    /**
-     * @param Subscriber $subscriber
-     * @param array      $sequenceIds
-     */
-    private function subscribeToSequences(Subscriber $subscriber, array $sequenceIds)
-    {
-        $this->bulkSubscribeToSequences($subscriber->bot_id, [$subscriber->_id], $sequenceIds);
-    }
-
-    /**
-     * @param Subscriber $subscriber
-     * @param array      $sequenceIds
-     */
-    private function unsubscribeFromSequences(Subscriber $subscriber, array $sequenceIds)
-    {
-        $this->bulkUnsubscribeFromSequences($subscriber->bot_id, [$subscriber->_id], $sequenceIds);
-    }
-
-
-    /**
-     * @param ObjectID $botId
-     * @param array    $subscriberIds
-     * @param array    $sequenceIds
-     */
-    private function bulkSubscribeToSequences(ObjectID $botId, array $subscriberIds, array $sequenceIds)
-    {
-        $schedules = [];
-
-        foreach ($subscriberIds as $subscriberId) {
-
-            $filter = [
-                ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
-                ['operator' => '=', 'key' => 'bot_id', 'value' => $botId]
-            ];
-
-            $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
-
-            foreach ($sequences as $sequence) {
-                if ($message = $this->sequenceRepo->getFirstSendableMessage($sequence)) {
-                    $schedules[] = [
-                        'sequence_id'   => $sequence->_id,
-                        'message_id'    => $message->id,
-                        'subscriber_id' => $subscriberId,
-                        'status'        => SequenceScheduleRepositoryInterface::STATUS_PENDING,
-                        'send_at'       => change_date(Carbon::now(), $message->conditions['wait_for']),
-                    ];
-                }
-
-                $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $message->id);
-                $this->sequenceRepo->update($sequence, [
-                    "messages.{$index}.queued" => $message->queued + 1,
-                    'subscriber_count'         => $sequence->subscriber_count + 1
-                ]);
-            }
-        }
-
-        if ($schedules) {
-            $this->sequenceScheduleRepo->bulkCreate($schedules);
-        }
-    }
-
-    /**
-     * @param ObjectID $botId
-     * @param array    $subscriberIds
-     * @param array    $sequenceIds
-     */
-    private function bulkUnsubscribeFromSequences(ObjectID $botId, array $subscriberIds, array $sequenceIds)
-    {
-        $delete = [];
-
-        foreach ($subscriberIds as $subscriberId) {
-            $filter = [
-                ['operator' => 'in', 'key' => '_id', 'value' => $sequenceIds],
-                ['operator' => '=', 'key' => 'bot_id', 'value' => $botId]
-            ];
-
-            $schedules = $this->sequenceScheduleRepo
-                ->pendingPerSubscriberInSequences($subscriberId, $sequenceIds, ['_id', 'message_id', 'sequence_id'])
-                ->keyBy('sequence_id');
-
-            $sequences = $this->sequenceRepo->getAll($filter, [], ['_id', 'subscriber_count', 'messages.id', 'messages.deleted_at', 'messages.queued']);
-
-            foreach ($sequences as $sequence) {
-                $schedule = $schedules->get($sequence->id);
-                $index = $this->sequenceRepo->getMessageIndexInSequence($sequence, $schedule->message_id);
-
-                $this->sequenceRepo->update($sequence, [
-                    'subscriber_count'         => $sequence->subscriber_count - 1,
-                    "messages.{$index}.queued" => $sequence->messages[$index]->queued - 1
-                ]);
-            }
-
-            $delete = array_merge($delete, $schedules->pluck('_id')->toArray());
-        }
-
-        if ($delete) {
-            $this->sequenceScheduleRepo->bulkDelete($delete);
-        }
     }
 }

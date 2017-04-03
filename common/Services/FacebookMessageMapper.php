@@ -72,7 +72,7 @@ class FacebookMessageMapper
             return [
                 'type'    => 'postback',
                 'title'   => $button->title,
-                'payload' => "r:{$button->last_revision_id}",
+                'payload' => "mm|r:{$button->last_revision_id}",
             ];
 
         }, $this->bot->main_menu->buttons);

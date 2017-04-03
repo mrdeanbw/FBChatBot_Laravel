@@ -382,6 +382,7 @@ class BotValidator extends LaravelValidator
 
         if (! $url && ! $templateId && ! $messages) {
             $this->addError("{$attribute}.template.id", 'has_main_action');
+
             return false;
         }
 
@@ -479,6 +480,20 @@ class BotValidator extends LaravelValidator
     public function validateBotTag($attribute, $value)
     {
         return in_array($value, $this->bot->tags);
+    }
+
+    /**
+     * @param $attribute
+     * @param $value
+     * @param $parameters
+     * @return bool
+     */
+    public function validateIncompatibleTags($attribute, $value, $parameters)
+    {
+        $addTags = $this->getValue($parameters[0]);
+        $removeTags = $this->getValue($parameters[1]);
+
+        return ! $addTags || ! $removeTags || ! array_intersect($addTags, $removeTags);
     }
 
 

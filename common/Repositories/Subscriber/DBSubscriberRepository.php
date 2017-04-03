@@ -23,17 +23,18 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
 
     /**
      * @param array $data
-     *
      * @return Subscriber
      */
     public function create(array $data)
     {
         if ($data['active']) {
-            $history = ['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => new Carbon()];
+            $history = ['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => mongo_date()];
             $data['history'] = [new SubscriptionHistory($history)];
         }
+        /** @var Subscriber $ret */
+        $ret = parent::create($data);
 
-        return parent::create($data);
+        return $ret;
     }
 
     /**
@@ -48,11 +49,11 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
             $history = null;
 
             if ($model->active && ! $data['active']) {
-                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED, 'action_at' => new Carbon()]);
+                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED, 'action_at' => mongo_date()]);
             }
 
             if (! $model->active && $data['active']) {
-                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => new Carbon()]);
+                $history = new SubscriptionHistory(['action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED, 'action_at' => mongo_date()]);
             }
 
             if ($history) {
@@ -300,6 +301,9 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
 
         list($update, $requiresTwoQueries) = $this->normalizeBatchUpdateArray($input);
 
+        if (! $update) {
+            return;
+        }
         // We need 2 queries.
         if ($requiresTwoQueries) {
 
