@@ -142,7 +142,7 @@ class BotService
     {
         $pageIds = $input['pages'];
         $timezone = $input['timezone'];
-        $timezoneOffset = Carbon::now('Pacific/Marquesas')->offsetHours;
+        $timezoneOffset = Carbon::now($input['timezone'])->offsetHours;
 
         // Get the list of Facebook pages, that don't have bots associated with them.
         // Index them by Facebook ID.
@@ -340,7 +340,9 @@ class BotService
             'url'      => 'https://www.mrreply.com',
         ]);
 
+        $this->templates->messages->forMainMenuButtons(true);
         $buttons = $this->templates->messages->correspondInputMessagesToOriginal([$button], [], $botId, true);
+        $this->templates->messages->forMainMenuButtons(false);
 
         return $this->mainMenus->defaultMainMenu($buttons);
     }

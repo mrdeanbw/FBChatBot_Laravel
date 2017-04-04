@@ -12,7 +12,6 @@ trait HasEmbeddedArrayModels
     public function setAttribute($key, $value)
     {
         if (! empty($value) && ($nested = explode('.', $key))) {
-
             if (count($nested) == 2 && isset($this->embedded[$nested[0]])) {
                 if (is_array($this->embedded[$nested[0]])) {
                     foreach ($this->{$nested[0]} as $object) {

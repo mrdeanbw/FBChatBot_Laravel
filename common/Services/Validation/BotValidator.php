@@ -506,7 +506,6 @@ class BotValidator extends LaravelValidator
     {
         $keyAttribute = substr($attribute, -5);
         $key = $this->getValue($keyAttribute);
-        \Log::debug("Filter Key: '{$keyAttribute}' => '{$key}'");
         if ($key == 'gender') {
             return in_array($value, ['male', 'female']);
         }

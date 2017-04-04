@@ -1,6 +1,5 @@
 <?php namespace Common\Services;
 
-use Common\Models\Button;
 use Common\Models\Card;
 use Common\Models\Image;
 use Common\Models\Message;
@@ -149,10 +148,17 @@ class MessageService
                 continue;
             }
 
-            $inputMessage->type = $isNew? $inputMessage->type : $originalMessage->type;
-            if (is_null($inputMessage->readonly)) {
-                $inputMessage->readonly = false;
+            if (! $allowReadOnly) {
+                if (! $isNew && $originalMessage->readonly) {
+                    $inputMessage = $originalMessage;
+                    $normalized[] = $inputMessage;
+                    continue;
+                } else {
+                    unset($inputMessage->readonly);
+                }
             }
+
+            $inputMessage->type = $isNew? $inputMessage->type : $originalMessage->type;
 
             if (! $isNew && $originalMessage->last_revision_id) {
                 $inputMessage->last_revision_id = $originalMessage->last_revision_id;
@@ -160,7 +166,8 @@ class MessageService
 
             if (! $allowReadOnly) {
                 if (! $isNew && $originalMessage->readonly) {
-                    $inputMessage->readonly = $originalMessage->readonly;
+                    $inputMessage = $originalMessage;
+                    continue;
                 } else {
                     unset($inputMessage->readonly);
                 }
@@ -190,14 +197,14 @@ class MessageService
 
             $normalized[] = $inputMessage;
 
-            if ($this->versioning && in_array($inputMessage->type, ['text', 'image', 'card_container']) && ($isNew || $this->messagesAreDifferent($inputMessage, $originalMessage))) {
+            if ($this->versioning && (in_array($inputMessage->type, ['text', 'image', 'card_container']) || $this->forMainMenuButtons) && ($isNew || $this->messagesAreDifferent($inputMessage, $originalMessage))) {
                 $temp = $this->getVersionData($botId, $inputMessage);
                 $inputMessage->last_revision_id = $temp['_id'];
                 $this->newMessageRevisions[] = $temp;
             }
         }
 
-        if ($this->versioning) {
+        if ($this->versioning && ! $this->forMainMenuButtons) {
             foreach ($original->toArray() as $message) {
                 if ($message->readonly) {
                     continue;
@@ -299,7 +306,7 @@ class MessageService
         foreach (self::diffFields[$inputMessage->type] as $field) {
 
             if (! is_array($inputMessage->{$field})) {
-                if ($inputMessage->{$field} !== $originalMessage->{$field}) {
+                if ($inputMessage->{$field} != $originalMessage->{$field}) {
                     return true;
                 }
                 continue;

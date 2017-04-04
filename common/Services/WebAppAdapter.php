@@ -389,11 +389,11 @@ class WebAppAdapter
      */
     public function storeIncomingOptInMessage(array $event, Bot $bot, Subscriber $subscriber)
     {
-        $data = [
-            'optin'     => 1,
-            'action_at' => mongo_date($event['timestamp'])
-        ];
-        $this->storeIncomingMessage($data, $bot, $subscriber);
+        //        $data = [
+        //            'optin'     => 1,
+        //            'action_at' => mongo_date($event['timestamp'])
+        //        ];
+        //        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -403,12 +403,12 @@ class WebAppAdapter
      */
     public function storeIncomingTextMessage(array $event, Bot $bot, Subscriber $subscriber = null)
     {
-        $data = [
-            'message'     => ['text' => $event['message']['text'], 'seq' => $event['message']['seq']],
-            'facebook_id' => $event['message']['mid'],
-            'action_at'   => mongo_date($event['timestamp'])
-        ];
-        $this->storeIncomingMessage($data, $bot, $subscriber);
+        //        $data = [
+        //            'message'     => ['text' => $event['message']['text'], 'seq' => $event['message']['seq']],
+        //            'facebook_id' => $event['message']['mid'],
+        //            'action_at'   => mongo_date($event['timestamp'])
+        //        ];
+        //        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -418,11 +418,11 @@ class WebAppAdapter
      */
     public function storeIncomingGetStartedButtonClick($timestamp, $bot, $subscriber)
     {
-        $data = [
-            'message'   => ['get_started' => true],
-            'action_at' => mongo_date($timestamp)
-        ];
-        $this->storeIncomingMessage($data, $bot, $subscriber);
+        //        $data = [
+        //            'message'   => ['get_started' => true],
+        //            'action_at' => mongo_date($timestamp)
+        //        ];
+        //        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -433,11 +433,11 @@ class WebAppAdapter
      */
     public function storeIncomingButtonClick($title, $timestamp, Bot $bot, Subscriber $subscriber = null)
     {
-        $data = [
-            'message'   => ['button' => $title],
-            'action_at' => mongo_date($timestamp),
-        ];
-        $this->storeIncomingMessage($data, $bot, $subscriber);
+        //        $data = [
+        //            'message'   => ['button' => $title],
+        //            'action_at' => mongo_date($timestamp),
+        //        ];
+        //        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -451,18 +451,18 @@ class WebAppAdapter
      */
     public function storeIncomingMessage(array $data, Bot $bot, Subscriber $subscriber = null)
     {
-        $data = array_merge($data, [
-            'incoming'      => 1,
-            'bot_id'        => $bot->_id,
-            'subscriber_id' => null,
-        ]);
-
-        if ($subscriber) {
-            $data['subscriber_id'] = $subscriber->_id;
-            $this->subscriberRepo->update($subscriber, ['last_interaction_at' => Carbon::now()]);
-        }
-
-        $this->inboxRepo->create($data);
+        //        $data = array_merge($data, [
+        //            'incoming'      => 1,
+        //            'bot_id'        => $bot->_id,
+        //            'subscriber_id' => null,
+        //        ]);
+        //
+        //        if ($subscriber) {
+        //            $data['subscriber_id'] = $subscriber->_id;
+        //            $this->subscriberRepo->update($subscriber, ['last_interaction_at' => Carbon::now()]);
+        //        }
+        //
+        //        $this->inboxRepo->create($data);
     }
 
     /**
@@ -495,18 +495,25 @@ class WebAppAdapter
     }
 
     /**
-     * @param ObjectID   $revisionId
+     * @param string     $payload
      * @param Bot        $bot
      * @param Subscriber $subscriber
-     * @return null|false
+     * @return false|null
      */
-    public function handlePostbackMainMenuButtonClick(ObjectID $revisionId, Bot $bot, Subscriber $subscriber)
+    public function handlePostbackMainMenuButtonClick($payload, Bot $bot, Subscriber $subscriber)
     {
         try {
+            $clean = [];
+            $segmented = explode('|', $payload);
+            foreach ($segmented as $section) {
+                $temp = explode(':', $section);
+                $clean[$temp[0]] = $temp[1];
+            }
+            $clean['r'] = new ObjectID($clean['r']);
             /** @var MessageRevision $revision */
-            $revision = $this->messageRevisionRepo->findById($revisionId);
+            $revision = $this->messageRevisionRepo->findById($clean['r']);
             $this->carryOutButtonActions($revision, $bot, $subscriber);
-            $this->messageRevisionRepo->recordMainMenuButtonClick($revisionId, $bot, $subscriber);
+            $this->messageRevisionRepo->recordMainMenuButtonClick($clean['r'], $bot, $subscriber);
 
             return false;
         } catch (Exception $e) {

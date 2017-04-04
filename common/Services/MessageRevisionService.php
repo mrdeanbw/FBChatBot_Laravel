@@ -65,7 +65,7 @@ class MessageRevisionService
     public function getRevisionsWithStatsForMainMenuButton(ObjectID $buttonId, Bot $bot)
     {
         $button = array_first($bot->main_menu->buttons, function (Button $button) use ($buttonId) {
-            return (string)$button->id === $buttonId;
+            return $button->id == $buttonId;
         });
 
         if (! $button) {

@@ -8,6 +8,7 @@ use Common\Jobs\UpdateMainMenuOnFacebook;
 use Common\Repositories\Bot\DBBotRepository;
 use Common\Services\Facebook\MessengerThread;
 use Dingo\Api\Exception\ValidationHttpException;
+use MongoDB\BSON\ObjectID;
 
 class MainMenuService
 {
@@ -59,13 +60,7 @@ class MainMenuService
      */
     public function update(array $input, Bot $bot, User $user)
     {
-        $buttons = $input['buttons'];
-
-        // remove the last element in the main menu buttons (the copyrighted block).
-        array_pop($buttons);
-
-        $buttons = $this->normalizeButtons($buttons, $bot);
-        $buttons[] = array_last($bot->main_menu->buttons);
+        $buttons = $this->normalizeButtons($input['buttons'], $bot);
 
         $this->botRepo->update($bot, ['main_menu.buttons' => $buttons]);
 
@@ -102,7 +97,11 @@ class MainMenuService
         $buttons = $this->messages->correspondInputMessagesToOriginal($buttons, $bot->main_menu->buttons, $bot->_id);
 
         if (! $buttons) {
-            throw new ValidationHttpException(["messages" => ["Invalid Messages"]]);
+            throw new ValidationHttpException(["buttons" => ["Invalid Messages"]]);
+        }
+
+        if (count($buttons) > 5) {
+            throw new ValidationHttpException(["buttons" => ["The main menu may not have more than 5 buttons."]]);
         }
 
         return $buttons;
@@ -123,7 +122,7 @@ class MainMenuService
             if ($button['main_action'] == 'url') {
                 $ret->url = $button['url'];
             } else {
-                $ret->template_id = $button['template']['id'];
+                $ret->template_id = new ObjectID($button['template']['id']);
                 if ($addTags = array_get($button, 'add_tags')) {
                     $ret->add_tags = $addTags;
                 }

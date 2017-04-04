@@ -25,6 +25,11 @@ class Bot extends BaseModel
         subscriptions as relationSubscription; //overwrite the original relation subscription
     }
 
+    public $embedded = [
+        'main_menu'     => MainMenu::class,
+        'greeting_text' => [GreetingText::class],
+    ];
+
     /**
      * Get all of the subscriptions for the Stripe model.
      * @return \Jenssegers\Mongodb\Eloquent\Model

@@ -58,7 +58,6 @@ class FacebookMessageMapper
     public function mapMainMenuButtons()
     {
         return array_map(function (Button $button) {
-
             // If the button has a URL action, then we map it to Facebook's web_url.
             if ($button->url) {
                 return [

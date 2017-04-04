@@ -211,6 +211,14 @@ class TemplateService
 
         $ret = $this->messages->correspondInputMessagesToOriginal($messages, $original, $botId, $allowReadOnly);
 
+        $count = 0;
+        foreach ($ret as $message) {
+            $count += ! $message->deleted_at;
+        }
+        if ($count > 10) {
+            throw new ValidationHttpException(["message" => ["Your messages may not be more than 10 messages!"]]);
+        }
+
         $this->messages->persistMessageRevisions();
 
         return $ret;
