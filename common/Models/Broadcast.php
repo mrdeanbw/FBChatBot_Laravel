@@ -40,8 +40,8 @@ class Broadcast extends BaseModel
     {
         if (isset($attributes['filter']['groups'])) {
             foreach ($attributes['filter']['groups'] as $i => $group) {
-                foreach ($attributes['filter']['groups']['rules'] as $j => $rule) {
-                    $attributes['filter']['groups'][$i]['rules'][$j] = new AudienceFilterRule($rule);
+                foreach ($group['rules'] as $j => $rule) {
+                    $group['rules'][$j] = new AudienceFilterRule($rule);
                 }
                 $attributes['filter']['groups'][$i] = new AudienceFilterGroup($group);
             }
