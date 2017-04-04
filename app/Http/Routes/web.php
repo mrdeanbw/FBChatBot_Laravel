@@ -11,8 +11,10 @@ $app->group(['namespace' => 'App\Http\Controllers'], function (Application $app)
         $app->post('stripe/web-hook', '\Laravel\Cashier\Http\Controllers\WebhookController@handleWebhook');
     });
 
-    $app->get('/c/c/{payload}', 'ClickHandlingController@card');
-    $app->get('/c/tb/{payload}', 'ClickHandlingController@textButton');
-    $app->get('/c/cb/{payload}', 'ClickHandlingController@cardButton');
-    $app->get('/c/mb/{payload}', 'ClickHandlingController@menuButton');
+    $app->group(['middleware' => [Common\Http\Middleware\RedirectCrawlers::class]], function (Application $app) {
+        $app->get('/c/c/{payload}', 'ClickHandlingController@card');
+        $app->get('/c/tb/{payload}', 'ClickHandlingController@textButton');
+        $app->get('/c/cb/{payload}', 'ClickHandlingController@cardButton');
+        $app->get('/c/mb/{payload}', 'ClickHandlingController@menuButton');
+    });
 });
