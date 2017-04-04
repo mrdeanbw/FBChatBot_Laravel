@@ -1,10 +1,9 @@
 <?php namespace App\Http\Controllers;
 
-use Exception;
-use MongoDB\BSON\ObjectID;
 use Common\Services\WebAppAdapter;
-use Common\Services\EncryptionService;
 use Common\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 class ClickHandlingController extends Controller
 {
@@ -63,11 +62,18 @@ class ClickHandlingController extends Controller
     }
 
     /**
-     * @param $payload
+     * @param Request $request
+     * @param         $payload
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Laravel\Lumen\Http\Redirector|\Laravel\Lumen\Http\ResponseFactory
      */
-    public function menuButton($payload)
+    public function menuButton(Request $request, $payload)
     {
+        $data = [
+            'ip'         => $request->ip(),
+            'agent'      => $request->header('User-Agent'),
+            'is_crawler' => app(CrawlerDetect::class)->isCrawler(),
+        ];
+        \Log::debug('Main menu button click:', $data);
         if ($redirectTo = $this->adapter->handleUrlMainMenuButtonClick($payload)) {
             return redirect($redirectTo);
         }
