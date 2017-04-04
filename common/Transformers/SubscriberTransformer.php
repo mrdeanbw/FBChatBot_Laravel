@@ -8,7 +8,7 @@ class SubscriberTransformer extends BaseTransformer
 
     use LoadsAssociatedModels;
 
-    public $availableIncludes = ['history', 'sequences'];
+    public $availableIncludes = ['history'];
 
     public function transform(Subscriber $subscriber)
     {

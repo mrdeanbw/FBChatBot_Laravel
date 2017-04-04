@@ -39,14 +39,19 @@ trait LoadsAssociatedModels
     {
         switch ($modelToLoad) {
             case 'bot':
-                return $this->getRepo('bot')->findById(is_array($model)? $model['bot_id'] : $model->bot_id);
+                $id = is_array($model)? $model['bot_id'] : $model->bot_id;
+
+                return $id? $this->getRepo('bot')->findById($id) : null;
 
             case 'template':
-                return $this->getRepo('template')->findById(is_array($model)? $model['template_id'] : $model->template_id);
+                $id = is_array($model)? $model['template_id'] : $model->template_id;
+
+                return $this->getRepo('template')->findById($id);
 
             case 'sequences':
-                $filter = [['operator' => 'in', 'key' => '_id', 'value' => is_array($model)? $model['sequences'] : $model->sequences]];
-                return $this->getRepo('sequence')->getAll($filter);
+                $ids = is_array($model)? $model['sequences'] : $model->sequences;
+
+                return $ids? $this->getRepo('sequence')->getAll([['operator' => 'in', 'key' => '_id', 'value' => $ids]]) : null;
 
             default:
                 return null;
