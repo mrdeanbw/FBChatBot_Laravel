@@ -108,16 +108,14 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
 
     /**
      * Unsubscribe from the bot.
-     *
      * @param Subscriber $subscriber
-     *
      * @return bool
      */
     public function unsubscribe(Subscriber $subscriber)
     {
         // User is already unsubscribed.
         if (! $subscriber->active) {
-            return $subscriber;
+            return true;
         }
 
         return $this->update($subscriber, [
@@ -128,10 +126,8 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
 
     /**
      * Count the number of active subscribers for a certain page.
-     *
      * @param Bot $bot
-     *
-     * @return Subscriber
+     * @return int
      */
     public function activeSubscriberCountForBot(Bot $bot)
     {
@@ -441,18 +437,49 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     /**
      * @param Bot           $bot
      * @param string|Carbon $date
-     *
      * @return int
      */
     public function subscriptionCountForBot(Bot $bot, $date)
     {
-        $filter = [
-            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
-            ['operator' => '=', 'key' => 'history.action', 'value' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED],
-            ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
+        $boundaries = date_boundaries($date);
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['bot_id' => $bot->_id],
+                        ['history.action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED],
+                        [
+                            'history.action_at' => [
+                                '$gte' => mongo_date($boundaries[0]),
+                                '$lt'  => mongo_date($boundaries[1])
+                            ]
+                        ]
+                    ]
+                ],
+            ],
+            [
+                '$group' => [
+                    '_id'   => null,
+                    'count' => [
+                        '$sum' => [
+                            '$size' => [
+                                '$filter' => [
+                                    'input' => '$history',
+                                    'as'    => 'el',
+                                    'cond'  => [
+                                        '$eq' => ['$$el.action', SubscriberRepositoryInterface::ACTION_SUBSCRIBED]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
         ];
 
-        return $this->count($filter);
+        $result = Subscriber::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
     }
 
     /**
@@ -463,13 +490,45 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      */
     public function unsubscriptionCountForBot(Bot $bot, $date)
     {
-        $filter = [
-            ['operator' => '=', 'key' => 'bot_id', 'value' => $bot->_id],
-            ['operator' => '=', 'key' => 'history.action', 'value' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED],
-            ['operator' => 'date', 'key' => 'history.action_at', 'value' => $date]
+        $boundaries = date_boundaries($date);
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['bot_id' => $bot->_id],
+                        ['history.action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED],
+                        [
+                            'history.action_at' => [
+                                '$gte' => mongo_date($boundaries[0]),
+                                '$lt'  => mongo_date($boundaries[1])
+                            ]
+                        ]
+                    ]
+                ],
+            ],
+            [
+                '$group' => [
+                    '_id'   => null,
+                    'count' => [
+                        '$sum' => [
+                            '$size' => [
+                                '$filter' => [
+                                    'input' => '$history',
+                                    'as'    => 'el',
+                                    'cond'  => [
+                                        '$eq' => ['$$el.action', SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
         ];
 
-        return $this->count($filter);
+        $result = Subscriber::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
     }
 
     /**

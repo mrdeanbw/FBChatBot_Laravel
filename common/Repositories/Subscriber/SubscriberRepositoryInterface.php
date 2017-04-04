@@ -8,13 +8,12 @@ use Common\Models\Subscriber;
 use Common\Models\AudienceFilter;
 use Illuminate\Support\Collection;
 use Common\Repositories\AssociatedWithBotRepositoryInterface;
-use MongoDB\BSON\ObjectID;
 
 interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInterface
 {
 
     const ACTION_SUBSCRIBED = 1;
-    const ACTION_UNSUBSCRIBED = 0;
+    const ACTION_UNSUBSCRIBED = -1;
 
     /**
      * Find a bot subscriber by his Facebook ID.
@@ -75,7 +74,6 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
     /**
      * @param Bot           $bot
      * @param string|Carbon $date
-     *
      * @return int
      */
     public function subscriptionCountForBot(Bot $bot, $date);
@@ -83,7 +81,6 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
     /**
      * @param Bot           $bot
      * @param string|Carbon $date
-     *
      * @return int
      */
     public function unsubscriptionCountForBot(Bot $bot, $date);
@@ -92,16 +89,13 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      * @param Broadcast|Sequence $model
      * @param array              $filterBy
      * @param array              $orderBy
-     *
      * @return Collection
      */
     public function getActiveTargetAudience($model, array $filterBy = [], array $orderBy = []);
 
     /**
      * @param Sequence $sequence
-     *
      * @return int the number of newly added subscribers
-     *
      */
     public function subscribeToSequenceIfNotUnsubscribed(Sequence $sequence);
 

@@ -111,8 +111,26 @@ class MessageService
     public function persistMessageRevisions()
     {
         if ($this->messageRevisions) {
-            $this->messageRevisionRepo->bulkCreate($this->messageRevisions);
-            $this->messageRevisions = [];
+            $revisions = [];
+            foreach ($this->messageRevisions as $revision) {
+                if (isset($revision['deleted_at'])) {
+                    continue;
+                }
+                if (in_array($revision['type'], ['text', 'card']) && isset($revision['buttons'])) {
+                    $revision['buttons'] = $this->recursivelyRemoveDeletedMessages($revision['buttons']);
+                }
+                if ($revision['type'] == 'card_container') {
+                    $revision['cards'] = $this->recursivelyRemoveDeletedMessages($revision['cards']);
+                }
+                if ($revision['type'] == 'button' && isset($revision['messages'])) {
+                    $revision['messages'] = $this->recursivelyRemoveDeletedMessages($revision['messages']);
+                }
+                $revisions[] = $revision;
+            }
+            if ($revisions) {
+                $this->messageRevisionRepo->bulkCreate($revisions);
+                $this->messageRevisions = [];
+            }
         }
     }
 
@@ -166,7 +184,6 @@ class MessageService
 
             if (! $allowReadOnly) {
                 if (! $isNew && $originalMessage->readonly) {
-                    $inputMessage = $originalMessage;
                     continue;
                 } else {
                     unset($inputMessage->readonly);
@@ -411,5 +428,28 @@ class MessageService
         //            }
         //        }
 
+    }
+
+    private function recursivelyRemoveDeletedMessages(array $messages)
+    {
+        return array_filter($messages, function ($message) {
+            if ($message->deleted_at) {
+                return false;
+            }
+
+            if (in_array($message->type, ['text', 'card']) && $message->buttons) {
+                $message->buttons = $this->recursivelyRemoveDeletedMessages($message->buttons);
+            }
+
+            if ($message->type == 'card_container') {
+                $message->cards = $this->recursivelyRemoveDeletedMessages($message->cards);
+            }
+
+            if ($message->type == 'button' && $message->messages) {
+                $message->messages = $this->recursivelyRemoveDeletedMessages($message->messages);
+            }
+
+            return true;
+        });
     }
 }

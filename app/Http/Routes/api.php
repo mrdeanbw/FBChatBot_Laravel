@@ -1,16 +1,7 @@
 <?php
 
-use Common\Models\Bot;
-use Common\Models\SentMessage;
-use Common\Models\Subscriber;
-use Common\Models\User;
-use Common\Repositories\Bot\BotRepositoryInterface;
-use Common\Repositories\SentMessage\DBSentMessageRepository;
-use Common\Services\FacebookMessageSender;
 use Dingo\Api\Routing\Router;
-use Common\Jobs\UpdateMainMenuOnFacebook;
 use Common\Http\Middleware\AuthorizedMiddleware;
-use MongoDB\BSON\ObjectID;
 
 /** @type Router $api */
 $api = app(Router::class);
@@ -28,7 +19,7 @@ $options = [
 
 $api->version('v1', $options, function (Router $api) {
 
-    $api->get('/test', function (DBSentMessageRepository $repo) {
+    $api->get('/test', function () {
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');

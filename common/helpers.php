@@ -84,7 +84,7 @@ if (! function_exists('date_boundaries')) {
             return date_string_boundaries($date);
         }
 
-        return [$date, $date->copy()->addDay()];
+        return [$date->copy(), $date->copy()->addDay()];
     }
 }
 

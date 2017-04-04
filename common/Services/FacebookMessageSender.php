@@ -1,5 +1,6 @@
 <?php namespace Common\Services;
 
+use Common\Repositories\Template\TemplateRepositoryInterface;
 use Exception;
 use Carbon\Carbon;
 use Common\Models\Bot;
@@ -29,11 +30,6 @@ class FacebookMessageSender
         self::NOTIFICATION_NO_PUSH     => 'NO_PUSH',
     ];
     /**
-     * @type InboxRepositoryInterface
-     */
-    protected $inboxRepo;
-
-    /**
      * @type SentMessageRepositoryInterface
      */
     private $sentMessageRepo;
@@ -41,17 +37,20 @@ class FacebookMessageSender
      * @type FacebookAdapter
      */
     private $FacebookAdapter;
+    /**
+     * @var TemplateRepositoryInterface
+     */
+    private $templateRepo;
 
     /**
      * FacebookAPIAdapter constructor.
-     *
      * @param FacebookAdapter                $FacebookAdapter
      * @param SentMessageRepositoryInterface $sentMessageRepo
-     * @param InboxRepositoryInterface       $inboxRepo
+     * @param TemplateRepositoryInterface    $templateRepo
      */
-    public function __construct(FacebookAdapter $FacebookAdapter, SentMessageRepositoryInterface $sentMessageRepo, InboxRepositoryInterface $inboxRepo)
+    public function __construct(FacebookAdapter $FacebookAdapter, SentMessageRepositoryInterface $sentMessageRepo, TemplateRepositoryInterface $templateRepo)
     {
-        $this->inboxRepo = $inboxRepo;
+        $this->templateRepo = $templateRepo;
         $this->sentMessageRepo = $sentMessageRepo;
         $this->FacebookAdapter = $FacebookAdapter;
     }
@@ -72,14 +71,17 @@ class FacebookMessageSender
     /**
      * @param Template   $template
      * @param Subscriber $subscriber
+     * @param Bot|null   $bot
      * @return \object[]
      */
-    public function sendTemplate(Template $template, Subscriber $subscriber)
+    public function sendTemplate(Template $template, Subscriber $subscriber, Bot $bot = null)
     {
-        /** @type Bot $bot */
-        $this->loadModelsIfNotLoaded($template, ['bot']);
+        if (! $bot) {
+            $this->loadModelsIfNotLoaded($template, ['bot']);
+            $bot = $template->bot;
+        }
 
-        return $this->sendMessageArray($template->clean_messages, $subscriber, $template->bot);
+        return $this->sendMessageArray($template->clean_messages, $subscriber, $bot);
     }
 
     /**
@@ -94,7 +96,7 @@ class FacebookMessageSender
         $this->loadModelsIfNotLoaded($context, ['template']);
         $template = is_array($context)? $context['template'] : $context->template;
 
-        return $this->sendTemplate($template, $subscriber);
+        return $this->sendTemplate($template, $subscriber, $bot);
     }
 
     /**
@@ -145,15 +147,15 @@ class FacebookMessageSender
                     'facebook_id' => $facebookMessageId,
                     'sent_at'     => $sentAt
                 ]));
-//                $this->inboxRepo->create([
-//                    'bot_id'        => $bot->_id,
-//                    'subscriber_id' => $subscriber->_id,
-//                    'action_at'     => $sentAt,
-//                    'incoming'      => 0,
-//                    'facebook_id'   => $facebookMessageId,
-//                    'message'       => $mappedMessage['message'],
-//                    'notification'  => $mappedMessage['notification_type']
-//                ]);
+                //                $this->inboxRepo->create([
+                //                    'bot_id'        => $bot->_id,
+                //                    'subscriber_id' => $subscriber->_id,
+                //                    'action_at'     => $sentAt,
+                //                    'incoming'      => 0,
+                //                    'facebook_id'   => $facebookMessageId,
+                //                    'message'       => $mappedMessage['message'],
+                //                    'notification'  => $mappedMessage['notification_type']
+                //                ]);
             } catch (MessageNotSentException $e) {
                 // do nothing
             }
@@ -169,8 +171,10 @@ class FacebookMessageSender
      */
     public function sendBotMessage($messageIndex, Bot $bot, Subscriber $subscriber)
     {
-        $context = $bot->templates[$messageIndex];
-        $this->sendFromTemplateWrapper($context, $subscriber, $bot);
+        $templateId = $bot->templates[$messageIndex];
+        /** @var Template $template */
+        $template = $this->templateRepo->findById($templateId);
+        $this->sendTemplate($template, $subscriber, $bot);
     }
 
     /**

@@ -239,7 +239,7 @@ class BroadcastService
             $data['send_at'] = $timezone? Carbon::createFromFormat('Y-m-d H:i', "{$input['date']} {$input['time']}", $timezone)->setTimezone('UTC') : null;
         }
 
-        if (! $data['send_at']) {
+        if ($data['timezone_mode'] == BroadcastRepositoryInterface::TIMEZONE_SUBSCRIBER) {
             $data['schedules'] = $this->calculateRunSchedules($data);
             $data['send_at'] = $data['schedules'][0]->send_at;
         }

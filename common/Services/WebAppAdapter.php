@@ -315,11 +315,12 @@ class WebAppAdapter
      * Send an auto reply.
      * @param AutoReplyRule $rule
      * @param Subscriber    $subscriber
+     * @param Bot           $bot
      */
-    public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber)
+    public function sendAutoReply(AutoReplyRule $rule, Subscriber $subscriber, Bot $bot)
     {
         $this->loadModelsIfNotLoaded($rule, ['template']);
-        $this->FacebookMessageSender->sendTemplate($rule->template, $subscriber);
+        $this->FacebookMessageSender->sendTemplate($rule->template, $subscriber, $bot);
     }
 
     /**

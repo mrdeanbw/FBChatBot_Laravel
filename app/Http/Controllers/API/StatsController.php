@@ -111,7 +111,7 @@ class StatsController extends APIController
     /**
      * Total number of active subscribers.
      * @param Bot $bot
-     * @return array
+     * @return int
      */
     private function subscriberCount(Bot $bot)
     {

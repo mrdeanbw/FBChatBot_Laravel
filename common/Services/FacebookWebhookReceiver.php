@@ -133,7 +133,7 @@ class FacebookWebhookReceiver
 
                 $this->adapter->storeIncomingTextMessage($event, $bot, $subscriber);
                 if ($rule->template_id) {
-                    $this->adapter->sendAutoReply($rule, $subscriber);
+                    $this->adapter->sendAutoReply($rule, $subscriber, $bot);
                 }
 
                 return;

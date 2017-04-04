@@ -380,10 +380,8 @@ class SubscriberService
     /**
      * Return the total number of subscription actions in a given period of time.
      * Calculated as the difference between subscription and unsubscription actions.
-     *
      * @param Bot           $bot
      * @param Carbon|string $date
-     *
      * @return integer
      */
     public function totalSubscriptions(Bot $bot, $date)

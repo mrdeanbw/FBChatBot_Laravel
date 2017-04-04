@@ -57,9 +57,31 @@ class Template extends BaseModel
 
     public function getCleanMessagesAttribute()
     {
-        return array_filter($this->messages, function ($message) {
-            return empty($message->deleted_at);
+        return $this->recursivelyRemoveDeletedMessages($this->messages);
+    }
+
+    private function recursivelyRemoveDeletedMessages(array $messages)
+    {
+        return array_filter($messages, function ($message) {
+            if ($message->deleted_at) {
+                return false;
+            }
+
+            if (in_array($message->type, ['text', 'card']) && $message->buttons) {
+                $message->buttons = $this->recursivelyRemoveDeletedMessages($message->buttons);
+            }
+
+            if ($message->type == 'card_container') {
+                $message->cards = $this->recursivelyRemoveDeletedMessages($message->cards);
+            }
+
+            if ($message->type == 'button' && $message->messages) {
+                $message->messages = $this->recursivelyRemoveDeletedMessages($message->messages);
+            }
+
+            return true;
         });
     }
+
 
 }
