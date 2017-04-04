@@ -389,11 +389,11 @@ class WebAppAdapter
      */
     public function storeIncomingOptInMessage(array $event, Bot $bot, Subscriber $subscriber)
     {
-        //        $data = [
-        //            'optin'     => 1,
-        //            'action_at' => mongo_date($event['timestamp'])
-        //        ];
-        //        $this->storeIncomingMessage($data, $bot, $subscriber);
+        $data = [
+            'optin'     => 1,
+            'action_at' => mongo_date($event['timestamp'])
+        ];
+        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -403,12 +403,12 @@ class WebAppAdapter
      */
     public function storeIncomingTextMessage(array $event, Bot $bot, Subscriber $subscriber = null)
     {
-        //        $data = [
-        //            'message'     => ['text' => $event['message']['text'], 'seq' => $event['message']['seq']],
-        //            'facebook_id' => $event['message']['mid'],
-        //            'action_at'   => mongo_date($event['timestamp'])
-        //        ];
-        //        $this->storeIncomingMessage($data, $bot, $subscriber);
+        $data = [
+            'message'     => ['text' => $event['message']['text'], 'seq' => $event['message']['seq']],
+            'facebook_id' => $event['message']['mid'],
+            'action_at'   => mongo_date($event['timestamp'])
+        ];
+        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -418,11 +418,11 @@ class WebAppAdapter
      */
     public function storeIncomingGetStartedButtonClick($timestamp, $bot, $subscriber)
     {
-        //        $data = [
-        //            'message'   => ['get_started' => true],
-        //            'action_at' => mongo_date($timestamp)
-        //        ];
-        //        $this->storeIncomingMessage($data, $bot, $subscriber);
+        $data = [
+            'message'   => ['get_started' => true],
+            'action_at' => mongo_date($timestamp)
+        ];
+        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -433,11 +433,11 @@ class WebAppAdapter
      */
     public function storeIncomingButtonClick($title, $timestamp, Bot $bot, Subscriber $subscriber = null)
     {
-        //        $data = [
-        //            'message'   => ['button' => $title],
-        //            'action_at' => mongo_date($timestamp),
-        //        ];
-        //        $this->storeIncomingMessage($data, $bot, $subscriber);
+        $data = [
+            'message'   => ['button' => $title],
+            'action_at' => mongo_date($timestamp),
+        ];
+        $this->storeIncomingMessage($data, $bot, $subscriber);
     }
 
     /**
@@ -451,18 +451,18 @@ class WebAppAdapter
      */
     public function storeIncomingMessage(array $data, Bot $bot, Subscriber $subscriber = null)
     {
-        //        $data = array_merge($data, [
-        //            'incoming'      => 1,
-        //            'bot_id'        => $bot->_id,
-        //            'subscriber_id' => null,
-        //        ]);
-        //
-        //        if ($subscriber) {
-        //            $data['subscriber_id'] = $subscriber->_id;
-        //            $this->subscriberRepo->update($subscriber, ['last_interaction_at' => Carbon::now()]);
-        //        }
-        //
-        //        $this->inboxRepo->create($data);
+        $data = array_merge($data, [
+            'incoming'      => 1,
+            'bot_id'        => $bot->_id,
+            'subscriber_id' => null,
+        ]);
+
+        if ($subscriber) {
+            $data['subscriber_id'] = $subscriber->_id;
+            $this->subscriberRepo->update($subscriber, ['last_interaction_at' => Carbon::now()]);
+        }
+
+//        $this->inboxRepo->create($data);
     }
 
     /**
@@ -548,9 +548,9 @@ class WebAppAdapter
                 if (! $bot->enabled) {
                     throw new InactiveBotException();
                 }
-                $cardContainer = array_map(function (Message $message) use ($clean) {
+                $cardContainer = array_first($template->messages, function (Message $message) use ($clean) {
                     return $message->id == $clean['o'];
-                }, $template->messages);
+                });
                 $card = null;
                 $cardIndex = -1;
                 foreach ($cardContainer->cards as $i => $revisionCard) {
@@ -619,9 +619,9 @@ class WebAppAdapter
                 if (! $bot->enabled) {
                     throw new InactiveBotException();
                 }
-                $text = array_map(function (Message $message) use ($clean) {
+                $text = array_first($template->messages, function (Message $message) use ($clean) {
                     return $message->id == $clean['o'] && $message->buttons;
-                }, $template->messages);
+                });
                 $button = null;
                 $buttonIndex = -1;
                 foreach ($text->buttons as $i => $revisionButton) {
@@ -690,9 +690,9 @@ class WebAppAdapter
                 if (! $bot->enabled) {
                     throw new InactiveBotException();
                 }
-                $cardContainer = array_map(function (Message $message) use ($clean) {
+                $cardContainer = array_first($template->messages, function (Message $message) use ($clean) {
                     return $message->id == $clean['o'];
-                }, $template->messages);
+                });
                 $card = null;
                 $cardIndex = -1;
                 foreach ($cardContainer->cards as $i => $revisionCard) {
@@ -780,9 +780,9 @@ class WebAppAdapter
                 if (! $bot->enabled) {
                     throw new InactiveBotException();
                 }
-                $text = array_map(function (Message $message) use ($clean) {
+                $text = array_first($template->messages, function (Message $message) use ($clean) {
                     return $message->id == $clean['o'] && $message->buttons;
-                }, $template->messages);
+                });
                 $button = null;
                 $buttonIndex = -1;
                 foreach ($text->buttons as $i => $revisionButton) {
@@ -849,9 +849,9 @@ class WebAppAdapter
                 if (! $bot->enabled) {
                     throw new InactiveBotException();
                 }
-                $cardContainer = array_map(function (Message $message) use ($clean) {
+                $cardContainer = array_first($template->messages, function (Message $message) use ($clean) {
                     return $message->id == $clean['o'];
-                }, $template->messages);
+                });
                 $card = null;
                 $cardIndex = -1;
                 foreach ($cardContainer->cards as $i => $revisionCard) {

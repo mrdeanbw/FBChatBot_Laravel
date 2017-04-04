@@ -145,15 +145,15 @@ class FacebookMessageSender
                     'facebook_id' => $facebookMessageId,
                     'sent_at'     => $sentAt
                 ]));
-                $this->inboxRepo->create([
-                    'bot_id'        => $bot->_id,
-                    'subscriber_id' => $subscriber->_id,
-                    'action_at'     => $sentAt,
-                    'incoming'      => 0,
-                    'facebook_id'   => $facebookMessageId,
-                    'message'       => $mappedMessage['message'],
-                    'notification'  => $mappedMessage['notification_type']
-                ]);
+//                $this->inboxRepo->create([
+//                    'bot_id'        => $bot->_id,
+//                    'subscriber_id' => $subscriber->_id,
+//                    'action_at'     => $sentAt,
+//                    'incoming'      => 0,
+//                    'facebook_id'   => $facebookMessageId,
+//                    'message'       => $mappedMessage['message'],
+//                    'notification'  => $mappedMessage['notification_type']
+//                ]);
             } catch (MessageNotSentException $e) {
                 // do nothing
             }
