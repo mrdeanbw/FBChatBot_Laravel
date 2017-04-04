@@ -29,10 +29,6 @@ $options = [
 $api->version('v1', $options, function (Router $api) {
 
     $api->get('/test', function (DBSentMessageRepository $repo) {
-        $id = new ObjectId("58e245d05d3a1441e8007e5b");
-        $cardId = new ObjectId("58e245085d3a1441e8007e57");
-        $buttonId = new ObjectId("58e245085d3a1441e8007e58");
-        return SentMessage::where('_id', $id)->where('cards.id', $cardId)->push('cards.$.buttons.1.clicks', mongo_date());
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');

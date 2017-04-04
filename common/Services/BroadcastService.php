@@ -2,12 +2,12 @@
 
 use Carbon\Carbon;
 use Common\Models\Bot;
+use MongoDB\BSON\ObjectID;
 use Common\Models\Broadcast;
 use Common\Models\AudienceFilter;
 use Common\Models\BroadcastSchedule;
 use Dingo\Api\Exception\ValidationHttpException;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
-use MongoDB\BSON\ObjectID;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Common\Repositories\Subscriber\SubscriberRepositoryInterface;
 
@@ -93,8 +93,16 @@ class BroadcastService
     {
         $filter = [['key' => 'status', 'operator' => '!=', 'value' => BroadcastRepositoryInterface::STATUS_PENDING]];
         $order = ['_id' => 'desc'];
+        $ret = $this->broadcastRepo->paginateForBot($bot, $page, $filter, $order, $perPage);
+        /**
+         * @var Broadcast $broadcast
+         */
+        foreach ($ret as $broadcast) {
+            $this->loadModelsIfNotLoaded($broadcast, ['template']);;
+            $this->sentMessages->setSummaryStatsForMessage($broadcast->template->messages[0]);
+        }
 
-        return $this->broadcastRepo->paginateForBot($bot, $page, $filter, $order, $perPage);
+        return $ret;
     }
 
     /**
@@ -144,16 +152,13 @@ class BroadcastService
 
     /**
      * Create a broadcast
-     *
      * @param array $input
      * @param Bot   $bot
-     *
      * @return Broadcast
      */
     public function create(array $input, Bot $bot)
     {
         $template = $this->templates->setVersioning(false)->createImplicit($input['template']['messages'], $bot->_id);
-
         $data = array_merge($this->cleanInput($input, $bot), [
             'bot_id'            => $bot->_id,
             'template_id'       => $template->_id,
@@ -203,11 +208,11 @@ class BroadcastService
         $timezoneMode = array_search($input['timezone_mode'], BroadcastRepositoryInterface::_TIMEZONE_MAP);
         $timezone = $this->cleanTimezone($bot, $timezoneMode, array_get($input, 'timezone'));
 
-        if ($this->isDateTimeInThePast($input['date'], $input['time'], $timezone)) {
+        if ($input['send_mode'] != 'now' && $this->isDateTimeInThePast($input['date'], $input['time'], $timezone)) {
             throw new ValidationHttpException(['date' => ["The selected date & time is in the past."]]);
         }
 
-        $audienceFilter = new AudienceFilter($input['filter'], true);
+        $audienceFilter = SubscriberService::cleanAudienceFilter($input['filter']);
         $messageType = array_search($input['message_type'], BroadcastRepositoryInterface::_MESSAGE_MAP);
         $targetAudienceCount = $this->matchingSubscriberCount($messageType, $audienceFilter);
         if (! $targetAudienceCount) {
@@ -225,8 +230,6 @@ class BroadcastService
             'timezone_mode'    => $timezoneMode,
             'message_type'     => $messageType,
             'notification'     => array_search($input['notification'], FacebookMessageSender::_NOTIFICATION_MAP),
-            'schedules'        => [],
-            'completed_at'     => null,
             'remaining_target' => $targetAudienceCount,
         ];
 
@@ -281,7 +284,7 @@ class BroadcastService
             }
             $schedule[] = new BroadcastSchedule([
                 'utc_offset' => $offset,
-                'send_at'    => $sendAt,
+                'send_at'    => mongo_date($sendAt),
                 'status'     => BroadcastRepositoryInterface::STATUS_PENDING
             ]);
         }
@@ -303,6 +306,7 @@ class BroadcastService
      * @param ObjectID $broadcastId
      * @param Bot      $bot
      * @return Broadcast
+     * @throws \Exception
      */
     public function broadcastWithDetailedStats(ObjectID $broadcastId, Bot $bot)
     {
@@ -313,13 +317,12 @@ class BroadcastService
 
         $this->loadModelsIfNotLoaded($broadcast, ['template']);
 
-        foreach ($broadcast->template->clean_messages as $i => $message) {
+        foreach ($broadcast->template->messages as $i => $message) {
             if (! $i) {
-                //                $this->sentMessages->setFullMessageStats($message, $message->id);
+                $this->sentMessages->setFullStatsForMessage($message);
             } else {
-                //              $this->sentMessages->setMessageClickableStats($message, $message->id);
+                $this->sentMessages->setClickableStatsForMessage($message);
             }
-            throw new \Exception("Unimplmented");
         }
 
         return $broadcast;

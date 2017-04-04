@@ -53,7 +53,7 @@ class MessageRevisionService
         $revisionCount = count($revisions);
         for ($i = 0; $i < $revisionCount; $i++) {
             $revision = $revisions[$i];
-            $this->sentMessages->setFullMessageStats($revision);
+            $this->sentMessages->setFullStatsForRevision($revision);
         }
     }
 

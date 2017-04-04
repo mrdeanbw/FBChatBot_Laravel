@@ -8,9 +8,9 @@ class AudienceFilterTransformer extends BaseTransformer
     public function transform(AudienceFilter $filter)
     {
         return [
-            'groups'    => $filter->groups,
-            'enabled'   => $filter->enabled,
-            'join_type' => $filter->join_type
+            'groups'    => $filter->groups?: [],
+            'enabled'   => (bool)$filter->enabled,
+            'join_type' => $filter->join_type?: 'and'
         ];
     }
 

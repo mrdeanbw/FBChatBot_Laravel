@@ -131,7 +131,7 @@ class FacebookMessageMapper
                     'payload' => [
                         'template_type' => 'button',
                         'text'          => $body,
-                        'buttons'       => $this->mapTextButtons($message->buttons, $message->last_revision_id)
+                        'buttons'       => $this->mapTextButtons($message->buttons, $message->id, $message->last_revision_id)
                     ]
                 ]
             ]
@@ -218,14 +218,14 @@ class FacebookMessageMapper
             ];
 
             if ($card->buttons) {
-                $ret['buttons'] = $this->mapCardButtons($card->buttons, $card->id, $lastRevisionId);
+                $ret['buttons'] = $this->mapCardButtons($card->buttons, $card->id, $cardContainerId, $lastRevisionId);
             }
 
             // If the card has a URL.
             if ($card->url) {
                 $ret['default_action'] = [
                     'type' => 'web_url',
-                    'url'  => $this->payloadEncoder->card($card->id, $lastRevisionId)
+                    'url'  => $this->payloadEncoder->card($card->id, $cardContainerId, $lastRevisionId)
                 ];
             }
 
@@ -237,13 +237,14 @@ class FacebookMessageMapper
     /**
      * @param array         $buttons
      * @param ObjectID      $cardId
+     * @param ObjectID      $cardContainerId
      * @param ObjectID|null $lastRevisionId
      * @return array
      */
-    protected function mapCardButtons(array $buttons, ObjectID $cardId, ObjectID $lastRevisionId = null)
+    protected function mapCardButtons(array $buttons, ObjectID $cardId, ObjectID $cardContainerId, ObjectID $lastRevisionId = null)
     {
-        return array_map(function (Button $button) use ($cardId, $lastRevisionId) {
-            $payload = $this->payloadEncoder->cardButton($button, $cardId, $lastRevisionId);
+        return array_map(function (Button $button) use ($cardId, $lastRevisionId, $cardContainerId) {
+            $payload = $this->payloadEncoder->cardButton($button, $cardId, $cardContainerId, $lastRevisionId);
 
             return $this->mapButton($button, $payload);
         }, $buttons);
@@ -251,13 +252,14 @@ class FacebookMessageMapper
 
     /**
      * @param array         $buttons
+     * @param ObjectID      $textId
      * @param ObjectID|null $lastRevisionId
      * @return array
      */
-    protected function mapTextButtons(array $buttons, ObjectID $lastRevisionId = null)
+    protected function mapTextButtons(array $buttons, ObjectID $textId, ObjectID $lastRevisionId = null)
     {
-        return array_map(function (Button $button) use ($lastRevisionId) {
-            $payload = $this->payloadEncoder->textButton($button, $lastRevisionId);
+        return array_map(function (Button $button) use ($lastRevisionId, $textId) {
+            $payload = $this->payloadEncoder->textButton($button, $textId, $lastRevisionId);
 
             return $this->mapButton($button, $payload);
         }, $buttons);
@@ -290,16 +292,17 @@ class FacebookMessageMapper
 
     /**
      * Evaluate supported shortcodes
-     * @param            $text
+     * @param string     $text
      * @param Subscriber $subscriber
-     * @return mixed
+     * @return string
      */
     protected function evaluateShortcodes($text, Subscriber $subscriber)
     {
-        return str_replace(
-            ['{{first_name}}', '{{last_name}}', '{{full_name}}', '{{page_name}}'],
-            [$subscriber->first_name, $subscriber->last_name, $subscriber->full_name, $this->bot->page->name],
-            $text
-        );
+        return replace_text_vars($text, [
+            'first_name' => $subscriber->first_name,
+            'last_name'  => $subscriber->last_name,
+            'full_name'  => $subscriber->full_name,
+            'page_name'  => $this->bot->page->name,
+        ], 320);
     }
 }

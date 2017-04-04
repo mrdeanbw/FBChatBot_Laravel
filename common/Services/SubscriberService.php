@@ -1,6 +1,8 @@
 <?php namespace Common\Services;
 
 use Carbon\Carbon;
+use Common\Models\AudienceFilterGroup;
+use Common\Models\AudienceFilterRule;
 use Common\Models\Bot;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
@@ -234,7 +236,7 @@ class SubscriberService
         if ($filter = array_get($filterBy, 'filter', [])) {
             $ret[] = [
                 'operator' => 'subscriber',
-                'filter'   => new AudienceFilter($this->normalizeFilter($filter))
+                'filter'   => $this->cleanAudienceFilter($filter)
             ];
             $this->addActiveFilter($ret);
         }
@@ -269,54 +271,35 @@ class SubscriberService
 
     /**
      * Normalize the filter groups by removing empty rules and empty groups.
-     *
      * @param $filter
-     *
-     * @return mixed
+     * @return AudienceFilter
      */
-    private function normalizeFilter(array $filter)
+    public static function cleanAudienceFilter(array $filter)
     {
+        $ret = new AudienceFilter();
         if (! $filter) {
-            return $filter;
+            return $ret;
         }
 
-        if (! ($filter['enabled'] = (bool)array_get($filter, 'enabled', false))) {
-            return array_only($filter, 'enabled');
+        if (array_get($filter, 'enabled')) {
+            $ret->enabled = true;
+        } else {
+            return $ret;
         }
 
-        $filter['groups'] = array_get($filter, 'groups', []);
+        $ret->join_type = $filter['join_type'];
+        if ($groups = array_get($filter, 'groups', [])) {
+            $ret->groups = [];
+        }
 
-        foreach ($filter['groups'] as $i => $group) {
-            $filter['groups'][$i]['rules'] = $this->removeRulesWithoutValues($group['rules']);
-            if ($filter['groups'][$i]['rules']) {
-                $filter['groups'][$i]['join_type'] = array_get($filter['groups'][$i], 'join_type', 'and');
+        foreach ($groups as $i => $group) {
+            $ret->groups[$i] = new AudienceFilterGroup(['join_type' => $group['join_type'], 'rules' => []]);
+            foreach ($group['rules'] as $j => $rule) {
+                $ret->groups[$i]->rules[$j] = new AudienceFilterRule(array_only($rule, ['key', 'value']));
             }
         }
 
-        // If a group is empty (has no rules), remove it.
-        $filter['groups'] = array_filter($filter['groups'], function ($group) {
-            return ! empty($group['rules']);
-        });
-
-        if ($filter['groups']) {
-            $filter['join_type'] = array_get($filter, 'join_type', 'and');
-        }
-
-        return $filter;
-    }
-
-    /**
-     * If a rule has no value, then remove it from the filter groups.
-     *
-     * @param $rules
-     *
-     * @return array
-     */
-    private function removeRulesWithoutValues($rules)
-    {
-        return array_filter($rules, function ($rule) {
-            return ! empty($rule['value']);
-        });
+        return $ret;
     }
 
     /**

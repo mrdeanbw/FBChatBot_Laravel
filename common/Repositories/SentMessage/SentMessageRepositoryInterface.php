@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use Common\Models\Bot;
 use Common\Models\Button;
 use Common\Models\Card;
+use Common\Models\Message;
 use Common\Models\MessageRevision;
 use MongoDB\BSON\ObjectID;
 use Common\Models\Subscriber;
@@ -34,59 +35,51 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalSentForMessage(MessageRevision $revision);
+    public function totalSentForRevision(MessageRevision $revision);
 
     /**
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberSentForMessage(MessageRevision $revision);
+    public function perSubscriberSentForRevision(MessageRevision $revision);
 
     /**
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalDeliveredForMessage(MessageRevision $revision);
+    public function totalDeliveredForRevision(MessageRevision $revision);
 
     /**
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberDeliveredForMessage(MessageRevision $revision);
+    public function perSubscriberDeliveredForRevision(MessageRevision $revision);
 
     /**
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalReadForMessage(MessageRevision $revision);
+    public function totalReadForRevision(MessageRevision $revision);
 
     /**
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberReadForMessage(MessageRevision $revision);
-
-    /**
-     * @param Button          $button
-     * @param MessageRevision $revision
-     * @return int
-     */
-    public function totalTextMessageButtonClicks(Button $button, MessageRevision $revision);
+    public function perSubscriberReadForRevision(MessageRevision $revision);
 
     /**
      * @param Button          $button
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberTextMessageButtonClicks(Button $button, MessageRevision $revision);
+    public function totalTextMessageButtonClicksForRevision(Button $button, MessageRevision $revision);
 
     /**
      * @param Button          $button
-     * @param Card            $card
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalCardButtonClicks(Button $button, Card $card, MessageRevision $revision);
+    public function perSubscriberTextMessageButtonClicksForRevision(Button $button, MessageRevision $revision);
 
     /**
      * @param Button          $button
@@ -94,21 +87,29 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberCardButtonClicks(Button $button, Card $card, MessageRevision $revision);
+    public function totalCardButtonClicksForRevision(Button $button, Card $card, MessageRevision $revision);
+
+    /**
+     * @param Button          $button
+     * @param Card            $card
+     * @param MessageRevision $revision
+     * @return int
+     */
+    public function perSubscriberCardButtonClicksForRevision(Button $button, Card $card, MessageRevision $revision);
 
     /**
      * @param Card            $card
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalCardClicks(Card $card, MessageRevision $revision);
+    public function totalCardClicksForRevision(Card $card, MessageRevision $revision);
 
     /**
      * @param Card            $card
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberCardClicks(Card $card, MessageRevision $revision);
+    public function perSubscriberCardClicksForRevision(Card $card, MessageRevision $revision);
 
     /**
      * @param Bot         $bot
@@ -180,4 +181,84 @@ interface SentMessageRepositoryInterface extends AssociatedWithBotRepositoryInte
      * @return array
      */
     public function followupFilter(Collection $subscribers);
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function totalSentForMessage(Message $message);
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberSentForMessage(Message $message);
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function totalDeliveredForMessage(Message $message);
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberDeliveredForMessage(Message $message);
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function totalReadForMessage(Message $message);
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberReadForMessage(Message $message);
+
+    /**
+     * @param Button  $button
+     * @param Message $message
+     * @return int
+     */
+    public function totalTextMessageButtonClicksForMessage(Button $button, Message $message);
+
+    /**
+     * @param Button  $button
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberTextMessageButtonClicksForMessage(Button $button, Message $message);
+
+    /**
+     * @param Button  $button
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function totalCardButtonClicksForMessage(Button $button, Card $card, Message $message);
+
+    /**
+     * @param Button  $button
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberCardButtonClicksForMessage(Button $button, Card $card, Message $message);
+
+    /**
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function totalCardClicksForMessage(Card $card, Message $message);
+
+    /**
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberCardClicksForMessage(Card $card, Message $message);
 }

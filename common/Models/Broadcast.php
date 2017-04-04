@@ -31,13 +31,6 @@ class Broadcast extends BaseModel
 
     protected $dates = ['send_at', 'completed_at'];
 
-//    public $embedded = [
-//        'filter.groups.rules' => [AudienceFilterRule::class],
-//        'filter.groups'       => [AudienceFilterGroup::class],
-//        'filter'              => AudienceFilter::class,
-//        'schedules'           => [BroadcastSchedule::class]
-//    ];
-
     /**
      * @param array $attributes
      * @param bool  $sync
@@ -45,6 +38,22 @@ class Broadcast extends BaseModel
      */
     public function setRawAttributes(array $attributes, $sync = false)
     {
+        if (isset($attributes['filter']['groups'])) {
+            foreach ($attributes['filter']['groups'] as $i => $group) {
+                foreach ($attributes['filter']['groups']['rules'] as $j => $rule) {
+                    $attributes['filter']['groups'][$i]['rules'][$j] = new AudienceFilterRule($rule);
+                }
+                $attributes['filter']['groups'][$i] = new AudienceFilterGroup($group);
+            }
+        }
+        $attributes['filter'] = new AudienceFilter($attributes['filter']);
+
+        if (isset($attributes['schedules'])) {
+            $attributes['schedules'] = array_map(function ($schedule) {
+                return new BroadcastSchedule($schedule);
+            }, $attributes['schedules']);
+        }
+
         return parent::setRawAttributes($attributes, $sync);
     }
 

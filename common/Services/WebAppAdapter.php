@@ -5,6 +5,8 @@ use Carbon\Carbon;
 use Common\Models\Bot;
 use Common\Models\Button;
 use MongoDB\BSON\ObjectID;
+use Common\Models\Message;
+use Common\Models\Template;
 use Common\Models\Subscriber;
 use Common\Models\AutoReplyRule;
 use Common\Models\MessageRevision;
@@ -249,7 +251,7 @@ class WebAppAdapter
      */
     public function sendDefaultReply(Bot $bot, Subscriber $subscriber)
     {
-//        $this->FacebookMessageSender->sendFromTemplateWrapper($bot->default_reply, $subscriber, $bot);
+        $this->FacebookMessageSender->sendFromTemplateWrapper($bot->default_reply, $subscriber, $bot);
     }
 
     /**
@@ -525,9 +527,39 @@ class WebAppAdapter
                 $temp = explode(':', $section);
                 $clean[$temp[0]] = $temp[1];
             }
-            $clean['r'] = new ObjectID($clean['r']);
             $clean['m'] = new ObjectID($clean['m']);
             $clean['i'] = new ObjectID($clean['i']);
+            if (isset($clean['b'])) {
+                $clean['b'] = new ObjectID($clean['b']);
+                $clean['t'] = new ObjectID($clean['t']);
+                $clean['o'] = new ObjectID($clean['o']);
+                $clean['s'] = new ObjectID($clean['s']);
+                /** @var Template $template */
+                $template = $this->templateRepo->findById($clean['t']);
+                /** @var Bot $bot */
+                $bot = $this->botRepo->findById($template->bot_id);
+                if (! $bot->enabled) {
+                    throw new InactiveBotException();
+                }
+                $cardContainer = array_map(function (Message $message) use ($clean) {
+                    return $message->id == $clean['o'];
+                }, $template->messages);
+                $card = null;
+                $cardIndex = -1;
+                foreach ($cardContainer->cards as $i => $revisionCard) {
+                    if ($revisionCard->id == $clean['i'] && $revisionCard->url) {
+                        $card = $revisionCard;
+                        $cardIndex = $i;
+                        break;
+                    }
+                }
+                $this->sentMessageRepo->recordCardClick($clean['m'], $cardIndex);
+                $this->broadcastRepo->recordClick($bot, $clean['b'], $clean['s']);
+
+                return valid_url($card->url)? $card->url : "http://{$card->url}";
+            }
+
+            $clean['r'] = new ObjectID($clean['r']);
             /** @var MessageRevision $revision */
             $revision = $this->messageRevisionRepo->findById($clean['r']);
             /** @var Bot $bot */
@@ -567,11 +599,39 @@ class WebAppAdapter
                 $temp = explode(':', $section);
                 $clean[$temp[0]] = $temp[1];
             }
-
-            $clean['r'] = new ObjectID($clean['r']);
             $clean['m'] = new ObjectID($clean['m']);
             $clean['i'] = new ObjectID($clean['i']);
+            if (isset($clean['b'])) {
+                $clean['b'] = new ObjectID($clean['b']);
+                $clean['t'] = new ObjectID($clean['t']);
+                $clean['o'] = new ObjectID($clean['o']);
+                /** @var Template $template */
+                $template = $this->templateRepo->findById($clean['t']);
+                /** @var Bot $bot */
+                $bot = $this->botRepo->findById($template->bot_id);
+                if (! $bot->enabled) {
+                    throw new InactiveBotException();
+                }
+                $text = array_map(function (Message $message) use ($clean) {
+                    return $message->id == $clean['o'] && $message->buttons;
+                }, $template->messages);
+                $button = null;
+                $buttonIndex = -1;
+                foreach ($text->buttons as $i => $revisionButton) {
+                    if ($revisionButton->id == $clean['i']) {
+                        $button = $revisionButton;
+                        $buttonIndex = $i;
+                        break;
+                    }
+                }
+                $this->carryOutButtonActions($button, $bot, $subscriber);
+                $this->sentMessageRepo->recordTextButtonClick($clean['m'], $buttonIndex);
+                $this->broadcastRepo->recordClick($bot, $clean['b'], $subscriber->_id);
 
+                return $button->title;
+            }
+
+            $clean['r'] = new ObjectID($clean['r']);
             /** @var MessageRevision $revision */
             $revision = $this->messageRevisionRepo->findById($clean['r']);
             $button = null;
@@ -610,13 +670,51 @@ class WebAppAdapter
                 $clean[$temp[0]] = $temp[1];
             }
 
-            $clean['r'] = new ObjectID($clean['r']);
             $clean['m'] = new ObjectID($clean['m']);
             $clean['i'] = new ObjectID($clean['i']);
+            if (isset($clean['b'])) {
+                $clean['b'] = new ObjectID($clean['b']);
+                $clean['t'] = new ObjectID($clean['t']);
+                $clean['o'] = new ObjectID($clean['o']);
+                /** @var Template $template */
+                $template = $this->templateRepo->findById($clean['t']);
+                /** @var Bot $bot */
+                $bot = $this->botRepo->findById($template->bot_id);
+                if (! $bot->enabled) {
+                    throw new InactiveBotException();
+                }
+                $cardContainer = array_map(function (Message $message) use ($clean) {
+                    return $message->id == $clean['o'];
+                }, $template->messages);
+                $card = null;
+                $cardIndex = -1;
+                foreach ($cardContainer->cards as $i => $revisionCard) {
+                    if ($revisionCard->id == $clean['i'] && $revisionCard->buttons) {
+                        $card = $revisionCard;
+                        $cardIndex = $i;
+                        break;
+                    }
+                }
+                /** @var Button $button */
+                $button = null;
+                $buttonIndex = -1;
+                foreach ($card->buttons as $i => $cardButton) {
+                    if ($cardButton->id == $clean['i']) {
+                        $button = $cardButton;
+                        $buttonIndex = $i;
+                        break;
+                    }
+                }
+                $this->carryOutButtonActions($button, $bot, $subscriber);
+                $this->sentMessageRepo->recordCardButtonClick($clean['m'], $cardIndex, $buttonIndex);
+                $this->broadcastRepo->recordClick($bot, $clean['b'], $subscriber->_id);
 
+                return $button->title;
+            }
+
+            $clean['r'] = new ObjectID($clean['r']);
             /** @var MessageRevision $revision */
             $revision = $this->messageRevisionRepo->findById($clean['r']);
-
             $card = null;
             $cardIndex = -1;
             foreach ($revision->cards as $i => $revisionCard) {
@@ -661,10 +759,39 @@ class WebAppAdapter
                 $temp = explode(':', $section);
                 $clean[$temp[0]] = $temp[1];
             }
-            $clean['r'] = new ObjectID($clean['r']);
             $clean['m'] = new ObjectID($clean['m']);
             $clean['i'] = new ObjectID($clean['i']);
             $clean['s'] = new ObjectID($clean['s']);
+            if (isset($clean['b'])) {
+                $clean['b'] = new ObjectID($clean['b']);
+                $clean['t'] = new ObjectID($clean['t']);
+                $clean['o'] = new ObjectID($clean['o']);
+                /** @var Template $template */
+                $template = $this->templateRepo->findById($clean['t']);
+                /** @var Bot $bot */
+                $bot = $this->botRepo->findById($template->bot_id);
+                if (! $bot->enabled) {
+                    throw new InactiveBotException();
+                }
+                $text = array_map(function (Message $message) use ($clean) {
+                    return $message->id == $clean['o'] && $message->buttons;
+                }, $template->messages);
+                $button = null;
+                $buttonIndex = -1;
+                foreach ($text->buttons as $i => $revisionButton) {
+                    if ($revisionButton->id == $clean['i'] && $revisionButton->url) {
+                        $button = $revisionButton;
+                        $buttonIndex = $i;
+                        break;
+                    }
+                }
+                dispatch(new CarryOutTextButtonActions($button, $buttonIndex, $bot, $clean['s'], $clean['m']));
+                $this->broadcastRepo->recordClick($bot, $clean['b'], $clean['s']);
+
+                return valid_url($button->url)? $button->url : "http://{$button->url}";
+            }
+
+            $clean['r'] = new ObjectID($clean['r']);
             /** @var MessageRevision $revision */
             $revision = $this->messageRevisionRepo->findById($clean['r']);
             /** @var Bot $bot */
@@ -701,11 +828,49 @@ class WebAppAdapter
             }
 
             $clean['c'] = new ObjectID($clean['c']);
-            $clean['r'] = new ObjectID($clean['r']);
             $clean['m'] = new ObjectID($clean['m']);
             $clean['i'] = new ObjectID($clean['i']);
             $clean['s'] = new ObjectID($clean['s']);
+            if (isset($clean['b'])) {
+                $clean['b'] = new ObjectID($clean['b']);
+                $clean['t'] = new ObjectID($clean['t']);
+                $clean['o'] = new ObjectID($clean['o']);
+                /** @var Template $template */
+                $template = $this->templateRepo->findById($clean['t']);
+                /** @var Bot $bot */
+                $bot = $this->botRepo->findById($template->bot_id);
+                if (! $bot->enabled) {
+                    throw new InactiveBotException();
+                }
+                $cardContainer = array_map(function (Message $message) use ($clean) {
+                    return $message->id == $clean['o'];
+                }, $template->messages);
+                $card = null;
+                $cardIndex = -1;
+                foreach ($cardContainer->cards as $i => $revisionCard) {
+                    if ($revisionCard->id == $clean['c'] && $revisionCard->buttons) {
+                        $card = $revisionCard;
+                        $cardIndex = $i;
+                        break;
+                    }
+                }
+                /** @var Button $button */
+                $button = null;
+                $buttonIndex = -1;
+                foreach ($card->buttons as $i => $cardButton) {
+                    if ($cardButton->id == $clean['i'] && $cardButton->url) {
+                        $button = $cardButton;
+                        $buttonIndex = $i;
+                        break;
+                    }
+                }
+                dispatch(new CarryOutCardButtonActions($button, $buttonIndex, $cardIndex, $bot, $clean['s'], $clean['m']));
+                $this->broadcastRepo->recordClick($bot, $clean['b'], $clean['s']);
 
+                return valid_url($button->url)? $button->url : "http://{$button->url}";
+            }
+
+            $clean['r'] = new ObjectID($clean['r']);
             /** @var MessageRevision $revision */
             $revision = $this->messageRevisionRepo->findById($clean['r']);
             /** @var Bot $bot */
@@ -713,7 +878,6 @@ class WebAppAdapter
             if (! $bot->enabled) {
                 throw new InactiveBotException();
             }
-
             $card = null;
             $cardIndex = -1;
             foreach ($revision->cards as $i => $revisionCard) {
@@ -723,7 +887,6 @@ class WebAppAdapter
                     break;
                 }
             }
-
             /** @var Button $button */
             $button = null;
             $buttonIndex = -1;
@@ -796,11 +959,6 @@ class WebAppAdapter
         if ($button->unsubscribe) {
             $this->concludeUnsubscriptionProcess($bot, $subscriber);
         }
-
-        //        if ($broadcastId = $decoder->getBroadcastId()) {
-        //            $this->broadcastRepo->recordClick($bot, $broadcastId, $subscriber->_id);
-        //        }
-
     }
 
 

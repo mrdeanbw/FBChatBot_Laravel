@@ -76,7 +76,7 @@ class BroadcastController extends APIController
     {
         $bot = $this->enabledBot();
 
-        $this->validate($request, $this->validationRules(), $this->filterGroupRuleValidationCallback($bot));
+        $this->validateForBot($bot, $request, $this->validationRules());
 
         $broadcast = $this->broadcasts->create($request->all(), $bot);
 
@@ -98,7 +98,7 @@ class BroadcastController extends APIController
         $id = new ObjectID($id);
         $bot = $this->enabledBot();
 
-        $this->validate($request, $this->validationRules(), $this->filterGroupRuleValidationCallback($bot));
+        $this->validateForBot($bot, $request, $this->validationRules());
 
         $broadcast = $this->broadcasts->update($id, $request->all(), $bot);
 
@@ -141,7 +141,7 @@ class BroadcastController extends APIController
             'filter.groups.*.join_type'     => 'bail|required|in:and,or,none',
             'filter.groups.*.rules'         => 'bail|required|array',
             'filter.groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
-            'filter.groups.*.rules.*.value' => 'bail|required',
+            'filter.groups.*.rules.*.value' => 'bail|required|filter_value',
             'send_mode'                     => 'bail|required|in:now,later',
             'date'                          => 'bail|required_if:send_mode,later|date_format:Y-m-d',
             'time'                          => 'bail|required_if:send_mode,later|date_format:H:i',

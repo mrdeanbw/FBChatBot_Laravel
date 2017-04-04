@@ -258,9 +258,9 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalSentForMessage(MessageRevision $revision)
+    public function totalSentForRevision(MessageRevision $revision)
     {
-        $filter = [['key' => 'revision_id', 'operator' => '=', 'value' => $revision->_id],];
+        $filter = [['key' => 'revision_id', 'operator' => '=', 'value' => $revision->_id]];
 
         return $this->count($filter);
     }
@@ -269,7 +269,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberSentForMessage(MessageRevision $revision)
+    public function perSubscriberSentForRevision(MessageRevision $revision)
     {
         $aggregate = [
             ['$match' => ['revision_id' => $revision->_id]],
@@ -286,7 +286,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalDeliveredForMessage(MessageRevision $revision)
+    public function totalDeliveredForRevision(MessageRevision $revision)
     {
         $filter = [
             ['key' => 'revision_id', 'operator' => '=', 'value' => $revision->_id],
@@ -300,7 +300,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberDeliveredForMessage(MessageRevision $revision)
+    public function perSubscriberDeliveredForRevision(MessageRevision $revision)
     {
         $aggregate = [
             [
@@ -324,7 +324,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalReadForMessage(MessageRevision $revision)
+    public function totalReadForRevision(MessageRevision $revision)
     {
         $filter = [
             ['key' => 'revision_id', 'operator' => '=', 'value' => $revision->_id],
@@ -338,7 +338,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberReadForMessage(MessageRevision $revision)
+    public function perSubscriberReadForRevision(MessageRevision $revision)
     {
         $aggregate = [
             [
@@ -363,7 +363,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalCardClicks(Card $card, MessageRevision $revision)
+    public function totalCardClicksForRevision(Card $card, MessageRevision $revision)
     {
         $aggregate = [
             [
@@ -390,7 +390,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberCardClicks(Card $card, MessageRevision $revision)
+    public function perSubscriberCardClicksForRevision(Card $card, MessageRevision $revision)
     {
 
         $aggregate = [
@@ -419,7 +419,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalTextMessageButtonClicks(Button $button, MessageRevision $revision)
+    public function totalTextMessageButtonClicksForRevision(Button $button, MessageRevision $revision)
     {
         $aggregate = [
             [
@@ -446,7 +446,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberTextMessageButtonClicks(Button $button, MessageRevision $revision)
+    public function perSubscriberTextMessageButtonClicksForRevision(Button $button, MessageRevision $revision)
     {
         $aggregate = [
             ['$match' => ['revision_id' => $revision->_id]],
@@ -475,7 +475,7 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function totalCardButtonClicks(Button $button, Card $card, MessageRevision $revision)
+    public function totalCardButtonClicksForRevision(Button $button, Card $card, MessageRevision $revision)
     {
         $filter = [
             [
@@ -506,10 +506,289 @@ class DBSentMessageRepository extends DBAssociatedWithBotRepository implements S
      * @param MessageRevision $revision
      * @return int
      */
-    public function perSubscriberCardButtonClicks(Button $button, Card $card, MessageRevision $revision)
+    public function perSubscriberCardButtonClicksForRevision(Button $button, Card $card, MessageRevision $revision)
     {
         $aggregate = [
             ['$match' => ['revision_id' => $revision->_id]],
+            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $card->id]],
+            ['$unwind' => '$cards.buttons'],
+            [
+                '$match' => [
+                    '$and' => [
+                        ['cards.buttons.id' => $button->id],
+                        ['cards.buttons.clicks.0' => ['$exists' => true]],
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
+        ];
+
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function totalSentForMessage(Message $message)
+    {
+        $filter = [['key' => 'message_id', 'operator' => '=', 'value' => $message->id]];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberSentForMessage(Message $message)
+    {
+        $aggregate = [
+            ['$match' => ['message_id' => $message->id]],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function totalDeliveredForMessage(Message $message)
+    {
+        $filter = [
+            ['key' => 'message_id', 'operator' => '=', 'value' => $message->id],
+            ['key' => 'delivered_at', 'operator' => '!=', 'value' => null]
+        ];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberDeliveredForMessage(Message $message)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['message_id' => $message->id],
+                        ['delivered_at' => ['$ne' => null]],
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function totalReadForMessage(Message $message)
+    {
+        $filter = [
+            ['key' => 'message_id', 'operator' => '=', 'value' => $message->id],
+            ['key' => 'read_at', 'operator' => '!=', 'value' => null]
+        ];
+
+        return $this->count($filter);
+    }
+
+    /**
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberReadForMessage(Message $message)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['message_id' => $message->id],
+                        ['read_at' => ['$ne' => null]],
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function totalCardClicksForMessage(Card $card, Message $message)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['message_id' => $message->id],
+                        ['cards.id' => $card->id],
+                    ]
+                ]
+            ],
+            ['$project' => ['cards' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $card->id]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.clicks']]]]
+        ];
+
+        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($ret)? $ret[0]->count : 0;
+    }
+
+    /**
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberCardClicksForMessage(Card $card, Message $message)
+    {
+
+        $aggregate = [
+            ['$match' => ['message_id' => $message->id]],
+            ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$cards'],
+            [
+                '$match' => [
+                    '$and' => [
+                        ["cards.id" => $card->id],
+                        ["cards.clicks.0" => ['$exists' => true]]
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Button  $button
+     * @param Message $message
+     * @return int
+     */
+    public function totalTextMessageButtonClicksForMessage(Button $button, Message $message)
+    {
+        $aggregate = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['message_id' => $message->id],
+                        ['buttons.id' => $button->id],
+                    ]
+                ]
+            ],
+            ['$project' => ['buttons' => 1]],
+            ['$unwind' => '$buttons'],
+            ['$match' => ['buttons.id' => $button->id]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$buttons.clicks']]]]
+        ];
+
+        $ret = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($ret)? $ret[0]->count : 0;
+    }
+
+    /**
+     * @param Button  $button
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberTextMessageButtonClicksForMessage(Button $button, Message $message)
+    {
+        $aggregate = [
+            ['$match' => ['message_id' => $message->id]],
+            ['$project' => ['buttons' => 1, 'subscriber_id' => 1]],
+            ['$unwind' => '$buttons'],
+            [
+                '$match' => [
+                    '$and' => [
+                        ["buttons.id" => $button->id],
+                        ["buttons.clicks.0" => ['$exists' => true]]
+                    ]
+                ]
+            ],
+            ['$group' => ['_id' => '$subscriber_id']],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => 1]]]
+        ];
+
+        $result = SentMessage::raw()->aggregate($aggregate)->toArray();
+
+        return count($result)? $result[0]->count : 0;
+    }
+
+    /**
+     * @param Button  $button
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function totalCardButtonClicksForMessage(Button $button, Card $card, Message $message)
+    {
+        $filter = [
+            [
+                '$match' => [
+                    '$and' => [
+                        ['message_id' => $message->id],
+                        ["cards.id" => $card->id],
+                        ["cards.buttons.id" => $button->id]
+                    ]
+                ]
+            ],
+            ['$project' => ['cards' => 1]],
+            ['$unwind' => '$cards'],
+            ['$match' => ['cards.id' => $card->id]],
+            ['$unwind' => '$cards.buttons'],
+            ['$match' => ['cards.buttons.id' => $button->id]],
+            ['$group' => ['_id' => null, 'count' => ['$sum' => ['$size' => '$cards.buttons.clicks']]]]
+        ];
+
+        $ret = SentMessage::raw()->aggregate($filter)->toArray();
+
+        return count($ret)? $ret[0]->count : 0;
+    }
+
+    /**
+     * @param Button  $button
+     * @param Card    $card
+     * @param Message $message
+     * @return int
+     */
+    public function perSubscriberCardButtonClicksForMessage(Button $button, Card $card, Message $message)
+    {
+        $aggregate = [
+            ['$match' => ['message_id' => $message->id]],
             ['$project' => ['cards' => 1, 'subscriber_id' => 1]],
             ['$unwind' => '$cards'],
             ['$match' => ['cards.id' => $card->id]],

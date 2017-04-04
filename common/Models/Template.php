@@ -1,11 +1,14 @@
 <?php namespace Common\Models;
 
+use MongoDB\BSON\ObjectID;
+
 /**
  * @property string    $name
  * @property bool      $explicit
  * @property Message[] $messages
  * @property Message[] $clean_messages
  * @property Bot       $bot
+ * @property ObjectID  bot_id
  */
 class Template extends BaseModel
 {

@@ -38,8 +38,21 @@ class SubscriberController extends APIController
             $filter = json_decode($filter, true);
         }
 
+        $bot = $this->enabledBot();
+        $this->validateForBot($bot, $request, [
+            'filter.filter'                        => 'bail|array',
+            'filter.filter.enabled'                => 'bail|bool',
+            'filter.filter.join_type'              => 'bail|required_if:filter.enabled,true|in:and,or',
+            'filter.filter.groups'                 => 'bail|array',
+            'filter.filter.groups.*'               => 'bail|required|array',
+            'filter.filter.groups.*.join_type'     => 'bail|required|in:and,or,none',
+            'filter.filter.groups.*.rules'         => 'bail|required|array',
+            'filter.filter.groups.*.rules.*.key'   => 'bail|required|in:gender,tag',
+            'filter.filter.groups.*.rules.*.value' => 'bail|required|filter_value',
+        ]);
+
         $paginator = $this->audience->paginate(
-            $this->enabledBot(),
+            $bot,
             (int)$request->get('page', 1),
             $filter,
             $request->get('sorting', []),

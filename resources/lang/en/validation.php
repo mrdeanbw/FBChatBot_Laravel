@@ -103,5 +103,6 @@ return [
     'card_param'           => 'You need to set up at least one more card content item: subtitle, image or button.',
     'unique_template_name' => 'The message tree name is already in use. Please choose another one.',
     'has_main_action'      => 'Every button must have an associated URL, child messages or message tree.',
+    'filter_value'         => 'The :attribute is invalid.',
 ];
 

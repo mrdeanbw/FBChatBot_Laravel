@@ -1,10 +1,8 @@
 <?php namespace Common\Transformers;
 
-use Common\Models\Message;
 use Common\Models\Broadcast;
 use Common\Services\FacebookMessageSender;
 use Common\Repositories\Broadcast\BroadcastRepositoryInterface;
-use Common\Repositories\SentMessage\SentMessageRepositoryInterface;
 
 class BroadcastTransformer extends BaseTransformer
 {
@@ -14,9 +12,8 @@ class BroadcastTransformer extends BaseTransformer
     public function transform(Broadcast $broadcast)
     {
         $stats = $broadcast->stats;
-        if (in_array($broadcast->status, [BroadcastRepositoryInterface::STATUS_RUNNING, BroadcastRepositoryInterface::STATUS_COMPLETED])) {
-            $this->loadModelsIfNotLoaded($broadcast, ['template']);
-            $stats = array_merge($stats, $this->getMessageStats($broadcast->template->clean_messages[0]));
+        if (isset($broadcast->template->messages[0]->stats)) {
+            $stats = array_merge($stats, $broadcast->template->messages[0]->stats);
         }
 
         return [
@@ -44,21 +41,5 @@ class BroadcastTransformer extends BaseTransformer
     public function includeFilter(Broadcast $broadcast)
     {
         return $this->item($broadcast->filter, new AudienceFilterTransformer(), false);
-    }
-
-    /**
-     * @param Message $message
-     * @return array
-     */
-    public function getMessageStats(Message $message)
-    {
-        /** @type SentMessageRepositoryInterface $sentMessageRepo */
-        $sentMessageRepo = app(SentMessageRepositoryInterface::class);
-
-        return [
-            'sent'      => $sentMessageRepo->totalSentForMessage($message->id),
-            'delivered' => $sentMessageRepo->totalDeliveredForMessage($message->id),
-            'read'      => $sentMessageRepo->totalReadForMessage($message->id),
-        ];
     }
 }

@@ -176,7 +176,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     {
         $query->where(function ($query) use ($filter) {
 
-            foreach ($filter->groups as $group) {
+            foreach (object_get($filter, 'groups', []) as $group) {
                 $method = $this->getWhereMethodName($filter->join_type);
                 $query->{$method}(function ($subQuery) use ($group) {
                     $this->applyFilterRules($subQuery, $group);

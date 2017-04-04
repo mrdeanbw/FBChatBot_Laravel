@@ -496,6 +496,28 @@ class BotValidator extends LaravelValidator
         return ! $addTags || ! $removeTags || ! array_intersect($addTags, $removeTags);
     }
 
+    /**
+     * @param $attribute
+     * @param $value
+     * @param $parameters
+     * @return bool
+     */
+    public function validateFilterValue($attribute, $value, $parameters)
+    {
+        $keyAttribute = substr($attribute, -5);
+        $key = $this->getValue($keyAttribute);
+        \Log::debug("Filter Key: '{$keyAttribute}' => '{$key}'");
+        if ($key == 'gender') {
+            return in_array($value, ['male', 'female']);
+        }
+
+        if ($key == 'tag') {
+            return $this->v('bot_tag', $attribute, $value);
+        }
+
+        return true;
+    }
+
 
     public function v($rule, $attribute, $value, $parameters = [])
     {
