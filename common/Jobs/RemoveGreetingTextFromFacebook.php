@@ -2,7 +2,6 @@
 
 use Exception;
 use Common\Models\Bot;
-use Common\Services\Facebook;
 use Common\Services\FacebookAdapter;
 use Common\Exceptions\DisallowedBotOperation;
 

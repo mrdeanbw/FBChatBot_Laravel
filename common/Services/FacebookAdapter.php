@@ -154,7 +154,7 @@ class FacebookAdapter
             return $this->removeGreetingText($bot);
         };
 
-        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot, null, false);
     }
 
     /**
@@ -192,7 +192,7 @@ class FacebookAdapter
             return $this->removeGetStartedButton($bot);
         };
 
-        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot, null, false);
     }
 
     /**
@@ -231,7 +231,7 @@ class FacebookAdapter
             return $this->removePersistentMenu($bot);
         };
 
-        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot, null, false);
     }
 
     /**
@@ -286,7 +286,7 @@ class FacebookAdapter
             return $this->unsubscribeFromPage($bot);
         };
 
-        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot);
+        return $this->makeHttpRequestToFacebook($facebookCallback, $retryCallback, $bot, null, false);
     }
 
     /**
@@ -314,18 +314,19 @@ class FacebookAdapter
      * @param Closure $retryCallback
      * @param Bot     $bot
      * @param string  $message
+     * @param bool    $botMustBeEnabled
      * @return object
      * @throws InactiveBotException
      * @throws InvalidBotAccessTokenException
      * @throws MessageNotSentException
      */
-    protected function makeHttpRequestToFacebook(Closure $FacebookCallback, Closure $retryCallback, Bot $bot, $message = null)
+    protected function makeHttpRequestToFacebook(Closure $FacebookCallback, Closure $retryCallback, Bot $bot, $message = null, $botMustBeEnabled = true)
     {
         if (! $bot->access_token) {
             throw new InvalidBotAccessTokenException;
         }
 
-        if (! $bot->enabled) {
+        if ($botMustBeEnabled && ! $bot->enabled) {
             throw new InactiveBotException;
         }
 
