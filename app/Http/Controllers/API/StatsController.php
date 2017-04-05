@@ -14,7 +14,6 @@ class StatsController extends APIController
     private $subscribers;
 
     protected $supportedMetrics = [
-        'summary',
         'subscriber_count',
         'subscription_timeline',
         'click_count',
@@ -59,25 +58,6 @@ class StatsController extends APIController
     }
 
     /**
-     * Summary metrics include:
-     * 1. Total number of active subscribers.
-     * 2. New subscription actions today.
-     * 3. New unsubscription actions today.
-     * @param Bot $bot
-     * @return array
-     */
-    private function summary(Bot $bot)
-    {
-        return [
-            'total' => $this->subscriberCount($bot),
-            'today' => [
-                'plus'     => $this->subscribers->newSubscriptions($bot, 'today'),
-                'negative' => $this->subscribers->newUnsubscriptions($bot, 'today'),
-            ],
-        ];
-    }
-
-    /**
      * Return the day-by-day number of new and total subscription actions in a given period of time
      * @param Bot    $bot
      * @param string $dateString
@@ -96,7 +76,7 @@ class StatsController extends APIController
         for ($date = $boundaries[0]; $date->lt($boundaries[1]); $date->addDay()) {
             $dates[$date->format('Y-m-d')] = [
                 'plus'  => $this->subscribers->newSubscriptions($bot, $date),
-                'total' => $this->subscribers->totalSubscriptions($bot, $date),
+                'total' => $this->subscribers->totalSubscriptions($bot, $date->copy()->addDay()),
             ];
         }
 

@@ -12,6 +12,7 @@ use Common\Models\AudienceFilterGroup;
 use Common\Models\SubscriptionHistory;
 use Jenssegers\Mongodb\Eloquent\Builder;
 use Common\Repositories\DBAssociatedWithBotRepository;
+use MongoDB\BSON\UTCDateTime;
 
 class DBSubscriberRepository extends DBAssociatedWithBotRepository implements SubscriberRepositoryInterface
 {
@@ -438,39 +439,7 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      */
     public function subscriptionCountForBot(Bot $bot, Carbon $until)
     {
-        $aggregate = [
-            [
-                '$match' => [
-                    '$and' => [
-                        ['bot_id' => $bot->_id],
-                        ['history.action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED],
-                        ['history.action_at' => ['$lte' => mongo_date($until)]]
-                    ]
-                ],
-            ],
-            [
-                '$group' => [
-                    '_id'   => null,
-                    'count' => [
-                        '$sum' => [
-                            '$size' => [
-                                '$filter' => [
-                                    'input' => '$history',
-                                    'as'    => 'el',
-                                    'cond'  => [
-                                        '$eq' => ['$$el.action', SubscriberRepositoryInterface::ACTION_SUBSCRIBED]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        $result = Subscriber::raw()->aggregate($aggregate)->toArray();
-
-        return count($result)? $result[0]->count : 0;
+        return $this->actionCountForBot($bot, mongo_date($until), SubscriberRepositoryInterface::ACTION_SUBSCRIBED);
     }
 
     /**
@@ -480,13 +449,24 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
      */
     public function unsubscriptionCountForBot(Bot $bot, Carbon $until)
     {
+        return $this->actionCountForBot($bot, mongo_date($until), SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED);
+    }
+
+    /**
+     * @param Bot         $bot
+     * @param UTCDateTime $until
+     * @param int         $action
+     * @return int
+     */
+    protected function actionCountForBot(Bot $bot, UTCDateTime $until, $action)
+    {
         $aggregate = [
             [
                 '$match' => [
                     '$and' => [
                         ['bot_id' => $bot->_id],
-                        ['history.action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED],
-                        ['history.action_at' => ['$lte' => mongo_date($until)]]
+                        ['history.action' => $action],
+                        ['history.action_at' => ['$lt' => $until]]
                     ]
                 ],
             ],
@@ -500,7 +480,10 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
                                     'input' => '$history',
                                     'as'    => 'el',
                                     'cond'  => [
-                                        '$eq' => ['$$el.action', SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED]
+                                        '$and' => [
+                                            ['$eq' => ['$$el.action', $action]],
+                                            ['$lt' => ['$$el.action_at', $until]]
+                                        ]
                                     ]
                                 ]
                             ]
@@ -517,10 +500,8 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
 
     /**
      * Determine if a subscriber matches given filtering criteria.
-     *
      * @param Subscriber     $subscriber
      * @param AudienceFilter $filter
-     *
      * @return bool
      */
     public function subscriberMatchesRules(Subscriber $subscriber, AudienceFilter $filter)
