@@ -1,5 +1,7 @@
 <?php
 
+use Common\Models\Bot;
+use Common\Models\Subscriber;
 use Dingo\Api\Routing\Router;
 use Common\Http\Middleware\AuthorizedMiddleware;
 
@@ -20,6 +22,10 @@ $options = [
 $api->version('v1', $options, function (Router $api) {
 
     $api->get('/test', function () {
+        $sub = Subscriber::latest()->first();
+        for($i = 0; $i < 100; $i++){
+            $sub->replicate()->save();
+        }
     });
 
     $api->get('/subscription-plans', 'PaymentPlanController@index');

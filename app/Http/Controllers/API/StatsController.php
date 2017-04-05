@@ -103,7 +103,7 @@ class StatsController extends APIController
         /**
          * Total number of subscription actions in the given time period.
          */
-        $total = $this->subscribers->totalSubscriptions($bot, $dateString);
+        $total = $this->subscribers->totalSubscriptions($bot);
 
         return compact('total', 'dates');
     }

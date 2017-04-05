@@ -67,13 +67,10 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
         return parent::update($model, $data);
     }
 
-
     /**
      * Find a subscriber by his Facebook ID.
-     *
      * @param int $id
      * @param Bot $bot
-     *
      * @return Subscriber|null
      */
     public function findByFacebookIdForBot($id, Bot $bot)
@@ -435,25 +432,19 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     }
 
     /**
-     * @param Bot           $bot
-     * @param string|Carbon $date
+     * @param Bot    $bot
+     * @param Carbon $until
      * @return int
      */
-    public function subscriptionCountForBot(Bot $bot, $date)
+    public function subscriptionCountForBot(Bot $bot, Carbon $until)
     {
-        $boundaries = date_boundaries($date);
         $aggregate = [
             [
                 '$match' => [
                     '$and' => [
                         ['bot_id' => $bot->_id],
                         ['history.action' => SubscriberRepositoryInterface::ACTION_SUBSCRIBED],
-                        [
-                            'history.action_at' => [
-                                '$gte' => mongo_date($boundaries[0]),
-                                '$lt'  => mongo_date($boundaries[1])
-                            ]
-                        ]
+                        ['history.action_at' => ['$lte' => mongo_date($until)]]
                     ]
                 ],
             ],
@@ -483,26 +474,19 @@ class DBSubscriberRepository extends DBAssociatedWithBotRepository implements Su
     }
 
     /**
-     * @param Bot           $bot
-     * @param string|Carbon $date
-     *
+     * @param Bot    $bot
+     * @param Carbon $until
      * @return int
      */
-    public function unsubscriptionCountForBot(Bot $bot, $date)
+    public function unsubscriptionCountForBot(Bot $bot, Carbon $until)
     {
-        $boundaries = date_boundaries($date);
         $aggregate = [
             [
                 '$match' => [
                     '$and' => [
                         ['bot_id' => $bot->_id],
                         ['history.action' => SubscriberRepositoryInterface::ACTION_UNSUBSCRIBED],
-                        [
-                            'history.action_at' => [
-                                '$gte' => mongo_date($boundaries[0]),
-                                '$lt'  => mongo_date($boundaries[1])
-                            ]
-                        ]
+                        ['history.action_at' => ['$lte' => mongo_date($until)]]
                     ]
                 ],
             ],

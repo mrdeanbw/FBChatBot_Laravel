@@ -380,14 +380,15 @@ class SubscriberService
     /**
      * Return the total number of subscription actions in a given period of time.
      * Calculated as the difference between subscription and unsubscription actions.
-     * @param Bot           $bot
-     * @param Carbon|string $date
-     * @return integer
+     * @param Bot    $bot
+     * @param Carbon $until
+     * @return int
      */
-    public function totalSubscriptions(Bot $bot, $date)
+    public function totalSubscriptions(Bot $bot, Carbon $until = null)
     {
-        $subscriptions = $this->subscriberRepo->subscriptionCountForBot($bot, $date);
-        $unsubscriptions = $this->subscriberRepo->unsubscriptionCountForBot($bot, $date);
+        $until = $until?: Carbon::now();
+        $subscriptions = $this->subscriberRepo->subscriptionCountForBot($bot, $until);
+        $unsubscriptions = $this->subscriberRepo->unsubscriptionCountForBot($bot, $until);
 
         return $subscriptions - $unsubscriptions;
     }

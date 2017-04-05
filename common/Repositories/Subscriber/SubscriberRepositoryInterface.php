@@ -76,14 +76,14 @@ interface SubscriberRepositoryInterface extends AssociatedWithBotRepositoryInter
      * @param string|Carbon $date
      * @return int
      */
-    public function subscriptionCountForBot(Bot $bot, $date);
+    public function subscriptionCountForBot(Bot $bot, Carbon $date);
 
     /**
      * @param Bot           $bot
      * @param string|Carbon $date
      * @return int
      */
-    public function unsubscriptionCountForBot(Bot $bot, $date);
+    public function unsubscriptionCountForBot(Bot $bot, Carbon $date);
 
     /**
      * @param Broadcast|Sequence $model
