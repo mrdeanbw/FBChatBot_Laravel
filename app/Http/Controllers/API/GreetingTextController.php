@@ -33,11 +33,7 @@ class GreetingTextController extends APIController
     {
         $bot = $this->enabledBot();
 
-        $this->validate(
-            $request,
-            ['text' => 'required|string|max:160'],
-            $this->greetingTextValidationCallback($bot)
-        );
+        $this->validate($request, ['text' => 'required|string|max:160']);
 
         $this->greetingTexts->update($request->all(), $bot, $this->user());
 
@@ -59,7 +55,6 @@ class GreetingTextController extends APIController
     private function greetingTextValidationCallback($page)
     {
         return function ($validator, $input) use ($page) {
-
             $greetingText = trim(array_get($input, 'text'));
             $copyrightSentence = "- Powered By: MrReply.com";
 

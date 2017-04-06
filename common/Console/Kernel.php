@@ -1,5 +1,6 @@
 <?php namespace Common\Console;
 
+use Admin\Console\Commands\RemoveMrReplyBranding;
 use Common\Console\Commands;
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Lumen\Console\Kernel as ConsoleKernel;
@@ -21,6 +22,8 @@ class Kernel extends ConsoleKernel
 
         Commands\CreateDatabaseIndexes::class,
         Commands\DropDatabaseIndexes::class,
+
+        RemoveMrReplyBranding::class
     ];
 
     /**

@@ -54,7 +54,7 @@ class GreetingTextService
     {
         return new GreetingText([
             'locale' => 'default',
-            'text'   => "Hello {{user_first_name}}, Welcome to {{page_name|fallback:our page}}! - Powered By: MrReply.com"
+            'text'   => "Hello {{user_first_name}}, Welcome to {{page_name|fallback:our page}}!"
         ]);
     }
 

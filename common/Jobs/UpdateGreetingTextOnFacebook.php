@@ -47,6 +47,7 @@ class UpdateGreetingTextOnFacebook extends BaseJob
 
         $success = isset($response->result) && starts_with($response->result, "Successfully");
 
+
         if (! $success) {
             throw new Exception("{$this->frontendFailMessageBody}. Facebook response: " . $response->result);
         }

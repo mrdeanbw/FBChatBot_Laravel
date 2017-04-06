@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use Common\Models\Bot;
 use Common\Models\Button;
 use Common\Models\Page;
+use Common\Models\Template;
 use Common\Models\User;
 use MongoDB\BSON\ObjectID;
 use Illuminate\Support\Collection;
@@ -216,6 +217,7 @@ class BotService
 
         /** @type Bot $bot */
         $bot = $this->botRepo->create($data);
+        Template::where('_id', $welcomeMessageTemplateId)->update(['messages.1.deleted_at' => mongo_date()]);
 
         $this->createDefaultAutoReplyRules($bot, $confirmUnsubscriptionTemplateId);
 
@@ -367,9 +369,9 @@ class BotService
                     'text' => "Welcome {{first_name|fallback:}}! Thank you for subscribing. The next post is coming soon, stay tuned!\n\nP.S. If you ever want to unsubscribe just type \"stop\"."
                 ],
                 [
-                    'type'     => 'text',
-                    'text'     => 'Want to create your own bot? Go to: https://www.mrreply.com',
-                    'readonly' => true
+                    'type'       => 'text',
+                    'text'       => 'Want to create your own bot? Go to: https://www.mrreply.com',
+                    'readonly'   => true,
                 ]
             ],
             'bot_id'   => $botId
