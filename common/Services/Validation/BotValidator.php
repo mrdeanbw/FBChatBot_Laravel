@@ -373,7 +373,7 @@ class BotValidator extends LaravelValidator
             ) {
                 return false;
             }
-            
+
             foreach ($messages as $i => $message) {
                 $attr = "{$messagesAttr}.{$i}";
                 if (! $this->validateMessage($attr, $message)) {

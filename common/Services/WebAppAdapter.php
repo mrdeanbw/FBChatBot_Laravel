@@ -958,10 +958,10 @@ class WebAppAdapter
 
         if ($button->template_id) {
             $this->FacebookMessageSender->sendFromTemplateWrapper($button, $subscriber, $bot);
-        } else {
-            if ($button->messages) {
-                $this->FacebookMessageSender->sendMessageArray($button->messages, $subscriber, $bot);
-            }
+        }
+
+        if ($button->messages) {
+            $this->FacebookMessageSender->sendMessageArray($button->messages, $subscriber, $bot);
         }
 
         if ($button->unsubscribe) {

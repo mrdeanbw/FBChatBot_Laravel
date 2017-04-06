@@ -259,11 +259,11 @@ class TemplateService
                     unset($message['template']);
                 } else {
                     unset($message['template']);
-                    if ($allowButtonMessages && $buttonMessages = array_get($message, 'messages')) {
-                        $message['messages'] = $this->recursivelyConstructMessage($buttonMessages, $allowButtonMessages);
-                    } else {
-                        unset($message['messages']);
-                    }
+                }
+                if ($allowButtonMessages && $buttonMessages = array_get($message, 'messages')) {
+                    $message['messages'] = $this->recursivelyConstructMessage($buttonMessages, $allowButtonMessages);
+                } else {
+                    unset($message['messages']);
                 }
             }
 
