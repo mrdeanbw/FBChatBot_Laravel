@@ -32,7 +32,7 @@ class DefaultReplyController extends APIController
         $bot = $this->enabledBot();
         $this->validateForBot($bot, $request, [
             'template'            => 'bail|required|array',
-            'template.messages'   => 'bail|required|array|max:10',
+            'template.messages'   => 'bail|array|max:10',
             'template.messages.*' => 'bail|required|array|message',
         ]);
 
